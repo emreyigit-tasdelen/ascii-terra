@@ -6,30 +6,58 @@ import { makeKnight, animBiped } from './models.js';
 import { P, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, applySnapshot, snapshotRows } from './actors.js';
 import { S, label, toast } from './game.js';
 
-export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, name: 'Senje', remotes: new Map() };
+export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Senje', remotes: new Map() };
 const TABARDS = [0x1b2c5e, 0x1e5a2a, 0x5a1e5a, 0x6a4a10, 0x205060, 0x6a1a1a, 0x3a3a3a, 0x4a2a10];
 
 export function sendNet(o) { if (NET.online && NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }
 export const isClient = () => NET.role === 'client';
 export const isHost = () => NET.role === 'host';
 
-export function connectNet(name) {
-  NET.name = name;
-  if (!('WebSocket' in window) || location.protocol === 'file:') return;
-  let ws; try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { return; }
+const TOK = 'asciiTerraTok';
+const raw = o => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); };
+/* Sayfa açılınca sunucuya bağlanır (giriş ekranı için); oyuna katılma joinWorld ile olur */
+export function initNet() {
+  const fail = () => { NET.tried = true; NET.available = false; NET.onReady && NET.onReady(); };
+  if (!('WebSocket' in window) || location.protocol === 'file:') return fail();
+  let ws; try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { return fail(); }
   NET.ws = ws;
-  ws.onopen = () => { ws.send(JSON.stringify({ t: 'hello', name })); ws.send(JSON.stringify({ t: 'vis', h: document.hidden ? 1 : 0 })); };
+  ws.onopen = () => {
+    NET.tried = true; NET.available = true; NET.onReady && NET.onReady();
+    let t = null; try { t = localStorage.getItem(TOK) || sessionStorage.getItem(TOK); } catch (e) { }
+    if (t) raw({ t: 'tok', token: t });
+  };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = () => {
     if (NET.online) toast('Sunucu bağlantısı koptu — tek oyunculu devam ediyorsun');
-    NET.online = false; NET.role = 'solo'; for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); status();
+    const wasAvail = NET.available; NET.online = false; NET.available = false; NET.role = 'solo';
+    for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); status();
+    if (!NET.tried || wasAvail) { NET.tried = true; NET.onReady && NET.onReady(); }
   };
   ws.onerror = () => { };
 }
+export function authRequest(mode, name, pass, remember) { NET.remember = remember; raw({ t: mode, name, pass }); }
+export function logout() {
+  let t = null; try { t = localStorage.getItem(TOK) || sessionStorage.getItem(TOK); localStorage.removeItem(TOK); sessionStorage.removeItem(TOK); } catch (e) { }
+  raw({ t: 'logout', token: t }); NET.account = null; NET.accountSave = null;
+}
+export function joinWorld(name) {
+  NET.name = name;
+  if (!NET.available) return;
+  raw({ t: 'hello', name }); raw({ t: 'vis', h: document.hidden ? 1 : 0 });
+}
+export const connectNet = joinWorld;
 function setRole() { NET.role = NET.hostId === NET.myId ? 'host' : 'client'; status(); }
 function onMsg(m) {
   switch (m.t) {
-    case 'welcome': NET.myId = m.id; NET.hostId = m.host; NET.online = true; setRole(); m.players.forEach(p => addRemote(p.id, p.name, p.st));
+    case 'auth':
+      if (m.ok) {
+        NET.account = m.name; NET.accountSave = m.save;
+        try { (NET.remember === false ? sessionStorage : localStorage).setItem(TOK, m.token); } catch (e) { }
+      } else if (!m.silent) NET.account = null;
+      if (m.out || (m.silent && !m.ok)) { try { localStorage.removeItem(TOK); sessionStorage.removeItem(TOK); } catch (e) { } }
+      NET.onAuth && NET.onAuth(m); break;
+    case 'kick': toast(m.why || 'Bağlantı kesildi'); break;
+    case 'welcome': NET.myId = m.id; NET.hostId = m.host; NET.online = true; if (m.name) NET.name = m.name; setRole(); m.players.forEach(p => addRemote(p.id, p.name, p.st));
       toast('Sunucuya bağlandın — ' + (m.players.length ? m.players.length + ' oyuncu daha çevrimiçi' : 'şu an yalnızsın') + (isHost() ? ' (dünya sende)' : '')); break;
     case 'join': addRemote(m.id, m.name); toast(m.name + ' dünyaya katıldı'); chatLine('', m.name + ' katıldı', 'sys'); status(); break;
     case 'leave': { const r = NET.remotes.get(m.id); if (r) { toast(r.name + ' ayrıldı'); chatLine('', r.name + ' ayrıldı', 'sys'); removeRemote(r); NET.remotes.delete(m.id); status(); } break; }
@@ -38,7 +66,7 @@ function onMsg(m) {
     case 'ch': chatLine(m.name, m.text, m.from === NET.myId ? 'me' : ''); break;
     case 'hit': { const e = enemies[m.e]; if (isHost() && e) hitEnemy(e, m.d, m.x, m.z, { remote: true, crit: m.c, by: m.from }); break; }
     case 'kill': { const e = enemies[m.e]; if (e) grantKill(e); break; }
-    case 'dmg': hurtPlayer(m.d); break;
+    case 'dmg': hurtPlayer(m.d, m.x != null ? { x: m.x, z: m.z } : null); break;
     case 'en': if (isClient()) applySnapshot(m.d); break;
     case 'tele': telegraph(m.x, m.z, m.r, m.dl, m.d, !!m.f, false); break;
     case 'ep': spawnEproj(m.x, m.y, m.z, m.vx, m.vz, m.d, m.tid, false); break;
@@ -70,7 +98,7 @@ export function updateNet(dt) {
     if (R.atk >= 0) { R.atk += dt / .36; if (R.atk > 1) R.atk = -1; }
     const amt = (R.a[0] || 0) / 100, run = (R.a[1] || 0) / 100;
     R.ph += dt * Math.max(1.5, amt * 5.8 * 1.75 + run * 6);
-    animBiped(R.rig, { ph: R.ph, amt, run, atk: R.atk, atkType: R.atkType || 0, dodge: R.a[4] ?? -1, air: R.a[5] || 0, hit: R.a[6] || 0, t: T, dt, style: 'knight' });
+    animBiped(R.rig, { ph: R.ph, amt, run, atk: R.atk, atkType: R.atkType || 0, dodge: R.a[4] ?? -1, air: R.a[5] || 0, hit: R.a[6] || 0, block: R.a[7] || 0, t: T, dt, style: 'knight' });
     R.rig.g.position.set(R.x, R.y, R.z); R.rig.g.rotation.y = R.f; R.rig.g.visible = R.got;
     R.rig.g.rotation.x = R.hp <= 0 ? -1.45 : 0;
     if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + ' · sv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
@@ -79,7 +107,7 @@ export function updateNet(dt) {
   sendT -= dt;
   if (sendT <= 0) {   // yerel oyuncu durumu ~15 Hz
     sendT = .066;
-    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl });
+    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl });
   }
   if (isHost()) { snapT -= dt; if (snapT <= 0) { snapT = .1; const d = snapshotRows(); if (d.length) sendNet({ t: 'en', d }); } }
 }

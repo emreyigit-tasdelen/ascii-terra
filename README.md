@@ -38,7 +38,7 @@ hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone
 
 - **100% ASCII rendering** — per-material glyph sets, pixel-aligned glyph atlas, finer grid for characters and creatures
 - Knight world: village, ruined castle with towers and a torch-lit gate, menhirs on a foamy coast, forests
-- Real-time combat: sword, fireball, whirlwind, dodge roll; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
+- Real-time combat: sword combos, shield block and parry with stamina, fireball, whirlwind, dodge roll, jump; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
 - Detailed procedural models: plate-armoured knights (layered pauldrons, visored helm, chainmail, tabard, cape, longsword, heraldic shield),
   anatomical skeletons, shaggy dire wolves, a hairy giant spider and a winged, scaled dragon
 - Enemies: skeleton warriors, dark knights, dire wolves, the *Dusk Widow* spider boss and the *Ash Dragon* world boss
@@ -77,6 +77,9 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 - Boss ground telegraphs and witch hexes are shared; every client checks damage for its own knight, so dodging stays responsive.
 - Kill rewards (XP, loot, quest progress) go to the player who landed the final blow. Quests and inventory are per player.
 - Chat: press `Enter`, type, `Enter` to send.
+- **Accounts:** register or log in on the start screen to keep your progress on the server and continue from any device,
+  or play as a guest (progress stays in that browser). Passwords are stored only as salted scrypt hashes, login tokens only as
+  SHA-256 digests, login attempts are rate-limited, and all of it lives in `server/data/` which is git-ignored.
 - The server is a single dependency-free file (`server/server.js`): static files + a minimal WebSocket implementation,
   path-traversal and dotfile protection, message size and rate limits, sanitised names and chat.
 - To play over the internet, run the server on a VPS or any Node host and put it behind HTTPS; the client switches to `wss://` automatically.
@@ -88,14 +91,15 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `W A S D` | move (`Shift` to run) |
 | `Space` | jump |
 | `C` | dodge roll |
-| Left click / `1` | sword attack toward the cursor |
+| Left click / `1` | sword attack toward the cursor (3-hit combo) |
+| Right click (hold) / `F` | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
 | `Enter` | chat (multiplayer) |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
-| Right-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
+| Middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
 | `[` `]` | glyph size |
 
 ## How the ASCII renderer works

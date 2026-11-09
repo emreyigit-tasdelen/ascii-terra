@@ -69,3 +69,16 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 .lbl.ally{color:#9fc4ff}
 #overlay p.name{font-size:13px;color:#ccc}
 #pname{font:inherit;font-size:14px;background:#111;color:#fff;border:1px solid #888;padding:4px 8px;width:170px;text-align:center}
+.bar.st{height:4px}.bar.st i{background:repeating-linear-gradient(90deg,#8fbf3a 0 3px,#3e5a14 3px 4px);width:100%}
+#acct{margin:6px auto 4px;max-width:300px}
+#acct .tabs{display:flex;gap:0;margin-bottom:8px}
+#acct .tabs button{flex:1;margin:0;font-size:12px;padding:5px 0;border-color:#555;color:#999;background:#0b0b0b}
+#acct .tabs button.on{color:#fff;border-color:#c9a227;background:#1a1608}
+#aform{display:flex;flex-direction:column;gap:6px}
+#aform input[type=text],#aform input:not([type]),#aform input[type=password]{font:inherit;font-size:14px;background:#111;color:#fff;border:1px solid #777;padding:6px 8px;text-align:center}
+#aform input:focus{border-color:#c9a227;outline:none}
+#remrow{font-size:11px;color:#999;text-align:left}
+#aform #auth{margin:2px 0 0}
+#amsg{min-height:16px;font-size:11px!important;color:#c9a227!important;margin:6px 0!important}
+#amsg.err{color:#ff6a5a!important}
+#who{font-size:13px;color:#ccc;margin:8px 0}#who b{color:#ffd88a}#who a{color:#888}

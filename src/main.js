@@ -4,7 +4,7 @@ import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV,
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
-import { NET, connectNet, updateNet, chatToggle, chatCancel } from './net.js';
+import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion } from './game.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: kamera ufka kadar indirilebilir (uzağı görmek için)
@@ -17,12 +17,11 @@ addEventListener('keydown', e => {
   const ae = document.activeElement;
   if (ae && ae.tagName === 'INPUT') {   // yazı alanındayken oyun tuşları çalışmaz
     if (ae.id === 'chatin') { if (e.key === 'Enter') { e.preventDefault(); chatToggle(); } else if (e.key === 'Escape') chatCancel(); }
-    else if (ae.id === 'pname' && e.key === 'Enter') $('go').click();
     return;
   }
   if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
   const k = e.key.toLowerCase();
-  if ('wasd'.includes(k) && k.length === 1) keys[k] = true;
+  if ('wasdf'.includes(k) && k.length === 1) keys[k] = true;
   if (e.key === 'Shift') keys.shift = true;
   if (e.code === 'Space') { e.preventDefault(); if (started && !e.repeat) doJump(); }
   if (!started || e.repeat) return;
@@ -38,15 +37,15 @@ addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') cam.yaw += .2; else if (e.key === 'ArrowRight') cam.yaw -= .2;
   else if (e.key === 'ArrowUp') cam.pitch = clamp(cam.pitch + .06, PMIN, 1.35); else if (e.key === 'ArrowDown') cam.pitch = clamp(cam.pitch - .06, PMIN, 1.35);
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; });
-addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = false; });
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); if ('wasdf'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false; });
 addEventListener('mousemove', e => {
   MOUSE.x = e.clientX; MOUSE.y = e.clientY;
   const c = $('cross'); c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
-  if (MOUSE.rmb && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
+  if (MOUSE.mmb && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
 });
-canvas.addEventListener('mousedown', e => { if (!started) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; });
-addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; });
+canvas.addEventListener('mousedown', e => { if (!started) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
+addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; if (e.button === 1) MOUSE.mmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * .02, 8, 42); }, { passive: true });
 addEventListener('resize', resize);
@@ -54,21 +53,66 @@ addEventListener('beforeunload', () => { if (started) save(); });
 
 /* ---------------- başlat ---------------- */
 function begin(fresh) {
-  const nm = ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Senje';
-  try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
+  const nm = NET.account || ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Senje';
+  if (!NET.account) try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
   NET.name = nm;
   if (fresh) resetSave(); else load();
   applyState(); buildHotbar();
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
   started = true; $('overlay').hidden = true; $('hud').hidden = false;
-  connectNet(nm);
+  joinWorld(nm);
   setTimeout(() => { if (!$('help').hidden) toggleHelp(); }, 15000);
 }
+/* ---------------- giriş ekranı: hesap / misafir ---------------- */
+let mode = 'login', newArmed = false;
+const amsg = (t, err) => { $('amsg').textContent = t || ''; $('amsg').className = err ? 'err' : ''; };
+function setMode(m) {
+  mode = m; document.querySelectorAll('#acct .tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  const guest = m === 'guest';
+  $('ppass').hidden = guest; $('ppass2').hidden = m !== 'reg'; $('remrow').hidden = guest; $('auth').hidden = guest;
+  $('auth').textContent = m === 'reg' ? 'Kayıt ol' : 'Giriş yap';
+  $('ppass').autocomplete = m === 'reg' ? 'new-password' : 'current-password';
+  refreshButtons();
+  if (guest) amsg(NET.available ? 'Misafir: ilerlemen yalnız bu tarayıcıda saklanır.' : 'Sunucuya ulaşılamadı: çevrimdışı misafir olarak oynayabilirsin.');
+  else amsg(m === 'reg' ? 'Hesapla ilerlemen sunucuda saklanır, her cihazdan devam edersin.' : '');
+}
+function refreshButtons() {
+  const authed = !!NET.account, guest = mode === 'guest';
+  $('acct').hidden = authed; $('who').hidden = !authed; $('whoname').textContent = NET.account || '';
+  const canPlay = authed || guest;
+  $('go').hidden = !canPlay; const has = canPlay && hasSave();
+  $('go').textContent = has ? 'Devam et' : 'Başla'; $('new').hidden = !has; $('new').textContent = 'Yeni oyun'; newArmed = false;
+}
+document.querySelectorAll('#acct .tabs button').forEach(b => b.onclick = e => { e.preventDefault(); if (!NET.available && b.dataset.m !== 'guest') return; setMode(b.dataset.m); });
+$('aform').onsubmit = e => {
+  e.preventDefault();
+  if (mode === 'guest') return $('go').click();
+  const n = $('pname').value.trim(), p = $('ppass').value;
+  if (!NET.available) return amsg('Sunucuya ulaşılamadı.', true);
+  if (n.length < 3) return amsg('Ad en az 3 karakter olmalı.', true);
+  if (p.length < 6) return amsg('Şifre en az 6 karakter olmalı.', true);
+  if (mode === 'reg' && p !== $('ppass2').value) return amsg('Şifreler aynı değil.', true);
+  amsg(mode === 'reg' ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'); $('auth').disabled = true;
+  authRequest(mode, n, p, $('prem').checked);
+};
+NET.onAuth = m => {
+  $('auth').disabled = false; $('ppass').value = ''; $('ppass2').value = '';
+  if (m.ok) { amsg(''); toastLater = 'Hoş geldin, ' + m.name; }
+  else if (!m.silent) amsg(m.err || 'Giriş başarısız', true);
+  refreshButtons();
+};
+NET.onReady = () => {
+  if (!NET.available) { setMode('guest'); document.querySelectorAll('#acct .tabs button').forEach(b => { if (b.dataset.m !== 'guest') b.disabled = true; }); }
+  else if (!NET.account) amsg('');
+};
+$('logout').onclick = e => { e.preventDefault(); logout(); setMode('login'); amsg('Çıkış yapıldı.'); };
 $('go').onclick = () => begin(false);
-$('new').onclick = () => begin(true);
-if (hasSave()) { $('new').hidden = false; $('go').textContent = 'Devam et'; }
-try { $('pname').value = localStorage.getItem('asciiTerraName') || 'Senje'; } catch (e) { $('pname').value = 'Senje'; }
+$('new').onclick = () => { if (!newArmed) { newArmed = true; $('new').textContent = 'Emin misin? İlerleme silinir'; return; } begin(true); };
+let toastLater = '';
+try { $('pname').value = localStorage.getItem('asciiTerraName') || ''; } catch (e) { }
+setMode('login'); amsg('Sunucuya bağlanılıyor…');
+initNet();
 
 /* ---------------- kamera (takip + sarsıntı) ---------------- */
 function updateCamera(dt, run) {

@@ -14,7 +14,7 @@ let T = 0;
 
 /* ================= oyuncu ================= */
 export const P = { x: 0, z: 14, y: 0, vx: 0, vz: 0, vy: 0, air: false, face: Math.PI, hp: 100, maxhp: 100, dead: false, deadT: 0, hurtT: 0, hitT: 0, lastHit: 99,
-  dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
+  dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, block: false, blockT: 0, st: 100, stMax: 100, stCd: 0, stunT: 0, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
 export const CD = { slash: 0, fire: 0, whirl: 0 }, CDMAX = { slash: .42, fire: 2.5, whirl: 7 };
 export const TGT = { e: null };
 {
@@ -134,7 +134,7 @@ export function updateEffects(dt) {
     p.x += p.vx * dt; p.z += p.vz * dt; p.m.position.set(p.x, p.y, p.z); p.m.rotation.y += dt * 7;
     if (Math.random() < .8) burst('hex', p.x, p.y, p.z, 1);
     let gone = p.life <= 0;
-    if (d < 1 && Math.abs(ty + 1.2 - p.y) < 1.1) { if (me) hurtPlayer(p.dmg); gone = true; }
+    if (d < 1 && Math.abs(ty + 1.2 - p.y) < 1.1) { if (me) hurtPlayer(p.dmg, { x: p.x - p.vx, z: p.z - p.vz }); gone = true; }
     if (gone) { burst('ichor', p.x, p.y, p.z, 10); disposeMesh(p.m); eproj.splice(i, 1); }
   }
 }
@@ -160,7 +160,7 @@ function faceAim() { const a = aim(); P.face = Math.atan2(a.x - P.x, a.z - P.z);
 const baseDmg = () => dmgFor(S.lvl) + atkBonus();
 const reachOf = e => (e.k.scale ? e.k.scale * (e.k.id === 'dragon' ? 2.6 : 1) : e.k.id === 'troll' ? 1.2 : 0);
 export function doSlash() {
-  if (P.dead || CD.slash > 0 || P.dodgeT > 0) return; CD.slash = CDMAX.slash; faceAim();
+  if (P.dead || CD.slash > 0 || P.dodgeT > 0 || P.block || P.stunT > 0) return; CD.slash = CDMAX.slash; faceAim();
   P.atkType = P.comboT > 0 ? (P.atkType + 1) % 3 : 0; P.comboT = .75; P.atkT = 0;      // 3 vuruşluk kombo
   const fx = Math.sin(P.face), fz = Math.cos(P.face), mult = [1, 1.1, 1.35][P.atkType];
   for (const e of enemies) {
@@ -181,7 +181,7 @@ export function doWhirl() {
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
 }
 export function doDodge() {
-  if (P.dead || P.dodgeCd > 0 || P.air) return; P.dodgeCd = .8; P.dodgeT = .42;
+  if (P.dead || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
   const l = Math.hypot(P.mx || 0, P.mz || 0);
   if (l > .1) { P.ddx = P.mx / l; P.ddz = P.mz / l; } else { P.ddx = Math.sin(P.face); P.ddz = Math.cos(P.face); }
   P.face = Math.atan2(P.ddx, P.ddz); burst('dust', P.x, P.y + .1, P.z, 8);
@@ -216,9 +216,25 @@ export function grantKill(e) {   // ödül öldüren oyuncuya
   if (e.k.boss || e.k.elite) toast(e.k.name + ' yenildi!');
   checkQuests();
 }
-export function hurtPlayer(d) {
+// src: saldırının geldiği nokta {x, z, e?}; yoksa (alan saldırıları) bloklanamaz
+export function hurtPlayer(d, src) {
   if (P.dead) return;
   if (P.dodgeT > 0) { floatText('sıyrıldı', P.x, P.y + 2.8, P.z, 'info'); return; }
+  if (P.block && src && P.stunT <= 0) {
+    const ang = Math.atan2(src.x - P.x, src.z - P.z);
+    if (Math.abs(angDiff(P.face, ang)) < 1.25) {       // önden gelen darbe
+      const sx = P.x + Math.sin(P.face) * .6, sz = P.z + Math.cos(P.face) * .6;
+      if (P.blockT < .22) {                              // tam zamanında: savuşturma
+        burst('spark', sx, P.y + 1.3, sz, 24); hitFeel(.09, .3); floatText('SAVUŞTURMA!', P.x, P.y + 2.8, P.z, 'crit');
+        P.st = Math.min(P.stMax, P.st + 15);
+        if (src.e && !isClient()) { src.e.stunT = 1.4; src.e.atkT = -1; src.e.kx = Math.sin(ang) * 6; src.e.kz = Math.cos(ang) * 6; }
+        return;
+      }
+      P.st -= d * 1.4; P.stCd = 1; burst('spark', sx, P.y + 1.3, sz, 10); hitFeel(.03, .12);
+      if (P.st <= 0) { P.st = 0; P.block = false; P.stunT = .9; floatText('KALKAN KIRILDI', P.x, P.y + 2.8, P.z, 'hurt'); d *= .6; }
+      else { d *= .15; floatText('BLOK', P.x, P.y + 2.8, P.z, 'info'); if (d < 1) return; }
+    }
+  }
   d = Math.max(1, Math.round(d - defBonus())); P.hp -= d; P.hurtT = .35; P.hitT = .3; P.lastHit = 0;
   burst('blood', P.x, P.y + 1.3, P.z, 7); hitFeel(.03, .22);
   floatText('-' + d, P.x, P.y + 2.8, P.z, 'hurt');
@@ -247,7 +263,7 @@ function targetFor(e) {
   return best || { x: P.x, y: P.y, z: P.z, id: myTid(), local: true, dead: true };
 }
 function nearestPlayerDist(x, z) { let d = Math.hypot(P.x - x, P.z - z); if (isHost()) for (const R of remoteTargets()) d = Math.min(d, Math.hypot(R.x - x, R.z - z)); return d; }
-function dmgTarget(tg, d) { if (tg.local) hurtPlayer(d); else sendNet({ t: 'dmg', to: tg.id, d }); }
+function dmgTarget(tg, d, e) { if (tg.local) hurtPlayer(d, { x: e.x, z: e.z, e }); else sendNet({ t: 'dmg', to: tg.id, d, x: e.x, z: e.z }); }
 function deadAnim(e, dt) {
   const g = e.rig.g; setFlash(e, false);
   if (e.deadT > 0) {
@@ -283,14 +299,15 @@ function updateEnemy(e, dt) {
   e.cd -= dt; e.hurtT -= dt; e.hitT -= dt; e.provoked -= dt; e.lungeT -= dt; if (e.breathT > 0) e.breathT -= dt;
   const aggro = e.k.aggro * (ENV.night > .5 ? 1.3 : 1);
   let tx = e.wx, tz = e.wz, sp = e.k.spd * .35; e.chasing = false; e.run = 0;
-  if (e.lungeT > 0) { sp = 0; e.x += e.lx * dt; e.z += e.lz * dt; if (d < 1.6 && !e.hit) { e.hit = true; dmgTarget(tg, e.dmg * 1.3); } }
+  if (e.stunT > 0) { e.stunT -= dt; e.atkT = -1; e.lungeT = 0; sp = 0; e.hitT = .3; }   // savuşturulmuş: sendeliyor
+  else if (e.lungeT > 0) { sp = 0; e.x += e.lx * dt; e.z += e.lz * dt; if (d < 1.6 && !e.hit) { e.hit = true; dmgTarget(tg, e.dmg * 1.3, e); } }
   else if (e.atkT >= 0) {
     e.atkT += dt / e.k.atkTime; sp = 0; tx = tg.x; tz = tg.z;
     if (!e.hit && e.atkT > .5) {
       e.hit = true;
       if (e.k.ranged) { const ux = dxp / (d || 1), uz = dzp / (d || 1); spawnEproj(e.x + ux, e.y + 1.7, e.z + uz, ux * 10, uz * 10, e.dmg, tg.id); }
       else if (e.k.id === 'troll') { telegraph(e.x + Math.sin(e.face) * 3, e.z + Math.cos(e.face) * 3, 3.2, .05, e.dmg); hitFeel(.05, .45); }
-      else if (d < e.k.reach + .7) dmgTarget(tg, e.dmg);
+      else if (d < e.k.reach + .7) dmgTarget(tg, e.dmg, e);
     }
     if (e.atkT >= 1) e.atkT = -1;
   } else if ((d < aggro || e.provoked > 0) && !tg.dead) {
@@ -393,7 +410,7 @@ export function updatePlayer(dt) {
   const pvx = P.vx, pvz = P.vz;
   if (P.dodgeT > 0) { P.dodgeT -= dt; P.vx = P.ddx * 13; P.vz = P.ddz * 13; }
   else {
-    const run = keys.shift ? 1 : 0, sp = (run ? 9.5 : 5.8) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
+    const run = keys.shift && !P.block ? 1 : 0, sp = (run ? 9.5 : 5.8) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
     P.vx += (mx * sp - P.vx) * a; P.vz += (mz * sp - P.vz) * a;
   }
   let nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;
@@ -412,9 +429,17 @@ export function updatePlayer(dt) {
   P.turn = lerp(P.turn, clamp(angDiff(oldFace, P.face) / Math.max(dt, .001) / 8, -1, 1), 1 - Math.exp(-8 * dt));
   if (P.atkT >= 0) { P.atkT += dt / .36; if (P.atkT > 1) P.atkT = -1; }
   P.ph += dt * Math.max(1.5, spd * 1.75);
+  // kalkan: sağ tık ya da F basılıyken
+  P.stunT -= dt; P.stCd -= dt;
+  const wantBlock = (MOUSE.rmb || keys.f) && P.dodgeT <= 0 && !P.air && P.stunT <= 0 && P.st > 3;
+  if (wantBlock && !P.block) P.blockT = 0;
+  P.block = wantBlock;
+  if (P.block) { P.blockT += dt; P.st -= 3 * dt; P.stCd = Math.max(P.stCd, .5); P.atkT = -1; faceAim(); }
+  else if (P.stCd <= 0) P.st = Math.min(P.stMax, P.st + 28 * dt);
   P.animAmt = P.dodgeT > 0 ? 0 : Math.min(1, spd / 5.8); P.animRun = clamp((spd - 6) / 3.5, 0, 1);
   animBiped(r, { ph: P.ph, amt: P.animAmt, run: P.animRun, atk: P.atkT, atkType: P.atkType, hit: Math.max(0, P.hitT) * 3,
-    dodge: P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, air: P.air ? clamp(.4 + (P.vy > 0 ? .6 : .3), 0, 1) : 0, lean: P.lean, turn: P.turn, t: T, dt, style: 'knight' });
+    dodge: P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, air: P.air ? clamp(.4 + (P.vy > 0 ? .6 : .3), 0, 1) : 0, lean: P.lean, turn: P.turn, block: P.block ? 1 : 0, t: T, dt, style: 'knight' });
+  if (P.stunT > 0) r.spine.rotation.x -= .35;
   if (P.spinT > 0) { P.spinT -= dt; P.face += dt * 26; }
   P.arc.visible = P.atkT > .3 && P.atkT < .62; P.arc.rotation.z = [-.2, .9, -1.2][P.atkType] ?? 0;
   P.g.position.set(P.x, P.y, P.z); P.g.rotation.y = P.face;

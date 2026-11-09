@@ -617,6 +617,10 @@ export function animBiped(r, s) {
   }
   const hit = s.hit || 0;
   sx -= hit * .35; laZ -= hit * .4; raZ += hit * .4;
+  if (s.block > 0) {   // kalkan önde, kılıç geride, hafif çömelme
+    const b = s.block; laX = lerp(laX, -1.25, b); laE = lerp(laE, -1.55, b); laZ = lerp(laZ, .35, b);
+    raX = lerp(raX, -.45, b); raE = lerp(raE, -1.1, b); raZ = lerp(raZ, .3, b); sx += .12 * b; by -= .06 * b; kL += .25 * b; kR += .25 * b;
+  }
   if (s.air > 0) {   // zıplama: dizler toplanır, kollar dengede açılır
     const a = s.air; hL = lerp(hL, -.6, a); hR = lerp(hR, .1, a); kL = lerp(kL, 1.0, a); kR = lerp(kR, .55, a);
     laZ -= .55 * a; raZ += .35 * a; laX -= .3 * a; bx -= .08 * a;

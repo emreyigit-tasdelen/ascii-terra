@@ -35,7 +35,8 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [ ] Kalite ayarları menüsü (hücre boyutu, çimen yoğunluğu, çözünürlük ölçeği)
 
 ## Faz 2 — Oynanış çekirdeği
-- [ ] Dövüş hissi: hitstop, kamera sarsıntısı, kombo, kalkanla blok, yönlü vuruş
+- [x] Dövüş hissi: hitstop, kamera sarsıntısı, 3'lü kombo, kalkanla blok + savuşturma + dayanıklılık
+- [ ] Yönlü vuruş, düşmanların da bloklaması
 - [ ] Beceri sistemi + destek taşları (support gems) ile build oluşturma (video: skills & support gems)
 - [ ] Mana / dayanıklılık, beceri ağacı, sınıf yok — eşyaya bağlı build
 - [ ] Ekipman slotları: Silah, Miğfer, Omuzluk, Göğüs, Eldiven, Bacak, Çizme (video: craft ekranı)
@@ -69,7 +70,8 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [~] Oyuncu senkronu (15 Hz + yumuşatma) yapıldı; tahmin + uzlaştırma, ilgi alanı (AOI) filtresi yapılacak
 - [x] Sohbet
 - [ ] PVP düello daveti ("X seni düelloya davet ediyor", video), parti, ortak görev ilerlemesi
-- [ ] Hesap sistemi, sunucu tarafı kayıt (veritabanı), hile koruması
+- [x] Hesap sistemi (kayıt/giriş, scrypt, belirteç, beni hatırla), sunucu tarafı kayıt (JSON dosyası)
+- [ ] Gerçek veritabanı (SQLite/Postgres), şifre sıfırlama, hile koruması
 - [ ] Ölçekleme: bölge sunucuları
 
 ## Faz 6 — Yayın

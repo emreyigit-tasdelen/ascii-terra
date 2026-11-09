@@ -3,6 +3,7 @@ import { THREE, $, clamp, heightAt } from './core.js';
 import { camera, ENV } from './render.js';
 import { crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies, CD, CDMAX, TGT, resetPlayer } from './actors.js';
+import { NET, sendNet } from './net.js';
 
 const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
@@ -122,12 +123,20 @@ export function interact(npc) {
 }
 
 /* ================= kayıt ================= */
-export function save() { try { S.x = P.x; S.z = P.z; S.dayT = ENV.dayT; S.q = {}; Q.forEach(q => S.q[q.id] = q.st); localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { } }
-export function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
-export function resetSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } S = freshState(); Q.forEach(q => q.st = 0); }
+// Hesapla girildiyse ilerleme sunucuda (her cihazdan devam), misafirde tarayıcıda saklanır
+export function save() {
+  S.x = P.x; S.z = P.z; S.dayT = ENV.dayT; S.q = {}; Q.forEach(q => S.q[q.id] = q.st);
+  if (NET.account) { NET.accountSave = JSON.parse(JSON.stringify(S)); sendNet({ t: 'save', data: NET.accountSave }); return; }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { }
+}
+export function hasSave() { if (NET.account) return !!NET.accountSave; try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
+export function resetSave() {
+  if (NET.account) NET.accountSave = null; else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
+  S = freshState(); Q.forEach(q => q.st = 0);
+}
 export function load() {
   try {
-    const j = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!j) return false;
+    const j = NET.account ? NET.accountSave : JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!j) return false;
     S = Object.assign(freshState(), j); Q.forEach(q => q.st = (S.q && S.q[q.id]) || 0);
     P.x = S.x; P.z = S.z; ENV.dayT = S.dayT ?? .3;
     S.taken.forEach(id => { const c = crystals[id]; if (c) { c.taken = true; c.mesh.visible = false; } });
@@ -196,6 +205,7 @@ export function updateHUD(dt) {
     qt += '\n';
   });
   $('quests').textContent = qt || 'Köydekilerle konuş (E)';
+  $('stfill').style.width = (P.st / P.stMax * 100) + '%';
   $('hpfill').style.width = (P.hp / P.maxhp * 100) + '%'; $('hptxt').textContent = Math.ceil(P.hp) + ' / ' + P.maxhp + ' HP';
   $('xpfill').style.width = (S.xp / need(S.lvl) * 100) + '%'; $('xptxt').textContent = 'LV ' + S.lvl + ' · ' + S.xp + ' / ' + need(S.lvl) + ' XP';
   SLOTS.forEach((s, i) => {

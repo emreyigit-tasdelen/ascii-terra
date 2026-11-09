@@ -38,7 +38,7 @@ kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de ye
 
 - **%100 ASCII çizim** — malzemeye özel glif setleri, piksel hizalı glif atlası, karakter ve yaratıklar için ince ızgara
 - Şövalye dünyası: köy, kuleli ve meşaleli kapılı kale harabesi, köpüklü kıyıda menhirler, ormanlar
-- Gerçek zamanlı dövüş: kılıç, ateş topu, kasırga, yuvarlanma; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
+- Gerçek zamanlı dövüş: kılıç kombosu, dayanıklılıklı kalkan bloğu ve savuşturma, ateş topu, kasırga, yuvarlanma, zıplama; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
 - Detaylı prosedürel modeller: plaka zırhlı şövalyeler (katmanlı omuzluk, vizörlü miğfer, zincir zırh, tabard, pelerin, uzun kılıç, armalı kalkan),
   gerçek kemik yapılı iskeletler, tüylü dev kurtlar, kıllı dev örümcek ve kanatlı, pullu bir ejderha
 - Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Alacakaranlık Dulu* ve dünya bossu *Kül Ejderhası*
@@ -77,6 +77,9 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 - Boss uyarı daireleri ve cadı lanetleri herkese gider; her istemci hasarı kendi şövalyesi için kontrol eder, böylece kaçmak gecikmesiz kalır.
 - Öldürme ödülleri (XP, ganimet, görev ilerlemesi) son darbeyi vurana gider. Görevler ve envanter oyuncuya özeldir.
 - Sohbet: `Enter`'a bas, yaz, `Enter` ile gönder.
+- **Hesaplar:** giriş ekranında kayıt olup giriş yaparsan ilerlemen sunucuda saklanır ve her cihazdan devam edersin;
+  ya da misafir oynarsın (ilerleme o tarayıcıda kalır). Şifreler yalnız tuzlanmış scrypt karması, oturum belirteçleri yalnız SHA-256
+  özeti olarak tutulur; giriş denemeleri sınırlıdır ve hepsi git'e girmeyen `server/data/` klasöründedir.
 - Sunucu tek, bağımlılıksız bir dosyadır (`server/server.js`): statik dosyalar + küçük bir WebSocket uygulaması,
   yol gezinmesi ve gizli dosya koruması, mesaj boyutu ve hız sınırları, temizlenmiş isim ve sohbet.
 - İnternet üzerinden oynamak için sunucuyu bir VPS'te ya da herhangi bir Node barındırmada HTTPS arkasında çalıştır; istemci otomatik olarak `wss://` kullanır.
@@ -88,14 +91,15 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `W A S D` | yürü (`Shift` ile koş) |
 | `Boşluk` | zıpla |
 | `C` | yuvarlan |
-| Sol tık / `1` | imlece doğru kılıç |
+| Sol tık / `1` | imlece doğru kılıç (3 vuruşluk kombo) |
+| Sağ tık (basılı) / `F` | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
 | `Enter` | sohbet (çok oyunculu) |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
-| Sağ tık sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
+| Orta tuş sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
 | `[` `]` | harf boyutu |
 
 ## ASCII çizici nasıl çalışır?

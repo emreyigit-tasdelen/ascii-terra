@@ -28,3 +28,6 @@ scratch/
 *.mp4
 *.mov
 *.webm
+
+# Server-side accounts and saves (personal data, never committed)
+server/data/
