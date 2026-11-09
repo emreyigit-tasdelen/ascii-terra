@@ -1,9 +1,10 @@
 // Statik dünya: arazi, su, çimen, ağaçlar, köy, kale harabesi, kıyı menhirleri, kristaller, örümcek yuvası
 import {
   THREE, clamp, lerp, smooth, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
-  heightAt, isLand, findLand, pathDist, addCollider, addWall, MID, tag, lam, basic
+  heightAt, isLand, findLand, pathDist, addCollider, addWall, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
 } from './core.js';
 import { scene, ENV } from './render.js';
+import { makeDeadTree, PB } from './models.js';
 
 const insideCastle = (x, z, pad = 0) => Math.abs(x - CASTLE.x) < CASTLE.half - pad && Math.abs(z - CASTLE.z) < CASTLE.half - pad;
 const rocky = (x, z) => vnoise(x * .06 + 40, z * .06 - 13) > .74;
@@ -29,6 +30,7 @@ const Q =new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector
     else if (ny < .78) { const s = .8 + .4 * k; r = .17 * s; gg = .19 * s; b = .25 * s; }
     else { r = .035 + .03 * k2; gg = .085 + .04 * k; b = .03 + .012 * k2; }
     if (y > WATER + 1 && y < 20 && ny >= .78 && rocky(x, z)) { r = .12; gg = .13; b = .17; }
+    const swc = swampF(x, z); if (swc > 0 && y > WATER - .3) { r = lerp(r, .055 + .03 * k, swc); gg = lerp(gg, .06 + .025 * k2, swc); b = lerp(b, .035 + .01 * k, swc); }
     const cob = Math.max(smooth(2.6, 1.4, pathDist(x, z)), smooth(12.5, 10.5, Math.hypot(x, z)), insideCastle(x, z, 1) ? 1 : 0);
     if (cob > 0) { r = lerp(r, .15 + .03 * k, cob); gg = lerp(gg, .16 + .03 * k, cob); b = lerp(b, .21 + .03 * k, cob); }
     const sc = scorched(x, z); if (sc > 0) { r = lerp(r, .07 + .05 * k, sc); gg = lerp(gg, .055 + .03 * k, sc); b = lerp(b, .045 + .02 * k, sc); }
@@ -54,12 +56,15 @@ export const waterMat = new THREE.ShaderMaterial({
   void main(){
     float d=texture2D(tDepth,(vW.xz+200.)/400.).r;
     float shore=1.-smoothstep(0.,.2,d);
+    float sw=1.-smoothstep(32.,58.,distance(vW.xz,vec2(135.0,20.0)));
     float wave=sin(d*55.-uTime*1.4+sin(vW.x*.08+vW.z*.05)*3.);
     float foam=shore*smoothstep(.72,.97,wave)+(1.-smoothstep(0.,.04,d))*.9;
     float nn=sin(vW.x*.13+uTime*.4)*sin(vW.z*.11-uTime*.3+sin(vW.x*.05)*2.);
     foam+=smoothstep(.93,.99,nn)*.5*(1.-shore);
     float mist=shore*.22*(.5+.5*sin(vW.x*.05+vW.z*.07+uTime*.2));
-    vec3 col=mix(vec3(.008,.014,.032),vec3(.72,.77,.84),clamp(foam+mist,0.,1.));
+    foam*=1.-sw*.85; float algae=sw*smoothstep(.55,.8,sin(vW.x*1.7+sin(vW.z*1.3))*sin(vW.z*1.9+uTime*.1));
+    vec3 col=mix(mix(vec3(.008,.014,.032),vec3(.02,.035,.02),sw),vec3(.72,.77,.84),clamp(foam+mist*(1.-sw),0.,1.));
+    col=mix(col,vec3(.12,.16,.06),algae*.8);
     col*=uLight*.9+.15;
     gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),.75);
   }`
@@ -83,7 +88,8 @@ varying float vH;varying float vFl;varying float vAng;varying vec3 vGCol;`).repl
 float hgt=position.y;
 float tone=fract(sin(dot(offset.xz,vec2(12.9898,78.233)))*43758.5453);
 float fl=step(.955,tone);
-float s=par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.);
+float gsw=1.-smoothstep(32.,58.,distance(offset.xz,vec2(135.,20.)));
+float s=par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.)*(1.+gsw*.65);
 vec3 gp=position;gp.y*=s;gp.xz*=(fl>.5?3.5:1.);
 float gc=cos(par.x),gsn=sin(par.x);
 vec3 transformed=vec3(gp.x*gc-gp.z*gsn,gp.y,gp.x*gsn+gp.z*gc);
@@ -94,7 +100,8 @@ vec2 gdp=offset.xz-uPlayer.xz;float gpd=length(gdp);
 transformed.xz+=gdp/(gpd+.001)*(1.-smoothstep(0.,1.5,gpd))*.9*hgt*s;
 transformed+=offset;
 vH=hgt;vFl=fl;
-vGCol=(fl>.5&&hgt>.45)?vec3(.85,.88,.82):mix(vec3(.015,.04,.03),mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),hgt)*(.75+.5*fract(tone*7.3));
+vGCol=(fl>.5&&hgt>.45&&gsw<.5)?vec3(.85,.88,.82):mix(vec3(.015,.04,.03),mix(mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),vec3(.26,.24,.11),gsw),hgt)*(.75+.5*fract(tone*7.3));
+if(gsw>.5)fl=0.;vFl=fl;
 vec3 gtip=offset+vec3((par.z+gw)*s,s,(par.z*.5+gw*.6)*s);
 vec4 GA=projectionMatrix*viewMatrix*vec4(offset,1.),GB=projectionMatrix*viewMatrix*vec4(gtip,1.);
 vec2 gd=GB.xy/GB.w-GA.xy/GA.w;gd.x*=uAspect;float gan=atan(gd.y,gd.x);if(gan<0.)gan+=3.14159265;vAng=gan/3.14159265;
@@ -140,7 +147,7 @@ export function updateGrass(px, pz, limit) {
   const rng = mulberry32(1234), T = [];
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z), f = fbm(x * .022 + 100, z * .022 - 50, 3), r = rng();
-    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z)) continue;
+    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15) continue;
     if (f < .46 || (f < .54 && r > (f - .46) * 12)) continue;
     T.push({ x, z, h, s: .8 + rng() * .9, ry: rng() * 6.28, c: rng(), pine: rng() < .45 });
   }
@@ -354,5 +361,65 @@ export function updateWorld(t) {
   }
   for (let i = 0; i < 10; i++) { const a = rng() * 6.28, d = rng() * 12; box(1.4 + rng() * 2, .5 + rng(), 1.2 + rng(), ash, DRAGON_LAIR.x + Math.cos(a) * d, heightAt(DRAGON_LAIR.x + Math.cos(a) * d, DRAGON_LAIR.z + Math.sin(a) * d) + .1, DRAGON_LAIR.z + Math.sin(a) * d, rng() * 3); }
 }
+/* ================= Sisli Bataklık: kuru ağaçlar, yıkık şapel, mezarlık, rahip kampı ================= */
+export const campLight = new THREE.PointLight(0xff8833, 1.8, 26);
+export const GRAVES = [];
+{
+  const rng = mulberry32(9001);
+  // kuru ağaçlar
+  let n = 0;
+  for (let i = 0; i < 3000 && n < 55; i++) {
+    const a = rng() * 6.28, d = rng() * 56, x = SWAMP.x + Math.cos(a) * d, z = SWAMP.z + Math.sin(a) * d, h = heightAt(x, z);
+    if (h < WATER - .2 || Math.hypot(x - CHAPEL.x, z - CHAPEL.z) < 15 || Math.hypot(x - CAMP.x, z - CAMP.z) < 9 || pathDist(x, z) < 3 || Math.abs(x) > HALF - 6) continue;
+    const t = makeDeadTree(n + 1); t.position.set(x, h - .1, z); t.rotation.y = rng() * 6.28; t.scale.setScalar(.8 + rng() * .6); scene.add(t); addCollider(x, z, .4, 'tree'); n++;
+  }
+  // çürük tahta yürüme yolları
+  const plank = lam(0x3a2c1e, MID.WOOD);
+  for (let x = 97; x < 140; x += 1.1) {
+    const z = 15 + Math.sin(x * .12) * 3 + (x - 97) * .4, h = Math.max(heightAt(x, z), WATER + .15);
+    if (rng() < .12) continue;
+    const p = box(.9, .12, 2.2, plank, x, h + .1, z, (rng() - .5) * .2); p.rotation.z = (rng() - .5) * .15;
+    if (Math.floor(x) % 4 === 0) { box(.15, 1.2, .15, plank, x, h - .3, z - 1.1); box(.15, 1.2, .15, plank, x, h - .3, z + 1.1); }
+  }
+  // yıkık şapel
+  const C = CHAPEL, hy = heightAt(C.x, C.z), cs = [lam(0x737c8e, MID.STONE), lam(0x646c7c, MID.STONE), lam(0x80889a, MID.STONE)];
+  const ry = .35, cr = Math.cos(ry), sr = Math.sin(ry);
+  const W = (lx, lz) => [C.x + lx * cr + lz * sr, C.z - lx * sr + lz * cr];
+  const wseg = (lx, lz, w, h, d, k) => { const [x, z] = W(lx, lz); box(w, h, d, cs[k % 3], x, hy + h / 2, z, ry); addCollider(x, z, Math.max(w, d) * .5, 'wall'); };
+  [-1, 1].forEach(s => { [-7, -3.2, .6, 4.4].forEach((lz, k) => wseg(s * 4.5, lz, .9, 3.2 + rng() * 3.2, 2.6, k)); [-5.1, -1.3, 2.5, 6.3].forEach((lz, k) => { const [x, z] = W(s * 4.5, lz); box(1.2, 6.5 - k * .6 - rng() * 2, 1.2, cs[(k + 1) % 3], x, hy + 3, z, ry); }); });
+  wseg(-2.8, 8.2, 2.6, 7, .9, 0); wseg(2.8, 8.2, 2.6, 5.2, .9, 1);     // arka duvar
+  wseg(-3, -8.6, 2.2, 4.5, .9, 2); wseg(3, -8.6, 2.2, 2.6, .9, 0);     // ön (giriş açık)
+  { const [x, z] = W(-3.6, -9.6); box(3.6, 11, 3.6, cs[1], x, hy + 5.5, z, ry); addCollider(x, z, 2.4, 'wall'); const [x2, z2] = W(-3.0, -9.4); box(2.2, 2.4, 2.2, cs[2], x2, hy + 12.4, z2, ry + .3); }   // çan kulesi
+  { const [x, z] = W(0, 6.5); box(2.6, 1.1, 1.2, cs[0], x, hy + .55, z, ry); addCollider(x, z, 1.4, 'altar');
+    const [cx, cz] = W(0, 7.4); box(.3, 2.6, .3, cs[2], cx, hy + 1.3, cz, ry); box(1.3, .3, .3, cs[2], cx, hy + 2, cz, ry);
+    for (let i = 0; i < 5; i++) { const [x2, z2] = W(-1 + i * .5, 6.3); const cd = box(.08, .3 + rng() * .2, .08, lam(0xd8d0b0, MID.STONE), x2, hy + 1.25, z2); const f = new THREE.Mesh(new THREE.ConeGeometry(.06, .16, 5), fireM); f.position.set(x2, hy + 1.5 + cd.geometry.parameters.height / 2, z2); scene.add(f); flames.push({ m: f, s: .35, ph: i }); } }
+  for (let i = 0; i < 6; i++) { const [x, z] = W((rng() - .5) * 8, (rng() - .5) * 14); const b = box(.3, .3, 9, plank, x, hy + 4 + rng() * 2.5, z, ry); b.rotation.x = (rng() - .5) * .9; b.rotation.z = (rng() - .5) * .6; }
+  // mezarlık
+  const gm = [lam(0x5e6676, MID.STONE), lam(0x6e7686, MID.STONE)];
+  for (let i = 0; i < 4000 && GRAVES.length < 26; i++) {
+    const x = C.x - 22 + rng() * 18, z = C.z - 2 + rng() * 26, h = heightAt(x, z);
+    if (h < WATER + .3 || Math.hypot(x - C.x, z - C.z) < 10 || GRAVES.some(g => Math.hypot(g.x - x, g.z - z) < 2.2)) continue;
+    const r = rng(), tilt = (rng() - .5) * .35, yaw = rng() * .6 - .3;
+    if (r < .55) { const st = box(.75, 1.1, .2, gm[i % 2], x, h + .45, z, yaw); st.rotation.z = tilt; const top = new THREE.Mesh(new THREE.CylinderGeometry(.375, .375, .2, 10, 1, false, 0, Math.PI), gm[i % 2]); top.rotation.set(Math.PI / 2, 0, Math.PI / 2 + yaw); top.position.set(x, h + 1, z); scene.add(top); }
+    else if (r < .85) { const c1 = box(.14, 1.3, .14, plank, x, h + .55, z, yaw); c1.rotation.z = tilt; box(.6, .12, .12, plank, x, h + .85, z, yaw); }
+    else { box(1, .12, 2, lam(0x0a0a08, MID.GROUND), x, h + .02, z, yaw); box(.9, .5, .3, gm[1], x, h + .1, z + 1.2, yaw); }
+    addCollider(x, z, .45, 'grave'); GRAVES.push({ x, z });
+  }
+  // rahip kampı: çadır, ateş, sandıklar
+  const K = CAMP, hk = heightAt(K.x, K.z);
+  const tent = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.8, 6, 1, true), tag(new THREE.MeshPhongMaterial({ color: 0x4a3e2c, side: THREE.DoubleSide, shininess: 2 }), MID.WOOD)); tent.position.set(K.x + 3, hk + 1.4, K.z - 2.5); scene.add(tent); addCollider(K.x + 3, K.z - 2.5, 2, 'tent');
+  for (let i = 0; i < 4; i++) { const l = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, 1.2, 5), woodM); l.position.set(K.x, hk + .2, K.z); l.rotation.z = 1.25; l.rotation.y = i * 1.57; scene.add(l); }
+  const kf = new THREE.Mesh(new THREE.ConeGeometry(.45, 1.2, 7), fireM); kf.position.set(K.x, hk + .7, K.z); scene.add(kf); flames.push({ m: kf, s: 1.2, ph: 2 });
+  campLight.position.set(K.x, hk + 1.6, K.z); scene.add(campLight); addCollider(K.x, K.z, 1, 'fire');
+  [[-2.5, 1.5], [-2, 2.6], [2.2, 2]].forEach(([dx, dz], i) => box(.8, .7, .8, i % 2 ? plank : woodM, K.x + dx, hk + .35, K.z + dz, i));
+  torch(K.x - 4, K.z - 3, hk, 2.4);
+}
+export const REGIONS = [
+  { name: 'Köy', x: 0, z: 0, r: 24 }, { name: 'Kale Harabesi', x: CASTLE.x, z: CASTLE.z, r: 30 },
+  { name: 'Sisli Bataklık', x: SWAMP.x, z: SWAMP.z, r: 50 }, { name: 'Kül Diyarı', x: DRAGON_LAIR.x, z: DRAGON_LAIR.z, r: 28 },
+  { name: 'Örümcek Ormanı', x: LAIR.x, z: LAIR.z, r: 22 }, { name: 'Taş Çember', x: CIRCLE.x, z: CIRCLE.z, r: 16 }
+];
+export function regionAt(x, z) { for (const R of REGIONS) if (Math.hypot(x - R.x, z - R.z) < R.r) return R.name; return z > 75 ? 'Fırtına Kıyısı' : 'Vahşi Topraklar'; }
+
 /* Tüm statik dünya nesneleri gölge atar ve alır */
 scene.traverse(o => { if (o.isMesh && !o.userData.noShadow) { o.castShadow = true; o.receiveShadow = true; } });

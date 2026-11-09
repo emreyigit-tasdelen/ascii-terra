@@ -42,8 +42,12 @@ hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone
 - Detailed procedural models: plate-armoured knights (layered pauldrons, visored helm, chainmail, tabard, cape, longsword, heraldic shield),
   anatomical skeletons, shaggy dire wolves, a hairy giant spider and a winged, scaled dragon
 - Enemies: skeleton warriors, dark knights, dire wolves, the *Dusk Widow* spider boss and the *Ash Dragon* world boss
+- New region: the **Misty Swamp** in the east — shallow murky pools, reeds, dead trees, a ruined chapel and graveyard, thick fog
+  with ghouls that leap at you, swamp witches casting homing hexes and a club-wielding swamp troll
+- Animation: spring-smoothed joints, walk/run blending, hip sway and counter-rotating shoulders, 3-hit sword combo,
+  real dodge roll, jumping, hit flinches, cape physics, wolf trot/gallop, spider stepping, segmented dragon neck and tail
 - Real-time shadows, shiny metal armour, blood / bone / spark particles, blood decals, hit-stop and camera shake
-- 6-quest chain, inventory and equipment (weapon / armor), loot drops, leveling
+- 9-quest chain (village + swamp camp), inventory and equipment (weapon / armor), loot drops, leveling
 - Day / night cycle, rain, auto-save in the browser
 
 ## Run it
@@ -64,14 +68,15 @@ Any static file server works (for example `npx serve`). A WebGL2-capable browser
 | Key | Action |
 |---|---|
 | `W A S D` | move (`Shift` to run) |
-| `Space` | dodge roll |
+| `Space` | jump |
+| `C` | dodge roll |
 | Left click / `1` | sword attack toward the cursor |
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
-| Right-drag, arrow keys, wheel | rotate / tilt / zoom camera |
+| Right-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
 | `[` `]` | glyph size |
 
 ## How the ASCII renderer works

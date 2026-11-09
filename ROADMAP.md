@@ -25,7 +25,8 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [ ] Kıyıda sis/pus partikülleri, deniz üzerinde köpük kıvrımları, dalga animasyonu
 - [x] Ateş/kor/kan/kemik/kıvılcım parçacıkları, ateş topu izi, kan izleri, vuruş durması ve kamera sarsıntısı
 - [x] Detaylı modeller: plaka zırhlı şövalye, kara şövalye, anatomik iskelet, dev kurt, kıllı dev örümcek, kanatlı ejderha
-- [ ] Bloom benzeri parlama, karakterler için iskeletli (skinned) animasyon
+- [x] Animasyon v2: yaylı eklemler, kombo, takla, zıplama, darbe tepkisi, pelerin fiziği, yaratık yürüyüşleri, eklemli ejderha
+- [ ] Bloom benzeri parlama, iskeletli (skinned) mesh animasyonu, ayak IK (eğimde ayak yerleşimi)
 - [ ] Yıldırım/buz/mor büyü efektleri (video: New skills)
 - [ ] Malzemeye özel ızgara: zincir zırh `o8o8` deseni, ejderha pulları, örümcek tüyü (custom grid + symbol)
 - [ ] Dinamik hava: yağmur sıçraması, ıslak zemin parlaması, sis, kar; hava döngüsü
@@ -48,14 +49,16 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 ## Faz 3 — Dünya
 - [ ] Harita taslağından prosedürel üretim (video: map sketch pipeline): biyomlar, nehirler, yollar
 - [ ] Başlangıç öğretici alanı + ilk köy (video: tutorial area)
-- [ ] Yeni bölgeler: bataklık, karlı dağ, çöl harabeleri, zindanlar (iç mekan)
+- [x] Sisli Bataklık bölgesi (şapel, mezarlık, kamp, sis) + bölge başlıkları
+- [ ] Yeni bölgeler: karlı dağ, çöl harabeleri, zindanlar (iç mekan)
 - [ ] NPC rutinleri (gündüz/gece), tüccar, demirci, han
 - [ ] Ses ve müzik: adım, kılıç, ateş, yağmur, ortam (video: Added sound)
 - [ ] Büyük dünya için akış (chunk yükleme), uzak mesafe LOD
 
 ## Faz 4 — İçerik
 - [ ] Ana hikâye ve görev zinciri, diyalog ağacı sistemi
-- [ ] Bestiyer: iskelet okçu, ölü şövalye, ejderha, dev örümcek türleri, at/binek
+- [x] Hortlak, bataklık cadısı (menzilli), bataklık trolü (elit), kara şövalye, ejderha
+- [ ] Bestiyer: iskelet okçu, dev örümcek türleri, at/binek
 - [~] Bosslar: Alacakaranlık Dulu, Kül Ejderhası (ateş nefesi + kuyruk darbesi) eklendi; fazlar ve Kale Lordu yapılacak
 - [ ] Başarımlar, unvanlar
 

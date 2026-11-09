@@ -24,7 +24,15 @@ export const MOUSE = { x: innerWidth / 2, y: innerHeight / 2, lmb: false, rmb: f
 export const WATER = -4.2, HALF = 200;
 export const CASTLE = { x: 0, z: -56, half: 18 };          // kale harabesi merkezi (kuzey)
 export const roadX = z => 3.5 * Math.sin(z * .05);           // köy ↔ kale ↔ kıyı taş yolu
-export function pathDist(x, z) { if (z < CASTLE.z + CASTLE.half - 2 || z > 104) return 99; return Math.abs(x - roadX(z)); }
+export const roadZ = x => 2 + (x - 10) * .12 + 3 * Math.sin(x * .07);   // köy ↔ bataklık kampı yolu (doğu)
+export function pathDist(x, z) {
+  const a = (z < CASTLE.z + CASTLE.half - 2 || z > 104) ? 99 : Math.abs(x - roadX(z));
+  const b = (x < 10 || x > 96) ? 99 : Math.abs(z - roadZ(x));
+  return Math.min(a, b);
+}
+export const SWAMP = { x: 135, z: 20, r: 58 };                 // Sisli Bataklık (doğu)
+export const CHAPEL = { x: 150, z: 34 }, CAMP = { x: 93, z: 13.5 };
+export const swampF = (x, z) => 1 - smooth(32, 58, Math.hypot(x - SWAMP.x, z - SWAMP.z));
 
 export function heightAt(x, z) {
   let h = (fbm(x * .0065 + 31.7, z * .0065 + 12.3, 5) - .5) * 52;
@@ -32,6 +40,9 @@ export function heightAt(x, z) {
   h = lerp(2.2, h, smooth(20, 70, Math.hypot(x, z)));                       // köy düzlüğü
   h = lerp(3, h, smooth(26, 44, Math.hypot(x - CASTLE.x, z - CASTLE.z)));   // kale düzlüğü
   h -= smooth(70, 150, z) * 26;                                             // güneyde deniz
+  const sw = swampF(x, z); if (sw > 0) h = lerp(h, WATER + .45 + (fbm(x * .05 + 7, z * .05 - 3, 3) - .5) * 3.4, sw);   // sığ gölcüklü bataklık
+  const dc = Math.hypot(x - CHAPEL.x, z - CHAPEL.z); if (dc < 24) h = lerp(WATER + 1.5, h, smooth(13, 24, dc));          // şapel adacığı
+  const dk = Math.hypot(x - CAMP.x, z - CAMP.z); if (dk < 16) h = lerp(WATER + 1.8, h, smooth(7, 16, dk));               // rahip kampı
   h += smooth(150, 198, Math.max(Math.abs(x), -z)) * 34;                    // batı/doğu/kuzey dağları
   return h;
 }

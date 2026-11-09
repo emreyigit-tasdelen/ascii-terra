@@ -57,3 +57,6 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 #overlay p.support{margin-top:14px;font-size:11px;color:#888}
 #overlay p.support a{color:#c9a227;text-decoration:none;margin:0 4px}
 #overlay p.support a:hover{color:#ffd24a}
+#region{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:22px;letter-spacing:6px;color:#d8d2c0;text-shadow:0 0 8px #000,0 0 3px #000;opacity:0;white-space:nowrap}
+#region.show{animation:regionIn 4.5s forwards}
+@keyframes regionIn{0%{opacity:0;letter-spacing:14px}15%{opacity:1;letter-spacing:6px}75%{opacity:1}100%{opacity:0}}

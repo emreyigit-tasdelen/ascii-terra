@@ -248,7 +248,7 @@ export function makeRobed(o) {
   if (o.staff) {
     const st = new PB(id); st.add(taper([[0, -.9, 0], [0, .2, 0], [.03, .9, 0], [0, 1.05, 0]], .025, .018, 12, 6), 0x4a3424, 'matte', 0, 0, 0, { vary: .3 });
     st.add(new THREE.OctahedronGeometry(.07), o.staff, 'glow', [0, 1.13, 0], 0, [1, 1.6, 1]);
-    const g = st.build(); g.position.set(0, .05, .02); r.armR.hand.add(g);
+    const g = st.build(); g.position.set(0, .05, .02); r.armR.hand.add(g); r.staff = g;
   }
   if (o.bow) { const b = new PB(id); b.add(new THREE.TorusGeometry(.55, .02, 5, 16, Math.PI * .9), 0x4a3424, 'matte', 0, [0, 0, Math.PI / 2 + .15]); b.add(cyl(.06, .06, .5, 8), 0x3a2a1a, 'matte', [.12, -.05, -.05], [0, 0, .2]); const g = b.build(); g.position.set(0, .2, -.2); r.spine.add(g); }
   r.meshes = meshesOf(r.g); return r;
@@ -392,24 +392,40 @@ export function makeSpider() {
   return { g, body, legs, meshes: meshesOf(g) };
 }
 
-/* ================= ejderha ================= */
+/* ================= ejderha (eklemli boyun ve kuyruk zinciri) ================= */
 export function makeDragon() {
   const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const SC = 0x4e2c1f, BL = 0x8f6c48, HN = 0x24140e, BN = 0x9a8a6c;
   const scales = { color2: BL, mix: (x, y, z, nx, ny) => clamp(-ny * 1.6 - .1, 0, 1), vary: .4, freq: 7 };
   const bumps = (x, y, z) => Math.max(0, Math.sin(x * 9 + Math.sin(z * 9) * 1.5) * Math.sin(z * 9)) * .05;
-  const spinePts = [[0, 2.7, 3.2], [0, 2.35, 1.6], [0, 2.2, 0], [0, 2.3, -1.8], [0, 2.0, -3.6], [.6, 1.4, -5.6], [1.6, .9, -7.4], [2.8, .6, -8.6]];
-  const rad = t => t < .08 ? lerp(.55, 1.05, t / .08) : t < .3 ? lerp(1.05, 1.15, (t - .08) / .22) : t < .45 ? lerp(1.15, .85, (t - .3) / .15) : lerp(.85, .06, Math.pow((t - .45) / .55, .8));
-  const tor = new PB(id);
-  const tg = displace(taper(spinePts, rad, 0, 72, 18), .02, 6, 0, bumps); tg.scale(.85, 1, 1);
-  tor.add(tg, SC, 'matte', 0, 0, 0, scales);
-  const curve = new THREE.CatmullRomCurve3(spinePts.map(p => new THREE.Vector3(...p))), P = new THREE.Vector3();
-  for (let t = .04; t < .92; t += .035) { curve.getPointAt(t, P); const s = lerp(1, .22, t); tor.add(cone(.13 * s, .6 * s, 5), HN, 'gloss', [P.x, P.y + rad(t) * .93, P.z], [-.5, 0, 0]); }
-  tor.add(displace(taper([[0, 2.7, 3.2], [0, 3.4, 4.1], [0, 4.0, 4.9], [0, 4.2, 5.6]], .62, .38, 22, 14), .02, 7, 2, bumps), SC, 'matte', 0, 0, 0, scales);
-  for (let k = 0; k < 6; k++) { const t = k / 6; tor.add(cone(.09, .35, 5), HN, 'gloss', [0, lerp(3.2, 4.5, t), lerp(3.6, 5.5, t)], [-.6, 0, 0]); }
+  // gövde (göğüs → kalça)
+  const tor = new PB(id), torPts = [[0, 2.7, 3.3], [0, 2.4, 1.6], [0, 2.2, 0], [0, 2.3, -1.9]];
+  const rad = t => t < .15 ? lerp(.6, 1.05, t / .15) : t < .6 ? lerp(1.05, 1.15, (t - .15) / .45) : lerp(1.15, .8, (t - .6) / .4);
+  const tg = displace(taper(torPts, rad, 0, 30, 18), .02, 6, 0, bumps); tg.scale(.85, 1, 1); tor.add(tg, SC, 'matte', 0, 0, 0, scales);
+  const curve = new THREE.CatmullRomCurve3(torPts.map(p => new THREE.Vector3(...p))), P = new THREE.Vector3();
+  for (let t = .05; t < 1; t += .09) { curve.getPointAt(t, P); tor.add(cone(.13, .6, 5), HN, 'gloss', [P.x, P.y + rad(t) * .93, P.z], [-.5, 0, 0]); }
   body.add(tor.build());
-  // kafa
-  const head = new THREE.Group(); head.position.set(0, 4.2, 5.6); body.add(head);
+  // kuyruk zinciri
+  const tail = []; let parent = new THREE.Group(); parent.position.set(0, 2.3, -1.9); parent.rotation.x = .22; body.add(parent);
+  const TL = [1.25, 1.2, 1.15, 1.1, 1.05, 1, .95, .9]; let r0 = .8;
+  TL.forEach((L, i) => {
+    const r1 = Math.max(.05, r0 * .76), seg = new PB(id);
+    seg.add(displace(taper([[0, 0, 0], [0, 0, -L - .08]], r0, r1, 6, 14), .015, 7, i, bumps), SC, 'matte', 0, 0, 0, scales);
+    seg.add(cone(.12 * r0 + .02, .5 * r0 + .1, 5), HN, 'gloss', [0, r0 * .9, -L * .4], [-.6, 0, 0]);
+    if (i === TL.length - 1) seg.add(cone(.16, .5, 4), HN, 'gloss', [0, 0, -L - .2], [-Math.PI / 2, 0, 0], [1.6, 1, .3]);
+    parent.add(seg.build()); tail.push(parent);
+    const nx = new THREE.Group(); nx.position.z = -L; nx.rotation.x = .05; parent.add(nx); parent = nx; r0 = r1;
+  });
+  // boyun zinciri + kafa
+  const neck = []; parent = new THREE.Group(); parent.position.set(0, 2.75, 3.25); parent.rotation.x = -.78; body.add(parent);
+  [.95, .9, .85].forEach((L, i) => {
+    const rr = .62 - i * .08, seg = new PB(id);
+    seg.add(displace(taper([[0, 0, -.05], [0, 0, L + .08]], rr, rr - .08, 6, 14), .015, 7, i + 9, bumps), SC, 'matte', 0, 0, 0, scales);
+    seg.add(cone(.09, .35, 5), HN, 'gloss', [0, rr * .9, L * .5], [-.6, 0, 0]);
+    parent.add(seg.build()); neck.push(parent);
+    const nx = new THREE.Group(); nx.position.z = L; nx.rotation.x = .12; parent.add(nx); parent = nx;
+  });
+  const head = new THREE.Group(); head.rotation.x = .55; parent.add(head);
   const hb = new PB(id);
   hb.add(displace(ell(.5, .42, .75, 20, 14), .03, 9, 4, bumps), SC, 'matte', [0, .1, .35], 0, 0, scales);
   hb.add(taper([[0, .05, .8], [0, -.02, 1.65]], .32, .18, 8, 12), SC, 'matte', 0, 0, 0, scales);
@@ -446,34 +462,238 @@ export function makeDragon() {
     F.forEach(f => wb.add(taper([W, f], .08, .02, 6, 6), SC, 'matte', 0, 0, 0, scales));
     wb.add(cone(.07, .35, 5), BN, 'gloss', [W[0], W[1] + .2, W[2]], [0, 0, -s * .3]);
     const tris = [W, F[0], F[1], W, F[1], F[2], W, F[2], F[3], W, F[3], Bk, [0, 0, 0], W, Bk];
-    const mg = new THREE.BufferGeometry(); mg.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(), 3));
-    mg.computeVertexNormals();
+    const mg = new THREE.BufferGeometry(); mg.setAttribute('position', new THREE.Float32BufferAttribute(tris.flat(), 3)); mg.computeVertexNormals();
     wb.add(mg, 0x2a0f0c, 'cloth', 0, 0, 0, { vary: .3, freq: 3 });
     wg.add(wb.build()); wings.push({ g: wg, s });
   });
-  return { g, body, head, jaw, legs, wings, meshes: meshesOf(g) };
+  return { g, body, head, jaw, legs, wings, tail, neck, meshes: meshesOf(g) };
 }
 
-/* ================= animasyon ================= */
-export function animBiped(r, ph, amt, atk, t = 0) {
-  const s = Math.sin(ph), c = Math.cos(ph);
-  r.legL.p.rotation.x = s * .55 * amt; r.legR.p.rotation.x = -s * .55 * amt;
-  r.legL.kn.rotation.x = (.06 + .85 * Math.max(0, Math.sin(ph - .9))) * amt + .04;
-  r.legR.kn.rotation.x = (.06 + .85 * Math.max(0, Math.sin(ph + Math.PI - .9))) * amt + .04;
-  r.legL.ft.rotation.x = -r.legL.kn.rotation.x * .4; r.legR.ft.rotation.x = -r.legR.kn.rotation.x * .4;
-  r.body.position.y = .98 + (Math.abs(c) * .045 - .03) * amt;
-  r.spine.rotation.x = .04 * amt + Math.sin(t * 2) * .015;
-  r.armL.p.rotation.x = -s * .45 * amt - .05; r.armL.el.rotation.x = -.25 - .2 * amt; r.armL.p.rotation.z = -.08;
-  if (atk >= 0 && atk <= 1) {
-    let sx, sz, el, tw;
-    if (atk < .3) { const k = atk / .3; sx = lerp(0, -2.5, k); sz = lerp(0, -.45, k); el = lerp(-.3, -1.0, k); tw = lerp(0, .5, k); }
-    else if (atk < .62) { const k = (atk - .3) / .32, e = 1 - (1 - k) * (1 - k); sx = lerp(-2.5, .35, e); sz = lerp(-.45, .25, e); el = lerp(-1.0, -.15, e); tw = lerp(.5, -.65, e); }
-    else { const k = (atk - .62) / .38; sx = lerp(.35, 0, k); sz = lerp(.25, 0, k); el = lerp(-.15, -.3, k); tw = lerp(-.65, 0, k); }
-    r.armR.p.rotation.x = sx; r.armR.p.rotation.z = sz; r.armR.el.rotation.x = el; r.spine.rotation.y = tw;
-    r.armL.p.rotation.x = -.7; r.armL.el.rotation.x = -1.1;
-  } else {
-    r.armR.p.rotation.x = s * .45 * amt - .1; r.armR.p.rotation.z = .08; r.armR.el.rotation.x = -.35 - .2 * amt;
-    r.spine.rotation.y = s * .07 * amt;
+/* ================= hortlak (kambur, uzun pençeli ölü) ================= */
+export function makeGhoul(seed = 1) {
+  const id = MID.ACTOR, SK = 0x5e665a, DK = 0x2a2620, r = rig(), sk = { vary: .3, freq: 18, color2: 0x3e443a, mix: (x, y, z, nx, ny) => .5 - ny * .5 };
+  const pel = new PB(id); pel.add(ell(.13, .1, .09), SK, 'matte', 0, 0, 0, sk); pel.add(foldCloth(.15, .2, .3, 7, true), DK, 'cloth', [0, -.13, 0], 0, 0, { vary: .4 }); r.body.add(pel.build());
+  const ch = new PB(id);
+  ch.add(displace(lathe([[0, -.02], [.11, 0], [.14, .12], [.16, .26], [.15, .38], [.1, .45], [0, .46]], 16), .01, 20, seed), SK, 'matte', 0, 0, [1, 1, .7], sk);
+  for (let k = 0; k < 4; k++) { const tg = new THREE.TorusGeometry(.14 - k * .005, .009, 4, 12, 2.4); tg.rotateX(Math.PI / 2); tg.rotateY(Math.PI / 2 + 1.2 - Math.PI); tg.scale(1, 1, .72); ch.add(tg, 0x7a7e6e, 'matte', [0, .14 + k * .055, .01]); }
+  ch.add(box(.32, .04, .05), SK, 'matte', [0, .43, 0], 0, 0, sk);
+  r.spine.add(ch.build());
+  const hd = new PB(id);
+  hd.add(sph(.1, 14, 10), SK, 'matte', [0, .1, .02], 0, [.85, 1.05, 1.15], sk);
+  [-1, 1].forEach(s => { hd.add(sph(.026, 8, 6), 0x0a0a06, 'matte', [s * .036, .11, .1]); hd.add(sph(.012, 6, 4), 0xc8ff40, 'glow', [s * .036, .11, .118]); });
+  for (let k = 0; k < 8; k++) hd.add(cone(.006, .18, 3), 0x1a1814, 'matte', [(hash2(k, seed) - .5) * .14, .14, -.05 - hash2(k, 3) * .04], [.5 + hash2(k, 5) * .4, 0, (hash2(k, 7) - .5)]);
+  r.neck.add(hd.build());
+  const jaw = new PB(id); jaw.add(box(.07, .03, .08), SK, 'matte', [0, 0, .06], 0, 0, sk); for (let i = 0; i < 5; i++) jaw.add(cone(.006, .025, 3), 0xd8d0b0, 'matte', [-.024 + i * .012, .02, .095]);
+  const jg = jaw.build(); jg.position.set(0, .03, .02); r.neck.add(jg); r.jaw = jg;
+  [r.armL, r.armR].forEach(a => {
+    const u = new PB(id); u.add(taper([[0, 0, 0], [0, -.32, 0]], .042, .032, 5, 7), SK, 'matte', 0, 0, 0, sk); u.add(sph(.045, 7, 5), SK, 'matte', [0, -.32, 0]); a.p.add(u.build());
+    const l = new PB(id); l.add(taper([[0, 0, 0], [0, -.34, .02]], .034, .024, 5, 7), SK, 'matte', 0, 0, 0, sk); l.add(ell(.03, .04, .025, 8, 6), SK, 'matte', [0, -.37, .02]);
+    for (let f = 0; f < 4; f++) l.add(cone(.007, .13, 4), 0x1a1612, 'gloss', [-.02 + f * .013, -.44, .03], [Math.PI - .2, 0, (f - 1.5) * .15]);
+    a.el.add(l.build()); a.el.position.y = -.33; a.hand.position.y = -.37;
+  });
+  [r.legL, r.legR].forEach(L => {
+    const t = new PB(id); t.add(taper([[0, 0, 0], [0, -.44, .02]], .05, .035, 5, 7), SK, 'matte', 0, 0, 0, sk); t.add(sph(.042, 7, 5), SK, 'matte', [0, -.44, .02]); L.p.add(t.build());
+    const s = new PB(id); s.add(taper([[0, 0, 0], [0, -.42, -.02]], .035, .028, 5, 7), SK, 'matte', 0, 0, 0, sk); L.kn.add(s.build());
+    const f = new PB(id); f.add(ell(.035, .02, .08, 8, 6), SK, 'matte', [0, -.01, .05]); for (let k = 0; k < 3; k++) f.add(cone(.006, .06, 3), 0x1a1612, 'gloss', [-.015 + k * .015, -.015, .13], [Math.PI / 2, 0, 0]); L.ft.add(f.build());
+  });
+  r.meshes = meshesOf(r.g); return r;
+}
+
+/* ================= bataklık cadısı ================= */
+export function makeWitch() {
+  const r = makeRobed({ robe: 0x1c2618, hood: 0x121a10, skin: 0x7e8c6e, staff: 0x66ff44, tattered: true });
+  const n = new PB(MID.ACTOR); n.add(cone(.022, .11, 5), 0x7e8c6e, 'matte', [0, .1, .12], [Math.PI / 2 + .3, 0, 0]);
+  [-1, 1].forEach(s => n.add(sph(.012, 6, 4), 0x99ff55, 'glow', [s * .03, .14, .085]));
+  for (let k = 0; k < 9; k++) n.add(cone(.008, .3, 3), 0x8a8a7a, 'matte', [(hash2(k, 2) - .5) * .2, .02, .06 - hash2(k, 4) * .08], [Math.PI - .2, 0, (hash2(k, 6) - .5) * .5]);
+  r.neck.add(n.build());
+  if (r.staff) { const sk = new PB(MID.ACTOR); sk.add(sph(.07, 10, 8), 0xcdc3a9, 'matte', [0, 1.02, 0], 0, [1, .9, 1.1], { vary: .25 }); [-1, 1].forEach(s => sk.add(sph(.016, 6, 4), 0x66ff44, 'glow', [s * .025, 1.03, .06])); r.staff.add(sk.build()); }
+  r.meshes = meshesOf(r.g); return r;
+}
+
+/* ================= bataklık trolü ================= */
+export function makeTroll() {
+  const id = MID.ACTOR, SK = 0x56634a, r = rig(), sk = { vary: .35, freq: 10, color2: 0x7a8466, mix: (x, y, z, nx, ny) => clamp(nz(nx, ny), 0, 1) };
+  function nz(nx, ny) { return -ny * .6 + .2; }
+  const pel = new PB(id);
+  pel.add(displace(ell(.3, .26, .26, 18, 12), .03, 8, 1), SK, 'matte', [0, .05, .04], 0, 0, sk);
+  pel.add(foldCloth(.28, .36, .42, 8, true), 0x3a2a18, 'cloth', [0, -.15, 0], 0, 0, { vary: .35 });
+  pel.add(new THREE.TorusGeometry(.29, .03, 5, 18), 0x2a1e12, 'matte', [0, .05, 0], [Math.PI / 2, 0, 0]);
+  r.body.add(pel.build());
+  const ch = new PB(id);
+  ch.add(displace(ell(.42, .34, .3, 20, 14), .035, 7, 2), SK, 'matte', [0, .28, -.02], 0, 0, sk);
+  ch.add(displace(ell(.3, .22, .24, 16, 10), .03, 8, 3), SK, 'matte', [0, .48, -.1], 0, 0, sk);   // kambur
+  [-1, 1].forEach(s => ch.add(displace(ell(.16, .14, .15, 12, 8), .02, 10, s + 5), SK, 'matte', [s * .33, .42, 0], 0, 0, sk));
+  r.spine.add(ch.build());
+  const hd = new PB(id);
+  hd.add(displace(ell(.15, .14, .16, 14, 10), .02, 12, 4), SK, 'matte', [0, .06, .1], 0, 0, sk);
+  hd.add(ell(.06, .07, .08, 10, 8), SK, 'matte', [0, .05, .25], [.3, 0, 0], 0, sk);
+  hd.add(box(.24, .05, .08), 0x46523c, 'matte', [0, .13, .2]);
+  [-1, 1].forEach(s => { hd.add(sph(.022, 6, 5), 0xff8a20, 'glow', [s * .06, .1, .24]); hd.add(cone(.025, .11, 5), 0xe0d8b8, 'gloss', [s * .06, -.02, .22], [-.3, 0, s * .2]); hd.add(cone(.04, .12, 4), SK, 'matte', [s * .15, .1, .05], [0, 0, -s * 1.2]); });
+  const head = hd.build(); head.position.set(0, -.06, .1); r.neck.add(head);
+  [r.armL, r.armR].forEach((a, i) => {
+    const s = i ? 1 : -1;
+    a.p.position.set(s * .4, .4, 0);
+    const u = new PB(id); u.add(displace(taper([[0, .05, 0], [0, -.36, .02]], .12, .095, 6, 10), .02, 9, i), SK, 'matte', 0, 0, 0, sk); a.p.add(u.build());
+    a.el.position.y = -.36;
+    const l = new PB(id); l.add(displace(taper([[0, 0, 0], [0, -.34, .03]], .1, .08, 6, 10), .02, 9, i + 2), SK, 'matte', 0, 0, 0, sk); l.add(displace(ell(.09, .08, .07, 10, 8), .01, 12), SK, 'matte', [0, -.4, .03], 0, 0, sk);
+    a.el.add(l.build()); a.hand.position.y = -.4;
+  });
+  [r.legL, r.legR].forEach((L, i) => {
+    L.p.position.x = (i ? 1 : -1) * .17;
+    const t = new PB(id); t.add(displace(taper([[0, 0, 0], [0, -.44, .02]], .13, .1, 6, 10), .02, 9, i + 4), SK, 'matte', 0, 0, 0, sk); L.p.add(t.build());
+    const s = new PB(id); s.add(taper([[0, 0, 0], [0, -.42, 0]], .1, .085, 6, 10), SK, 'matte', 0, 0, 0, sk); L.kn.add(s.build());
+    const f = new PB(id); f.add(ell(.09, .05, .14, 10, 6), SK, 'matte', [0, -.02, .06], 0, 0, sk); L.ft.add(f.build());
+  });
+  const club = new PB(id); club.add(displace(taper([[0, -.15, 0], [0, .5, 0], [0, 1.2, 0]], .05, .13, 10, 9), .02, 6), 0x3a2a1a, 'matte', 0, 0, 0, { vary: .35 });
+  for (let k = 0; k < 9; k++) { const a = k * 2.3, y = .7 + (k % 4) * .14; club.add(cone(.02, .12, 4), 0x5a5a58, 'metal', [Math.cos(a) * .11, y, Math.sin(a) * .11], [Math.sin(a) * 1.4, 0, -Math.cos(a) * 1.4], 0, { vary: .4 }); }
+  const cg = club.build(); cg.rotation.x = 1.35; r.armR.hand.add(cg); r.weapon = cg;
+  r.g.scale.setScalar(1.75);
+  r.meshes = meshesOf(r.g); return r;
+}
+
+/* ================= kuru ağaç (bataklık) ================= */
+export function makeDeadTree(seed) {
+  const rng = mulberry32(seed * 131 + 7), pb = new PB(MID.WOOD), C = 0x2c2620, h = 4 + rng() * 3;
+  const lean = (rng() - .5) * .8;
+  pb.add(taper([[0, -.3, 0], [lean * .3, h * .4, 0], [lean, h * .8, rng() - .5], [lean * 1.2, h, 0]], .38, .08, 12, 8), C, 'matte', 0, 0, 0, { vary: .3, freq: 6 });
+  const nb = 4 + Math.floor(rng() * 4);
+  for (let i = 0; i < nb; i++) {
+    const y = h * (.45 + rng() * .5), a = rng() * 6.28, L = 1 + rng() * 1.8, x0 = lean * (y / h);
+    const p1 = [x0, y, 0], p2 = [x0 + Math.cos(a) * L * .6, y + L * .35, Math.sin(a) * L * .6], p3 = [x0 + Math.cos(a) * L, y + L * .3 + (rng() - .7) * .6, Math.sin(a) * L];
+    pb.add(taper([p1, p2, p3], .09, .015, 6, 5), C, 'matte', 0, 0, 0, { vary: .3 });
+    if (rng() < .6) { const b = rng() * 6.28; pb.add(taper([p2, [p2[0] + Math.cos(b) * .6, p2[1] + .4, p2[2] + Math.sin(b) * .6]], .035, .01, 4, 4), C, 'matte'); }
   }
-  if (r.cape) r.cape.rotation.x = .12 + amt * .35 + Math.sin(t * 3 + ph) * .04;
+  return pb.build();
+}
+
+/* ================= animasyon: yaylı eklemler ================= */
+// s: { ph, amt (0-1 hız), run (0-1), atk (-1 | 0-1), atkType (0-2), hit (0-1), dodge (-1 | 0-1), lean, turn, t, dt, style }
+const ez = k => k * k * (3 - 2 * k), eo = k => 1 - (1 - k) * (1 - k);
+const ATK = [
+  // [omuz x, omuz z, dirsek, gövde dönüşü] : bekle → kurulma → vuruş → takip
+  [[-2.7, .3, -1.2, .45], [.3, -.1, -.15, -.55], [.5, -.2, -.25, -.6]],     // tepeden çapraz
+  [[-1.45, 1.3, -.4, .85], [-1.45, -1.0, -.2, -.85], [-1.2, -1.15, -.5, -.95]], // yatay sağdan sola
+  [[-.7, -1.1, -.9, -.7], [-2.25, .85, -.2, .6], [-2.45, 1.0, -.3, .65]]       // aşağıdan yukarı ters
+];
+function atkPose(k, type) {
+  const A = ATK[type % 3], N = [-.25, .1, -.6, 0];
+  let a, b, f;
+  if (k < .3) { a = N; b = A[0]; f = ez(k / .3); }
+  else if (k < .55) { a = A[0]; b = A[1]; f = eo((k - .3) / .25); }
+  else if (k < .75) { a = A[1]; b = A[2]; f = ez((k - .55) / .2); }
+  else { a = A[2]; b = N; f = ez((k - .75) / .25); }
+  return a.map((v, i) => lerp(v, b[i], f));
+}
+export function animBiped(r, s) {
+  const P = r._p || (r._p = {}), dt = s.dt ?? .016, t = s.t ?? 0, amt = s.amt ?? 0, run = s.run ?? 0, ph = s.ph ?? 0, st = s.style || 'knight';
+  const k = 1 - Math.exp(-dt * 16), kf = 1 - Math.exp(-dt * 40);
+  const set = (o, ax, key, v, kk = k) => { const c = P[key] ?? v; const n = c + (v - c) * kk; P[key] = n; o.rotation[ax] = n; };
+  const s1 = Math.sin(ph), c1 = Math.cos(ph), idle = 1 - amt;
+  const hunch = st === 'hunch', heavy = st === 'heavy', sham = st === 'shamble';
+  let stride = (.5 + .25 * run) * (heavy ? .8 : 1), kneeBase = hunch ? .4 : heavy ? .15 : .04;
+  let jit = sham ? Math.sin(t * 7.3 + (r.seed || 0)) * .06 : 0;
+  // bacaklar
+  let hL = s1 * stride * amt + jit, hR = -s1 * stride * amt - jit;
+  let kL = kneeBase + (.65 + .5 * run) * Math.max(0, Math.sin(ph - .9)) * amt;
+  let kR = kneeBase + (.65 + .5 * run) * Math.max(0, Math.sin(ph + Math.PI - .9)) * amt * (sham ? .6 : 1);
+  if (hunch) { hL -= .35; hR -= .35; }
+  // gövde
+  let by = .98 + (Math.abs(c1) * (.035 + .04 * run) - .03) * amt - .04 * run - (hunch ? .12 : heavy ? .05 : 0);
+  let bx = (.1 * run + (s.lean || 0) * .6) * amt, bz = s1 * (heavy ? .09 : .05) * amt + Math.sin(t * .5) * .02 * idle - (s.turn || 0) * .05, bry = s1 * .08 * amt;
+  let sx = .04 * amt + .08 * run + Math.sin(t * 1.8) * .02 + (hunch ? .55 : 0) + (st === 'robe-hunch' ? .3 : 0), sy = -s1 * .14 * amt, sz = -bz * .6;
+  // kollar
+  let laX = -s1 * (.4 + .35 * run) * amt - .05, laZ = -.1 - .05 * run, laE = -(.2 + .25 * amt + .7 * run);
+  let raX = s1 * (.3 + .25 * run) * amt - .25 * idle - .1, raZ = .1, raE = -(.35 + .25 * idle + .6 * run);
+  if (hunch) { laX = -.5 + s1 * .5 * amt; raX = -.5 - s1 * .5 * amt; laE = raE = -.35; }
+  if (heavy) { laX = -s1 * .55 * amt; raX = s1 * .4 * amt - .2; laZ = -.25; raZ = .25; }
+  if (sham) { laX += Math.sin(t * 5.1) * .08; raX += Math.cos(t * 4.3) * .08; }
+  let atkK = s.atk ?? -1;
+  if (atkK >= 0 && atkK <= 1) {
+    const [px, pz, pe, tw] = atkPose(atkK, s.atkType || 0);
+    raX = px; raZ = pz; raE = pe; sy = tw; bry = tw * .3;
+    if (hunch || heavy) { laX = px; laZ = -pz; laE = pe; }       // iki elle
+    else { laX = -.8; laE = -1.2; laZ = -.2; }                   // kalkan önde
+    by -= Math.sin(atkK * Math.PI) * .05; bx += Math.sin(atkK * Math.PI) * .12;
+  }
+  const hit = s.hit || 0;
+  sx -= hit * .35; laZ -= hit * .4; raZ += hit * .4;
+  if (s.air > 0) {   // zıplama: dizler toplanır, kollar dengede açılır
+    const a = s.air; hL = lerp(hL, -.6, a); hR = lerp(hR, .1, a); kL = lerp(kL, 1.0, a); kR = lerp(kR, .55, a);
+    laZ -= .55 * a; raZ += .35 * a; laX -= .3 * a; bx -= .08 * a;
+  }
+  // yerleştir
+  const kk = atkK >= 0 ? kf : k;
+  set(r.legL.p, 'x', 'hL', hL); set(r.legR.p, 'x', 'hR', hR);
+  set(r.legL.kn, 'x', 'kL', kL); set(r.legR.kn, 'x', 'kR', kR);
+  set(r.legL.ft, 'x', 'fL', -kL * .45 + Math.max(0, -hL) * .3); set(r.legR.ft, 'x', 'fR', -kR * .45 + Math.max(0, -hR) * .3);
+  set(r.body, 'x', 'bx', bx); set(r.body, 'z', 'bz', bz); set(r.body, 'y', 'bry', bry, kk);
+  P.by = (P.by ?? by) + (by - (P.by ?? by)) * kf; r.body.position.y = P.by;
+  set(r.spine, 'x', 'sx', sx); set(r.spine, 'y', 'sy', sy, kk); set(r.spine, 'z', 'sz', sz);
+  set(r.neck, 'x', 'nx', -(bx + sx) * .6 + (hunch ? .1 : 0) - hit * .25); set(r.neck, 'y', 'ny', -(bry + sy) * .8 + Math.sin(t * .37) * .3 * idle);
+  if (sham) r.neck.rotation.z = .2 + Math.sin(t * .9) * .1;
+  set(r.armL.p, 'x', 'laX', laX, kk); set(r.armL.p, 'z', 'laZ', laZ, kk); set(r.armL.el, 'x', 'laE', laE, kk);
+  set(r.armR.p, 'x', 'raX', raX, kk); set(r.armR.p, 'z', 'raZ', raZ, kk); set(r.armR.el, 'x', 'raE', raE, kk);
+  // takla (yuvarlanma): yumuşatmayı atla
+  if (s.dodge >= 0 && s.dodge <= 1) {
+    const d = s.dodge, sn = Math.sin(d * Math.PI);
+    r.body.rotation.x = d * Math.PI * 2; r.body.position.y = .98 - sn * .55;
+    r.legL.p.rotation.x = r.legR.p.rotation.x = -1.4 * sn; r.legL.kn.rotation.x = r.legR.kn.rotation.x = 2 * sn;
+    r.armL.p.rotation.x = r.armR.p.rotation.x = -1 * sn; r.armL.el.rotation.x = r.armR.el.rotation.x = -1.6 * sn;
+    P.bx = 0;
+  }
+  // pelerin: yaylı salınım
+  if (r.cape) {
+    const target = .14 + amt * .3 + run * .4 + (s.lean || 0) * .5 + hit * .3;
+    r._cv = (r._cv || 0) + ((target - (r._ca ?? target)) * 60 - (r._cv || 0) * 9) * dt; r._ca = (r._ca ?? target) + r._cv * dt;
+    r.cape.rotation.x = r._ca + Math.sin(t * 3 + ph) * .03 * (1 + run); r.cape.rotation.z = lerp(r.cape.rotation.z, -(s.turn || 0) * .25, k);
+  }
+}
+
+/* Kurt: tırıs / dörtnala, kafa ve kuyruk gecikmesi */
+export function animWolf(r, s) {
+  const mv = s.amt, run = s.run, ph = s.ph, t = s.t, k = 1 - Math.exp(-s.dt * 12);
+  r.legs.forEach((L, i) => {
+    const side = i % 2, gal = run > .5;
+    const off = gal ? (L.front ? side * .35 : Math.PI + side * .35) : (side ? Math.PI : 0) + (L.front ? 0 : Math.PI);
+    const p = ph + off, sw = (gal ? .85 : .6) * mv;
+    L.piv.rotation.x = Math.sin(p) * sw; L.kn.rotation.x = (L.front ? 1 : -1) * Math.max(0, Math.sin(p + 1.3)) * (.6 + .4 * run) * mv;
+  });
+  const gal = run > .5 ? 1 : 0;
+  r.body.rotation.x = lerp(r.body.rotation.x, Math.sin(ph) * .09 * gal * mv, k);
+  r.body.position.y = .82 + Math.abs(Math.sin(ph)) * (.04 + .06 * gal) * mv + Math.sin(t * 2.2) * .008;
+  const bite = s.atk >= 0 ? Math.sin(s.atk * Math.PI) : 0;
+  r.head.rotation.x = lerp(r.head.rotation.x, -bite * .5 + (s.alert ? .12 : 0) - Math.sin(ph) * .06 * mv, k * 1.5);
+  r.head.rotation.y = lerp(r.head.rotation.y, Math.sin(t * .4) * .35 * (1 - mv), k);
+  r.jaw.rotation.x = .1 + bite * .65 + (s.alert ? Math.abs(Math.sin(t * 6)) * .08 : 0);
+  r.tail.rotation.y = lerp(r.tail.rotation.y, Math.sin(t * 2.5 - .6) * (.25 + .15 * mv), k);
+  r.tail.rotation.x = lerp(r.tail.rotation.x, s.alert ? -.35 : -.05 * mv, k);
+  if (s.lunge) { r.body.rotation.x = -.25; }
+}
+
+/* Örümcek: dörtlü adım düzeni, bacak kaldırma */
+export function animSpider(r, s) {
+  const mv = s.amt, ph = s.ph * 1.5;
+  r.legs.forEach(L => {
+    if (L.bY == null) { L.bY = L.piv.rotation.y; L.bZ = L.up.rotation.z; L.bK = L.kn.rotation.z; }
+    const p = ph + (((L.i % 2) ^ (L.s > 0 ? 1 : 0)) ? Math.PI : 0), lift = Math.max(0, Math.sin(p));
+    L.piv.rotation.y = L.bY + Math.cos(p) * .28 * mv * (L.s);
+    L.up.rotation.z = L.bZ - L.s * lift * .4 * mv; L.kn.rotation.z = L.bK + L.s * lift * .25 * mv;
+  });
+  const a = s.atk >= 0 ? Math.sin(s.atk * Math.PI) : 0;
+  r.body.rotation.x = -a * .5; r.body.position.y = 1.3 + Math.abs(Math.sin(ph)) * .05 * mv + Math.sin(s.t * 2) * .03 + a * .35;
+  r.body.rotation.z = Math.sin(ph) * .03 * mv;
+  r.legs.forEach(L => { if (L.i === 0) L.up.rotation.z -= L.s * a * .9; });
+}
+
+/* Ejderha: ağır yürüyüş, dalgalanan kuyruk, nefeste boyun geri-ileri */
+export function animDragon(r, s) {
+  const mv = s.amt, ph = s.ph, t = s.t, br = s.breath || 0, a = s.atk >= 0 ? Math.sin(s.atk * Math.PI) : 0;
+  r.legs.forEach((L, i) => { const p = ph + (i % 2 ? Math.PI : 0) + (L.front ? 0 : Math.PI / 2); L.piv.rotation.x = Math.sin(p) * .4 * mv; L.kn.rotation.x = Math.max(0, Math.sin(p + 1)) * .5 * mv; });
+  r.body.position.y = Math.abs(Math.sin(ph)) * .12 * mv + Math.sin(t * 1.1) * .04;
+  r.body.rotation.z = Math.sin(ph) * .03 * mv;
+  r.tail.forEach((seg, i) => { seg.rotation.y = Math.sin(t * 1.4 - i * .55) * (.06 + i * .025) * (1 + mv); seg.rotation.x = (i ? .05 : .22) + Math.sin(t * .9 - i * .4) * .03; });
+  const rear = br > 0 ? (br > .7 ? -(1 - br) * 2.2 : .25) : 0;    // nefes: önce geri, sonra ileri
+  r.neck.forEach((seg, i) => { seg.rotation.x = (i ? .12 : -.78) + rear * .25 - a * .12 + Math.sin(t * .8 + i) * .03; seg.rotation.y = Math.sin(t * .5 - i * .3) * .08; });
+  r.head.rotation.x = .55 - a * .25 + rear * .2; r.jaw.rotation.x = .08 + a * .55 + (br > 0 && br < .75 ? .6 : 0);
+  r.wings.forEach(W => { W.g.rotation.z = W.s * (br > 0 || s.alert ? Math.sin(t * 5) * .45 : .25 + Math.sin(t * 1.1) * .06); W.g.rotation.y = W.s * (br > 0 ? -.2 : .35); });
 }

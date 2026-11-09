@@ -21,7 +21,9 @@ const TYPES = {
   ember: { col: [0xff6a10, 0xffb040], spd: [.2, .7], up: 1.2, g: -1.2, life: [1.2, 2.6], size: [.025, .05], drift: true },
   fire: { col: [0xff5a10, 0xffc040], spd: [1, 3], up: 3, g: -3, life: [.3, .7], size: [.08, .18] },
   dust: { col: [0x4a4a44, 0x6a6a60], spd: [.8, 2], up: .6, g: 2, life: [.3, .6], size: [.05, .1] },
-  magic: { col: [0x4aa0ff, 0xb0e0ff], spd: [1, 4], up: 2, g: 0, life: [.3, .8], size: [.03, .07] }
+  magic: { col: [0x4aa0ff, 0xb0e0ff], spd: [1, 4], up: 2, g: 0, life: [.3, .8], size: [.03, .07] },
+  hex: { col: [0x3aff2a, 0xb0ff80], spd: [1, 3], up: 1.5, g: 0, life: [.3, .7], size: [.03, .07] },
+  mist: { col: [0x3a4440, 0x56605a], spd: [.15, .45], up: .05, g: 0, life: [3.5, 6], size: [.18, .4], drift: true }
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
 let next = 0;

@@ -42,8 +42,12 @@ kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de ye
 - Detaylı prosedürel modeller: plaka zırhlı şövalyeler (katmanlı omuzluk, vizörlü miğfer, zincir zırh, tabard, pelerin, uzun kılıç, armalı kalkan),
   gerçek kemik yapılı iskeletler, tüylü dev kurtlar, kıllı dev örümcek ve kanatlı, pullu bir ejderha
 - Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Alacakaranlık Dulu* ve dünya bossu *Kül Ejderhası*
+- Yeni bölge: doğuda **Sisli Bataklık** — sığ çamurlu gölcükler, sazlık, kuru ağaçlar, yıkık şapel ve mezarlık, yoğun sis;
+  üstüne atılan hortlaklar, güdümlü lanet fırlatan bataklık cadıları ve sopalı bataklık trolü
+- Animasyon: yaylı eklemler, yürüme/koşma geçişi, kalça sallanması ve omuz karşı dönüşü, 3 vuruşluk kılıç kombosu,
+  gerçek takla, zıplama, darbe sarsılması, fizikli pelerin, kurtta tırıs/dörtnala, örümcek adımı, eklemli ejderha boynu ve kuyruğu
 - Gerçek zamanlı gölgeler, parlayan metal zırh, kan / kemik / kıvılcım parçacıkları, yerde kan izleri, vuruş durması ve kamera sarsıntısı
-- 6 görevlik zincir, envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
+- 9 görevlik zincir (köy + bataklık kampı), envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
 - Gece / gündüz döngüsü, yağmur, tarayıcıda otomatik kayıt
 
 ## Çalıştırma
@@ -64,14 +68,15 @@ Herhangi bir statik dosya sunucusu da olur (örneğin `npx serve`). WebGL2 deste
 | Tuş | Eylem |
 |---|---|
 | `W A S D` | yürü (`Shift` ile koş) |
-| `Boşluk` | yuvarlan |
+| `Boşluk` | zıpla |
+| `C` | yuvarlan |
 | Sol tık / `1` | imlece doğru kılıç |
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
-| Sağ tık sürükle, ok tuşları, tekerlek | kamerayı döndür / eğ / yakınlaştır |
+| Sağ tık sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
 | `[` `]` | harf boyutu |
 
 ## ASCII çizici nasıl çalışır?

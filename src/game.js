@@ -14,6 +14,7 @@ export const ITEMS = {
   rust: { n: 'Paslı Kılıç', t: 'weapon', atk: 0, c: '#aaa', d: 'ATK +0', icon: '/' },
   iron: { n: 'Demir Kılıç', t: 'weapon', atk: 6, c: '#9cf', d: 'ATK +6', icon: '/' },
   steel: { n: 'Çelik Kılıç', t: 'weapon', atk: 12, c: '#6f6', d: 'ATK +12', icon: '/' },
+  silver: { n: 'Kutsanmış Gümüş Kılıç', t: 'weapon', atk: 16, c: '#ddf', d: 'ATK +16', icon: '/' },
   moon: { n: 'Ay Çeliği Kılıcı', t: 'weapon', atk: 22, c: '#6ff', d: 'ATK +22', icon: '/' },
   gamb: { n: 'Kapitone Zırh', t: 'armor', def: 2, c: '#9cf', d: 'DEF +2', icon: '#' },
   chain: { n: 'Zincir Zırh', t: 'armor', def: 5, c: '#6f6', d: 'DEF +5', icon: '#' },
@@ -26,6 +27,8 @@ export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('E
 export function rollDrop(kind, lvl) {
   if (kind === 'widow') { giveItem('plate'); giveItem('pot', 2); return; }
   if (kind === 'dragon') { giveItem('pot', 5); return; }
+  if (kind === 'troll') { giveItem('pot', 3); if (Math.random() < .5) giveItem('plate'); return; }
+  if (kind === 'witch' && Math.random() < .3) { giveItem('pot'); return; }
   if (kind === 'dknight' && Math.random() < .35) { giveItem(Math.random() < .5 ? 'chain' : 'steel'); return; }
   const r = Math.random();
   if (r < .22) giveItem('pot');
@@ -76,7 +79,16 @@ export const Q = [
     hint: 'Gökyüzüne uzanan altın sütuna doğru yürü.', done: 'Çemberi gördün... Şövalye yemini artık senin, Senje. Bu zırh seni korusun.' },
   { id: 'dragon', giver: 'mira', title: 'Kül Ejderhası', obj: 'slay', kind: 'dragon', n: 1, xp: 1200, gold: 500, item: ['moon'], req: ['circle'],
     offer: 'Kuzeybatı dağlarının eteğinde kadim bir ejderha uyandı. Yemin ettin, Senje; köyü ondan ancak sen koruyabilirsin.',
-    hint: 'Kuzeybatıdaki yanık topraklara git. Ateş nefesinden önce yerde sıra sıra turuncu daireler belirir; yana yuvarlan!', done: 'Ejderha düştü... Ozanlar bu geceyi yüz yıl anlatacak. Al, Ay Çeliği Kılıcı artık senin.' }
+    hint: 'Kuzeybatıdaki yanık topraklara git. Ateş nefesinden önce yerde sıra sıra turuncu daireler belirir; yana yuvarlan (C)!', done: 'Ejderha düştü... Ozanlar bu geceyi yüz yıl anlatacak. Al, Ay Çeliği Kılıcı artık senin.' },
+  { id: 'ghouls', giver: 'osric', title: 'Mezarlıktan Kalkanlar', obj: 'slay', kind: 'ghoul', n: 8, xp: 220, gold: 90, item: ['silver'],
+    offer: 'Şapelin mezarlığı huzursuz, evlat. Hortlaklar topraktan çıkıp bataklığa yayıldı. 8 tanesini sonsuz uykusuna gönder.',
+    hint: 'Doğudaki yıkık şapelin batısındaki mezarlık. Hortlaklar uzaktan üstüne atılır; atılmadan yana çekil.', done: 'Tanrı ruhlarına huzur versin. Bu kutsanmış gümüş kılıç ölülere karşı keskindir.' },
+  { id: 'witches', giver: 'osric', title: 'Sisteki Cadılar', obj: 'slay', kind: 'witch', n: 3, xp: 260, gold: 120, item: ['pot', 4],
+    offer: 'Sisin içinde yeşil ışıklar görürsen, cadılar orada demektir. Uzaktan lanet fırlatırlar. 3 tanesini sustur.',
+    hint: 'Yeşil büyü toplarından zıplayarak (Boşluk) ya da yuvarlanarak (C) kaç, sonra üstlerine koş.', done: 'Sis biraz incelmiş gibi... Al, bu iksirler yoluna ışık olsun.' },
+  { id: 'troll', giver: 'osric', title: 'Bataklık Trolü', obj: 'slay', kind: 'troll', n: 1, xp: 480, gold: 200, item: ['plate'], req: ['ghouls'],
+    offer: 'Şapelin önündeki bataklıkta dev bir trol yaşıyor. Hacıların yolunu kesiyor. Gücün yeterse onu indir.',
+    hint: 'Trol yere çakmadan önce turuncu daire belirir. Sabırlı ol, arkasından vur.', done: 'Trolü mü devirdin? Bu zırh bir zamanlar bir tapınak şövalyesinindi; artık senin.' }
 ];
 const qById = {}; Q.forEach(q => { q.st = 0; qById[q.id] = q; });
 export function progress(q) { return q.obj === 'slay' ? Math.min(q.n, S.kills[q.kind] || 0) : q.obj === 'collect' ? Math.min(q.n, S.shards) : (S.circle ? 1 : 0); }
@@ -164,7 +176,11 @@ export function buildHotbar() {
 }
 export const toggleMini = () => { $('mini').hidden = !$('mini').hidden; };
 export const toggleHelp = () => { $('help').hidden = !$('help').hidden; };
-let hudT = 0, miniT = 0;
+let hudT = 0, miniT = 0, region = '', regionT = 0;
+export function showRegion(name) {
+  if (name === region) return; region = name; const el = $('region'); el.textContent = '— ' + name + ' —';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
 export function updateHUD(dt) {
   const near = NPCS.find(n => Math.hypot(n.x - P.x, n.z - P.z) < 4);
   $('prompt').textContent = (near && !dialog && !P.dead) ? '[E] ' + near.name + ' ile konuş' : '';
