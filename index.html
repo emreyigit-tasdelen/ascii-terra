@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>ASCII-Terra</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<div id="hud" hidden>
+  <div id="info"></div>
+  <div id="quests"></div>
+  <div id="mini" hidden><pre id="minimap"></pre></div>
+  <div id="target" hidden><div id="tName"></div><div class="tb"><i id="tFill"></i></div></div>
+  <div id="toasts"></div>
+  <div id="prompt"></div>
+  <div id="inv" class="panel" hidden></div>
+  <div id="dialog" class="panel" hidden></div>
+  <div id="bottom">
+    <div class="bar hp"><i id="hpfill"></i><span id="hptxt"></span></div>
+    <div class="bar xp"><i id="xpfill"></i><span id="xptxt"></span></div>
+    <div id="slots"></div>
+  </div>
+  <div id="help" class="panel">WASD yürü · Shift koş · Boşluk yuvarlan
+Sol tık / 1 kılıç · 2 ateş topu · 3 kasırga · 4 / Q iksir
+E konuş · I envanter · M harita · R yağmur
+Sağ tık sürükle / oklar: kamera · Tekerlek: yakınlaş
+[ ] harf boyutu · H bu yardımı gizle</div>
+</div>
+<div id="cross">+</div>
+<div id="overlay"><div class="box">
+<pre class="logo">
+ _   ___  ___ ___ ___     _____ ___ ___ ___    _
+/_\ / __|/ __|_ _|_ _|___|_   _| __| _ \ _ \  /_\
+/ _ \\__ \ (__ | | | |___| | | | _||   /   / / _ \
+/_/ \_\___/\___|___|___|    |_| |___|_|_\_|_\/_/ \_\
+</pre>
+  <p>Karakterlerden örülü bir şövalye dünyası. Sen <b>Senje</b>'sin: kaledeki iskeletleri temizle, kurtları avla,
+  Alacakaranlık Dulu'nu yen, Taş Çember'in yeminini al.</p>
+  <p class="keys">WASD yürü · Boşluk yuvarlan · Sol tık saldır · 2 ateş topu · 3 kasırga · E konuş · I envanter</p>
+  <button id="go">Başla</button><button id="new" hidden>Yeni oyun</button>
+  <p class="support">Projeyi destekle:
+    <a href="https://github.com/sponsors/emreyigit-tasdelen" target="_blank" rel="noopener">[ GitHub Sponsors ]</a>
+    <a href="https://buymeacoffee.com/emreyigit.tasdelen" target="_blank" rel="noopener">[ Buy Me a Coffee ]</a>
+  </p>
+</div></div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

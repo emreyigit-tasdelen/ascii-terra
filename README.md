@@ -1,0 +1,108 @@
+<div align="center">
+
+```
+    _    ____   ____ ___ ___     _____ _____ ____  ____      _
+   / \  / ___| / ___|_ _|_ _|   |_   _| ____|  _ \|  _ \    / \
+  / _ \ \___ \| |    | | | |_____| | |  _| | |_) | |_) |  / _ \
+ / ___ \ ___) | |___ | | | |_____| | | |___|  _ <|  _ <  / ___ \
+/_/   \_\____/ \____|___|___|    |_| |_____|_| \_\_| \_\/_/   \_\
+```
+
+**A dark knight-world action RPG where everything on screen is an ASCII character.**
+
+Grass, armor, castle walls, the sea, fire and rain are all drawn with glyphs — in real time, in your browser.
+
+[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-support-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/emreyigit-tasdelen)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-support-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/emreyigit.tasdelen)
+
+**English** · [Türkçe](README.tr.md)
+
+</div>
+
+---
+
+## What is this?
+
+ASCII-Terra is an open-world ARPG in the spirit of classic dungeon crawlers, but rendered entirely in text.
+A 3D scene is drawn off-screen with Three.js, and a custom shader turns every pixel into a glyph chosen
+per material: stone walls become dense letter textures, grass becomes `/ | \` strokes that follow each
+blade, water is black with white `~ =` foam, fire flickers as orange `# % &`.
+
+You play **Senje**, a knight in silver plate and a red tabard. Clear the undead from the castle ruins,
+hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone Circle.
+
+> Status: early development (v0.2). The long-term goal is an online, multiplayer ASCII MMORPG.
+> See the [roadmap](ROADMAP.md).
+
+## Features
+
+- **100% ASCII rendering** — per-material glyph sets, pixel-aligned glyph atlas, finer grid for characters and creatures
+- Knight world: village, ruined castle with towers and a torch-lit gate, menhirs on a foamy coast, forests
+- Real-time combat: sword, fireball, whirlwind, dodge roll; enemies telegraph attacks with orange ground circles
+- Enemies: skeleton warriors, wolves and a boss spider with webs
+- 5-quest starter chain, inventory and equipment (weapon / armor), loot drops, leveling
+- Day / night cycle, rain, auto-save in the browser
+
+## Run it
+
+The game uses ES modules, so it needs a local web server (opening `index.html` directly will not work).
+
+```bash
+git clone https://github.com/emreyigit-tasdelen/ascii-terra.git
+cd ascii-terra
+python -m http.server 8765
+```
+
+Then open <http://localhost:8765/index.html>. On Windows you can simply double-click `baslat.bat`.
+Any static file server works (for example `npx serve`). A WebGL2-capable browser is required.
+
+## Controls
+
+| Key | Action |
+|---|---|
+| `W A S D` | move (`Shift` to run) |
+| `Space` | dodge roll |
+| Left click / `1` | sword attack toward the cursor |
+| `2` / `3` | fireball / whirlwind |
+| `4` / `Q` | drink a potion |
+| `E` | talk to NPCs |
+| `I` / `M` | inventory / map |
+| `R` | toggle rain |
+| Right-drag, arrow keys, wheel | rotate / tilt / zoom camera |
+| `[` `]` | glyph size |
+
+## How the ASCII renderer works
+
+1. The scene is rendered at full resolution into an off-screen target.
+2. Every material writes a **material ID** into the alpha channel (`src/core.js` → `MID`).
+   Grass also encodes the on-screen angle of each blade.
+3. A full-screen pass (`src/render.js`) splits the screen into glyph cells, samples each cell
+   3×3 times and picks a glyph from the set that belongs to that material, coloured by the scene.
+4. Thin objects (rain, webs, flowers) claim a cell if any sample hits them, so 1-pixel lines never vanish.
+
+Details: [docs/STIL-REHBERI.md](docs/STIL-REHBERI.md) (style guide, Turkish with an English summary).
+
+## Project structure
+
+```
+index.html, style.css   entry page and HUD styles
+src/core.js             math, noise, terrain height, collisions, material IDs
+src/render.js           renderer, ASCII post-process, day/night, rain
+src/world.js            terrain, sea, grass, trees, village, castle, coast, crystals, spider lair
+src/models.js           knight, NPC, skeleton, wolf and spider models + animation
+src/actors.js           player, enemy AI, skills, projectiles, telegraphs
+src/game.js             state, items, quests, dialogue, save, HUD
+src/main.js             input, camera, main loop
+legacy/                 the original single-file prototype
+```
+
+## Support
+
+ASCII-Terra is developed in the open. If you enjoy it, you can support development:
+
+- GitHub Sponsors: <https://github.com/sponsors/emreyigit-tasdelen>
+- Buy Me a Coffee: <https://buymeacoffee.com/emreyigit.tasdelen>
+
+## Contributing
+
+Issues and pull requests are welcome. Please keep the core rule: everything that appears on screen must be ASCII.
