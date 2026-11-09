@@ -97,6 +97,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
 | `Enter` | chat (multiplayer) |
+| `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
 | Middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |

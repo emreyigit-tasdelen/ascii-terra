@@ -19,6 +19,11 @@ addEventListener('keydown', e => {
     if (ae.id === 'chatin') { if (e.key === 'Enter') { e.preventDefault(); chatToggle(); } else if (e.key === 'Escape') chatCancel(); }
     return;
   }
+  if (started && (e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !e.repeat) {   // Esc: önce açık pencereyi kapat, yoksa duraklat
+    if (e.key === 'Escape' && !paused && ($('dialog').hidden === false || invOpen())) { closeDialog(); if (invOpen()) toggleInv(); return; }
+    setPaused(!paused); return;
+  }
+  if (paused) return;
   if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
   const k = e.key.toLowerCase();
   if ('wasdf'.includes(k) && k.length === 1) keys[k] = true;
@@ -32,7 +37,6 @@ addEventListener('keydown', e => {
   else if (k === 'c') doDodge();
   else if (k === 'i') toggleInv(); else if (k === 'm') toggleMini(); else if (k === 'h') toggleHelp();
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Yağmur başladı' : 'Yağmur dindi'); }
-  else if (e.key === 'Escape') { closeDialog(); if (invOpen()) toggleInv(); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
   else if (e.key === 'ArrowLeft') cam.yaw += .2; else if (e.key === 'ArrowRight') cam.yaw -= .2;
   else if (e.key === 'ArrowUp') cam.pitch = clamp(cam.pitch + .06, PMIN, 1.35); else if (e.key === 'ArrowDown') cam.pitch = clamp(cam.pitch - .06, PMIN, 1.35);
@@ -44,7 +48,18 @@ addEventListener('mousemove', e => {
   const c = $('cross'); c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
   if (MOUSE.mmb && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
 });
-canvas.addEventListener('mousedown', e => { if (!started) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
+/* ---------------- duraklatma menüsü ---------------- */
+let paused = false;
+function setPaused(on) {
+  paused = on; $('pause').hidden = !on; for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false;
+  $('pnote').textContent = NET.online ? 'Çevrimiçisin: dünya diğer oyuncular için akmaya devam ediyor, ama sana kimse vuramaz.' : 'Oyun duraklatıldı.';
+  if (on) save();
+}
+$('presume').onclick = () => setPaused(false);
+$('phelp').onclick = () => toggleHelp();
+$('pmenu').onclick = () => { save(); setTimeout(() => location.reload(), 300); };
+addEventListener('blur', () => { if (started && !paused && !NET.online) setPaused(true); });   // sekmeden çıkınca tek oyunculuda otomatik duraklat
+canvas.addEventListener('mousedown', e => { if (!started || paused) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
 addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; if (e.button === 1) MOUSE.mmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * .02, 8, 42); }, { passive: true });
@@ -146,7 +161,8 @@ function frame(now, draw) {
   lastFrameAt = now;
   const rdt = Math.min(.05, (now - last) / 1000); last = now; T += rdt;
   let dt = rdt; if (FXS.stop > 0) { FXS.stop -= rdt; dt = rdt * .05; }   // vuruşta kısa durma
-  const run = started;
+  const run = started && !(paused && !NET.online);   // tek oyunculuda dünya donar; çevrimiçide akar
+  if (paused) P.invuln = true; else P.invuln = false;
   beginLabels();
   if (run) {
     if (MOUSE.lmb) doSlash();

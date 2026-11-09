@@ -218,7 +218,7 @@ export function grantKill(e) {   // ödül öldüren oyuncuya
 }
 // src: saldırının geldiği nokta {x, z, e?}; yoksa (alan saldırıları) bloklanamaz
 export function hurtPlayer(d, src) {
-  if (P.dead) return;
+  if (P.dead || P.invuln) return;
   if (P.dodgeT > 0) { floatText('sıyrıldı', P.x, P.y + 2.8, P.z, 'info'); return; }
   if (P.block && src && P.stunT <= 0) {
     const ang = Math.atan2(src.x - P.x, src.z - P.z);

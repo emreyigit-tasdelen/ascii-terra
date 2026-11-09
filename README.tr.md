@@ -97,6 +97,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
 | `Enter` | sohbet (çok oyunculu) |
+| `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
 | Orta tuş sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
