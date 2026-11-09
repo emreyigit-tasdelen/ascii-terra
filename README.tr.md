@@ -38,9 +38,12 @@ kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de ye
 
 - **%100 ASCII çizim** — malzemeye özel glif setleri, piksel hizalı glif atlası, karakter ve yaratıklar için ince ızgara
 - Şövalye dünyası: köy, kuleli ve meşaleli kapılı kale harabesi, köpüklü kıyıda menhirler, ormanlar
-- Gerçek zamanlı dövüş: kılıç, ateş topu, kasırga, yuvarlanma; düşmanlar saldırıyı yerde turuncu daireyle haber verir
-- Düşmanlar: iskelet savaşçılar, kurtlar ve ağlarıyla boss örümcek
-- 5 görevlik başlangıç zinciri, envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
+- Gerçek zamanlı dövüş: kılıç, ateş topu, kasırga, yuvarlanma; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
+- Detaylı prosedürel modeller: plaka zırhlı şövalyeler (katmanlı omuzluk, vizörlü miğfer, zincir zırh, tabard, pelerin, uzun kılıç, armalı kalkan),
+  gerçek kemik yapılı iskeletler, tüylü dev kurtlar, kıllı dev örümcek ve kanatlı, pullu bir ejderha
+- Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Alacakaranlık Dulu* ve dünya bossu *Kül Ejderhası*
+- Gerçek zamanlı gölgeler, parlayan metal zırh, kan / kemik / kıvılcım parçacıkları, yerde kan izleri, vuruş durması ve kamera sarsıntısı
+- 6 görevlik zincir, envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
 - Gece / gündüz döngüsü, yağmur, tarayıcıda otomatik kayıt
 
 ## Çalıştırma
@@ -89,6 +92,7 @@ src/render.js           renderer, ASCII son-işleme, gece/gündüz, yağmur
 src/world.js            arazi, deniz, çimen, ağaçlar, köy, kale, kıyı, kristaller, örümcek yuvası
 src/models.js           şövalye, NPC, iskelet, kurt ve örümcek modelleri + animasyon
 src/actors.js           oyuncu, düşman yapay zekâsı, beceriler, mermiler, uyarı daireleri
+src/fx.js               parçacıklar, kan izleri, vuruş durması, kamera sarsıntısı
 src/game.js             durum, eşyalar, görevler, diyalog, kayıt, arayüz
 src/main.js             girdi, kamera, ana döngü
 legacy/                 ilk tek dosyalık prototip

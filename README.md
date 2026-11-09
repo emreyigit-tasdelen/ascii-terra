@@ -38,9 +38,12 @@ hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone
 
 - **100% ASCII rendering** — per-material glyph sets, pixel-aligned glyph atlas, finer grid for characters and creatures
 - Knight world: village, ruined castle with towers and a torch-lit gate, menhirs on a foamy coast, forests
-- Real-time combat: sword, fireball, whirlwind, dodge roll; enemies telegraph attacks with orange ground circles
-- Enemies: skeleton warriors, wolves and a boss spider with webs
-- 5-quest starter chain, inventory and equipment (weapon / armor), loot drops, leveling
+- Real-time combat: sword, fireball, whirlwind, dodge roll; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
+- Detailed procedural models: plate-armoured knights (layered pauldrons, visored helm, chainmail, tabard, cape, longsword, heraldic shield),
+  anatomical skeletons, shaggy dire wolves, a hairy giant spider and a winged, scaled dragon
+- Enemies: skeleton warriors, dark knights, dire wolves, the *Dusk Widow* spider boss and the *Ash Dragon* world boss
+- Real-time shadows, shiny metal armour, blood / bone / spark particles, blood decals, hit-stop and camera shake
+- 6-quest chain, inventory and equipment (weapon / armor), loot drops, leveling
 - Day / night cycle, rain, auto-save in the browser
 
 ## Run it
@@ -91,6 +94,7 @@ src/render.js           renderer, ASCII post-process, day/night, rain
 src/world.js            terrain, sea, grass, trees, village, castle, coast, crystals, spider lair
 src/models.js           knight, NPC, skeleton, wolf and spider models + animation
 src/actors.js           player, enemy AI, skills, projectiles, telegraphs
+src/fx.js               particles, blood decals, hit-stop, camera shake
 src/game.js             state, items, quests, dialogue, save, HUD
 src/main.js             input, camera, main loop
 legacy/                 the original single-file prototype

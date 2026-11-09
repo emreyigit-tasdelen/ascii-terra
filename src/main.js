@@ -1,12 +1,13 @@
 // Giriş noktası: girdi, kamera, ana döngü
 import { $, clamp, lerp, keys, MOUSE, heightAt } from './core.js';
 import { camera, canvas, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
-import { updateWorld, updateGrass, grassMat, FIRE } from './world.js';
-import { P, updatePlayer, updateEnemies, updateEffects, updateShadows, actorLabels, doSlash, doFireball, doWhirl, doDodge, nearestNPC } from './actors.js';
+import { updateWorld, updateGrass, GU, flames } from './world.js';
+import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, nearestNPC } from './actors.js';
+import { FXS, burst, updateFX } from './fx.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar } from './game.js';
 
 const DAYLEN = 480;
-const cam = { yaw: 0, pitch: .98, dist: 18, tx: 0, ty: 0, tz: 0 };
+const cam = { yaw: 0, pitch: .98, dist: 17, tx: 0, ty: 0, tz: 0 };
 let started = false, last = performance.now(), T = 0, saveT = 0;
 
 /* ---------------- girdi ---------------- */
@@ -37,7 +38,7 @@ addEventListener('mousemove', e => {
 canvas.addEventListener('mousedown', e => { if (!started) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; });
 addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * .02, 9, 42); }, { passive: true });
+addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * .02, 8, 42); }, { passive: true });
 addEventListener('resize', resize);
 addEventListener('beforeunload', () => { if (started) save(); });
 
@@ -54,16 +55,23 @@ $('go').onclick = () => begin(false);
 $('new').onclick = () => begin(true);
 if (hasSave()) { $('new').hidden = false; $('go').textContent = 'Devam et'; }
 
-/* ---------------- kamera ---------------- */
+/* ---------------- kamera (takip + sarsıntı) ---------------- */
 function updateCamera(dt, run) {
   const k = 1 - Math.exp(-8 * dt);
   if (run) { cam.tx = lerp(cam.tx, P.x, k); cam.ty = lerp(cam.ty, P.y, k); cam.tz = lerp(cam.tz, P.z, k); }
   else { cam.yaw += dt * .05; cam.tx = 0; cam.tz = 8; cam.ty = heightAt(0, 8); }
-  const cp = Math.cos(cam.pitch);
+  const cp = Math.cos(cam.pitch), sh = FXS.shake * FXS.shake;
   let cx = cam.tx + Math.sin(cam.yaw) * cp * cam.dist, cy = cam.ty + 1 + Math.sin(cam.pitch) * cam.dist, cz = cam.tz + Math.cos(cam.yaw) * cp * cam.dist;
   cy = Math.max(cy, heightAt(cx, cz) + 2);
+  cx += (Math.random() - .5) * sh * 1.2; cy += (Math.random() - .5) * sh * 1.2; cz += (Math.random() - .5) * sh * 1.2;
   camera.position.set(cx, cy, cz); camera.lookAt(cam.tx, cam.ty + 1, cam.tz);
-  P.camYaw = cam.yaw;
+  FXS.shake = Math.max(0, FXS.shake - dt * 2.5);
+  P.camYaw = cam.yaw; ENV.focus.set(cam.tx, cam.ty, cam.tz);
+}
+
+/* ---------------- meşale ve ateşlerden kor ---------------- */
+function embers(dt, px, pz) {
+  for (const f of flames) { const p = f.m.position; if (Math.abs(p.x - px) < 40 && Math.abs(p.z - pz) < 40 && Math.random() < dt * 5 * f.s) burst('ember', p.x, p.y + .3, p.z, 1); }
 }
 
 /* ---------------- ana döngü ---------------- */
@@ -71,24 +79,25 @@ resize();
 P.y = heightAt(P.x, P.z); updateGrass(0, 8, 999);
 function frame(now) {
   requestAnimationFrame(frame);
-  const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
+  const rdt = Math.min(.05, (now - last) / 1000); last = now; T += rdt;
+  let dt = rdt; if (FXS.stop > 0) { FXS.stop -= rdt; dt = rdt * .05; }   // vuruşta kısa durma
   const run = started;
   beginLabels();
   if (run) {
     if (MOUSE.lmb) doSlash();
     updatePlayer(dt); updateEnemies(dt); updateEffects(dt);
-    saveT += dt; if (saveT > 8) { saveT = 0; save(); }
+    saveT += rdt; if (saveT > 8) { saveT = 0; save(); }
   }
-  updateDay(run ? dt : 0, DAYLEN);
-  updateCamera(dt, run);
-  updateRain(dt, cam.tx, cam.ty, cam.tz);
-  updateWorld(T);
+  updateNPCs(rdt); updateFX(dt);
+  updateDay(run ? rdt : 0, DAYLEN);
+  updateCamera(rdt, run);
+  updateRain(rdt, cam.tx, cam.ty, cam.tz);
+  updateWorld(T); embers(rdt, cam.tx, cam.tz);
   updateGrass(run ? P.x : 0, run ? P.z : 8, 2);
-  updateShadows();
-  const G = grassMat.uniforms; G.uPlayer.value.set(P.x, P.y, P.z); G.uLamp0.value.set(P.x, P.y + 1, P.z); G.uLamp1.value.set(FIRE.x, heightAt(0, 0) + 1, FIRE.z); G.uAspect.value = camera.aspect;
-  if (run) { actorLabels(); updateHUD(dt); }
+  GU.uPlayer.value.set(P.x, P.y, P.z); GU.uAspect.value = camera.aspect;
+  if (run) { actorLabels(); updateHUD(rdt); }
   endLabels();
   renderFrame(T, clamp(P.hurtT * 2, 0, .6));
 }
 requestAnimationFrame(frame);
-window.__game = { P, get S() { return S; }, ENV, cam, begin };
+window.__game = { P, enemies, get S() { return S; }, ENV, cam, begin };

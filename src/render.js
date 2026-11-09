@@ -5,6 +5,7 @@ import { THREE, $, clamp, lerp, smooth, MID, tag } from './core.js';
 
 export const canvas = $('c');
 export const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 export const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070d);
 scene.fog = new THREE.Fog(0x05070d, 30, 170);
@@ -83,15 +84,19 @@ const asciiMat = new THREE.ShaderMaterial({
       // karakterler ve yaratıklar: küçük hücreli ince ızgara
       bool cre=isD(a,.7);
       vec2 cp=fpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
-      vec3 acc=vec3(0.);float n=0.;
+      vec3 acc=vec3(0.);float n=0.;float L[9];
       for(int j=0;j<3;j++){for(int i=0;i<3;i++){
         vec4 s=S(base+cp*vec2((float(i)+.5)/3.,(float(j)+.5)/3.));
+        L[j*3+i]=isFig(s.a)?lum(s.rgb)*uExp:0.;
         if(isFig(s.a)){acc+=s.rgb;n+=1.;}
       }}
       vec3 c=(n>0.?acc/n:own.rgb)*uExp;
       float l=clamp(lum(c),0.,1.),hc=h21(cell+vec2(37.,11.));
-      float sl=cre?pick(FINE,l*1.25,hc,2.):pick(ACTOR,l*1.2,hc,1.5);
-      o=c*glyphF(sl,lp)*2.4+c*.1;
+      float gx=(L[2]+2.*L[5]+L[8])-(L[0]+2.*L[3]+L[6]),gy=(L[6]+2.*L[7]+L[8])-(L[0]+2.*L[1]+L[2]);
+      float mag=length(vec2(gx,gy))/4.,sl;
+      if(mag>.16+.2*l&&n>2.){float an=atan(-gx,gy);if(an<0.)an+=3.14159265;sl=EDGE_O+mod(floor(an/.785398+.5),4.);}  // plaka/kemik kenarları
+      else sl=cre?pick(FINE,l*1.25,hc,2.):pick(ACTOR,l*1.2,hc,1.5);
+      o=c*glyphF(sl,lp)*2.05+c*.08;
     }else{
       vec2 cp=cpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
       vec4 cen=S(base+cp*.5);
@@ -133,7 +138,7 @@ const asciiMat = new THREE.ShaderMaterial({
       }
       o=c*glyphN(sl,lp)*k+c*bg;
     }
-    o=o*(1.+uHurt*vec3(.15,-.25,-.25));
+    o=o*(1.+uHurt*vec3(.08,-.14,-.14));
     vec2 q=fc/res-.5;o*=1.-dot(q,q)*.6;
     gl_FragColor=vec4(o,1.);
   }`
@@ -160,18 +165,27 @@ export function renderFrame(t, hurt) {
 }
 
 /* ---------------- ışık + gün döngüsü ---------------- */
-export const sun = new THREE.DirectionalLight(0xfff0d0, .85); scene.add(sun);
-export const moon = new THREE.DirectionalLight(0x8899ff, .45); scene.add(moon);
+// Ana ışık (gündüz güneş, gece ay) gölge haritası üretir; zayıf ters dolgu ışığı kenarları ayırır.
+export const key = new THREE.DirectionalLight(0xfff0d0, .9); scene.add(key); scene.add(key.target);
+key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
+{ const c = key.shadow.camera; c.left = -44; c.right = 44; c.top = 44; c.bottom = -44; c.near = 1; c.far = 320; }
+key.shadow.bias = -.0005; key.shadow.normalBias = .05;
+export const fill = new THREE.DirectionalLight(0x6070a0, .18); scene.add(fill);
 export const hemi = new THREE.HemisphereLight(0x8899bb, 0x101410, .5); scene.add(hemi);
-export const ENV = { dayT: .3, night: 0, raining: false, light: new THREE.Vector3(1, 1, 1), sky: new THREE.Color(0x05070d), shadow: new THREE.Vector2(.3, .3) };
-const _a = new THREE.Color(), _b = new THREE.Color();
+export const ENV = { dayT: .3, night: 0, raining: false, light: new THREE.Vector3(1, 1, 1), sky: new THREE.Color(0x05070d), shadow: new THREE.Vector2(.3, .3), focus: new THREE.Vector3() };
+const _a = new THREE.Color(), _b = new THREE.Color(), _ld = new THREE.Vector3();
 export function updateDay(dt, len) {
   ENV.dayT = (ENV.dayT + dt / len) % 1;
   const a = (ENV.dayT - .25) * Math.PI * 2, e = Math.sin(a), D = smooth(-.12, .3, e), N = 1 - D, rain = ENV.raining ? 1 : 0;
   ENV.night = N;
-  sun.position.set(Math.cos(a) * .75, e, .5).multiplyScalar(100); sun.intensity = .85 * D * (1 - .4 * rain);
-  sun.color.setRGB(1, lerp(.6, .95, smooth(0, .4, e)), lerp(.4, .85, smooth(0, .4, e)));
-  moon.position.copy(sun.position).multiplyScalar(-1); moon.intensity = .5 * N;
+  const day = e > -.02;
+  _ld.set(Math.cos(a) * .75, e, .5); if (!day) _ld.multiplyScalar(-1); _ld.y = Math.max(_ld.y, .28); _ld.normalize();
+  const tx = Math.round(ENV.focus.x / 2) * 2, tz = Math.round(ENV.focus.z / 2) * 2;   // gölge titremesin diye ızgaraya oturt
+  key.target.position.set(tx, ENV.focus.y, tz); key.position.set(tx + _ld.x * 150, ENV.focus.y + _ld.y * 150, tz + _ld.z * 150);
+  if (day) { key.intensity = .95 * D * (1 - .45 * rain); key.color.setRGB(1, lerp(.6, .95, smooth(0, .4, e)), lerp(.4, .85, smooth(0, .4, e))); }
+  else { key.intensity = .5 * (1 - .4 * rain); key.color.setRGB(.55, .62, 1); }
+  fill.position.set(-_ld.x * 100, 40, -_ld.z * 100);
+  const sun = key;
   hemi.color.setRGB(lerp(.25, .55, D), lerp(.3, .62, D), lerp(.5, .75, D)); hemi.groundColor.setRGB(.06, .08, .06);
   _a.setRGB(.01, .015, .035); _b.setRGB(.06, .085, .12); ENV.sky.copy(_a).lerp(_b, D);
   if (rain) ENV.sky.lerp(_b.setRGB(.05, .055, .065), .5);

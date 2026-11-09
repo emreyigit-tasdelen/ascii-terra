@@ -25,6 +25,8 @@ export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = ()
 export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('Eşya: ' + ITEMS[id].n + (n > 1 ? ' x' + n : '')); renderInv(); }
 export function rollDrop(kind, lvl) {
   if (kind === 'widow') { giveItem('plate'); giveItem('pot', 2); return; }
+  if (kind === 'dragon') { giveItem('pot', 5); return; }
+  if (kind === 'dknight' && Math.random() < .35) { giveItem(Math.random() < .5 ? 'chain' : 'steel'); return; }
   const r = Math.random();
   if (r < .22) giveItem('pot');
   else if (r < (kind === 'wolf' ? .34 : .29)) {
@@ -71,7 +73,10 @@ export const Q = [
     hint: 'Batıdaki ormanda beyaz ağları ara. Yerde turuncu daire belirirse hemen Boşluk ile kaç!', done: 'Yaratık öldü ha? Efsane olacaksın. Bu çelik kılıcı al.' },
   { id: 'circle', giver: 'mira', title: 'Taş Çember', obj: 'reach', n: 1, xp: 250, gold: 150, item: ['moonp'], req: ['skel', 'shards', 'widow'],
     offer: 'Artık hazırsın. Kuzeydoğuda eski şövalyelerin yemin ettiği Taş Çember var. Oraya git.',
-    hint: 'Gökyüzüne uzanan altın sütuna doğru yürü.', done: 'Çemberi gördün... Şövalye yemini artık senin, Senje. Bu zırh seni korusun.' }
+    hint: 'Gökyüzüne uzanan altın sütuna doğru yürü.', done: 'Çemberi gördün... Şövalye yemini artık senin, Senje. Bu zırh seni korusun.' },
+  { id: 'dragon', giver: 'mira', title: 'Kül Ejderhası', obj: 'slay', kind: 'dragon', n: 1, xp: 1200, gold: 500, item: ['moon'], req: ['circle'],
+    offer: 'Kuzeybatı dağlarının eteğinde kadim bir ejderha uyandı. Yemin ettin, Senje; köyü ondan ancak sen koruyabilirsin.',
+    hint: 'Kuzeybatıdaki yanık topraklara git. Ateş nefesinden önce yerde sıra sıra turuncu daireler belirir; yana yuvarlan!', done: 'Ejderha düştü... Ozanlar bu geceyi yüz yıl anlatacak. Al, Ay Çeliği Kılıcı artık senin.' }
 ];
 const qById = {}; Q.forEach(q => { q.st = 0; qById[q.id] = q; });
 export function progress(q) { return q.obj === 'slay' ? Math.min(q.n, S.kills[q.kind] || 0) : q.obj === 'collect' ? Math.min(q.n, S.shards) : (S.circle ? 1 : 0); }

@@ -21,9 +21,11 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [ ] Vite ile geliştirme sunucusu ve build (CDN bağımlılığını kaldırmak için three.js yerel paket)
 
 ## Faz 1 — Görsel sadakat (videolara bire bir)
-- [ ] Gerçek gölge haritası (karakter, sur, ağaç gölgeleri); çimen shader'ına gölge örneklemesi
+- [x] Gerçek gölge haritası (karakter, sur, ağaç gölgeleri); çimen de gölge alıyor
 - [ ] Kıyıda sis/pus partikülleri, deniz üzerinde köpük kıvrımları, dalga animasyonu
-- [ ] Ateş/büyü partikülleri (turuncu `#%&` kıvılcımlar), ateş topu izi, isabet parlaması (bloom benzeri)
+- [x] Ateş/kor/kan/kemik/kıvılcım parçacıkları, ateş topu izi, kan izleri, vuruş durması ve kamera sarsıntısı
+- [x] Detaylı modeller: plaka zırhlı şövalye, kara şövalye, anatomik iskelet, dev kurt, kıllı dev örümcek, kanatlı ejderha
+- [ ] Bloom benzeri parlama, karakterler için iskeletli (skinned) animasyon
 - [ ] Yıldırım/buz/mor büyü efektleri (video: New skills)
 - [ ] Malzemeye özel ızgara: zincir zırh `o8o8` deseni, ejderha pulları, örümcek tüyü (custom grid + symbol)
 - [ ] Dinamik hava: yağmur sıçraması, ıslak zemin parlaması, sis, kar; hava döngüsü
@@ -54,7 +56,7 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 ## Faz 4 — İçerik
 - [ ] Ana hikâye ve görev zinciri, diyalog ağacı sistemi
 - [ ] Bestiyer: iskelet okçu, ölü şövalye, ejderha, dev örümcek türleri, at/binek
-- [ ] Bosslar: Alacakaranlık Dulu (fazlı), Ejderha, Kale Lordu
+- [~] Bosslar: Alacakaranlık Dulu, Kül Ejderhası (ateş nefesi + kuyruk darbesi) eklendi; fazlar ve Kale Lordu yapılacak
 - [ ] Başarımlar, unvanlar
 
 ## Faz 5 — Çok oyunculu (MMO)

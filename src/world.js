@@ -7,7 +7,11 @@ import { scene, ENV } from './render.js';
 
 const insideCastle = (x, z, pad = 0) => Math.abs(x - CASTLE.x) < CASTLE.half - pad && Math.abs(z - CASTLE.z) < CASTLE.half - pad;
 const rocky = (x, z) => vnoise(x * .06 + 40, z * .06 - 13) > .74;
-const Q = new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector3(), SV = new THREE.Vector3(), AX = new THREE.Vector3(0, 1, 0), CC = new THREE.Color();
+export const DRAGON_LAIR = findLand(-70, -128);   // ejderha yuvası: yanık, ağaçsız açıklık
+export const LAIR = findLand(-118, -38);          // örümcek yuvası
+const scorched = (x, z) => 1 - smooth(14, 24, Math.hypot(x - DRAGON_LAIR.x, z - DRAGON_LAIR.z));
+const clearing = (x, z) => Math.hypot(x - DRAGON_LAIR.x, z - DRAGON_LAIR.z) < 26 || Math.hypot(x - LAIR.x, z - LAIR.z) < 9;
+const Q =new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector3(), SV = new THREE.Vector3(), AX = new THREE.Vector3(0, 1, 0), CC = new THREE.Color();
 
 /* ================= arazi ================= */
 {
@@ -27,10 +31,12 @@ const Q = new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vecto
     if (y > WATER + 1 && y < 20 && ny >= .78 && rocky(x, z)) { r = .12; gg = .13; b = .17; }
     const cob = Math.max(smooth(2.6, 1.4, pathDist(x, z)), smooth(12.5, 10.5, Math.hypot(x, z)), insideCastle(x, z, 1) ? 1 : 0);
     if (cob > 0) { r = lerp(r, .15 + .03 * k, cob); gg = lerp(gg, .16 + .03 * k, cob); b = lerp(b, .21 + .03 * k, cob); }
+    const sc = scorched(x, z); if (sc > 0) { r = lerp(r, .07 + .05 * k, sc); gg = lerp(gg, .055 + .03 * k, sc); b = lerp(b, .045 + .02 * k, sc); }
     col[i * 3] = r; col[i * 3 + 1] = gg; col[i * 3 + 2] = b;
   }
   g.setAttribute('color', new THREE.BufferAttribute(col, 3));
-  scene.add(new THREE.Mesh(g, lam(0xffffff, MID.GROUND, { vertexColors: true })));
+  const t = new THREE.Mesh(g, tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 3, specular: 0x0a0a0a }), MID.GROUND));
+  t.receiveShadow = true; scene.add(t);
 }
 
 /* ================= su (köpüklü kıyı) ================= */
@@ -58,58 +64,47 @@ export const waterMat = new THREE.ShaderMaterial({
     gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),.75);
   }`
 });
-{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; scene.add(w); }
+{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; scene.add(w); }
 
-/* ================= çimen (doğrudan çizilen saplar + çiçekler) ================= */
-const grassBase = (() => { const w = .06, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(v, 3)); return g; })();
-const shadowSlots = []; for (let i = 0; i < 12; i++) shadowSlots.push(new THREE.Vector4(0, 0, 0, 0));
-export const grassMat = new THREE.ShaderMaterial({
-  side: THREE.DoubleSide,
-  uniforms: {
-    uTime: { value: 0 }, uLight: { value: ENV.light }, uFogColor: { value: ENV.sky }, uFogNear: { value: 30 }, uFogFar: { value: 170 },
-    uPlayer: { value: new THREE.Vector3() }, uLamp0: { value: new THREE.Vector3() }, uLamp1: { value: new THREE.Vector3() }, uLampI: { value: .5 },
-    uSh: { value: shadowSlots }, uAspect: { value: 1 }
-  },
-  vertexShader: `
-  attribute vec3 offset;attribute vec3 par;uniform float uTime,uAspect;uniform vec3 uPlayer;
-  varying float vH;varying float vFog;varying float vTone;varying float vFl;varying vec3 vW;varying float vAng;
-  void main(){
-    float hgt=position.y;
-    float tone=fract(sin(dot(offset.xz,vec2(12.9898,78.233)))*43758.5453);
-    float fl=step(.955,tone);
-    float s=par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.);
-    vec3 p=position;p.y*=s;p.xz*=(fl>.5?3.5:1.);
-    float c=cos(par.x),sn=sin(par.x);
-    vec3 r=vec3(p.x*c-p.z*sn,p.y,p.x*sn+p.z*c);
-    float w=sin(uTime*1.6+offset.x*.21+offset.z*.17)*.3+sin(uTime*2.7+offset.z*.4)*.1;
-    float bend=hgt*hgt*s;
-    r.x+=(par.z+w)*bend;r.z+=(par.z*.5+w*.6)*bend;
-    vec2 dp=offset.xz-uPlayer.xz;float pd=length(dp);
-    r.xz+=dp/(pd+.001)*(1.-smoothstep(0.,1.5,pd))*.9*hgt*s;
-    vec3 wp=r+offset;vW=wp;vec4 mv=viewMatrix*vec4(wp,1.);
-    vH=hgt;vTone=tone;vFl=fl;vFog=-mv.z;
-    gl_Position=projectionMatrix*mv;
-    // sapın ekrandaki yönü → ASCII geçişinde - / | \ seçimi için
-    vec3 tip=offset+vec3((par.z+w)*s,s,(par.z*.5+w*.6)*s);
-    vec4 A=projectionMatrix*viewMatrix*vec4(offset,1.),B=projectionMatrix*viewMatrix*vec4(tip,1.);
-    vec2 d=B.xy/B.w-A.xy/A.w;d.x*=uAspect;float an=atan(d.y,d.x);if(an<0.)an+=3.14159265;vAng=an/3.14159265;
-  }`,
-  fragmentShader: `
-  uniform vec3 uLight,uFogColor,uLamp0,uLamp1;uniform float uFogNear,uFogFar,uLampI;uniform vec4 uSh[12];
-  varying float vH;varying float vFog;varying float vTone;varying float vFl;varying vec3 vW;varying float vAng;
-  void main(){
-    bool flower=vFl>.5&&vH>.45;
-    vec3 base=flower?vec3(.85,.88,.82):mix(vec3(.015,.04,.03),mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(vTone*3.7)),vH)*(.75+.5*fract(vTone*7.3));
-    vec3 col=base*uLight;
-    vec3 d0=vW-uLamp0,d1=vW-uLamp1;
-    col+=base*vec3(1.,.8,.5)*uLampI/(1.+dot(d0,d0)*.12);
-    col+=base*vec3(1.,.6,.25)*1.6/(1.+dot(d1,d1)*.025);
-    float sh=1.;
-    for(int i=0;i<12;i++){vec4 sv=uSh[i];if(sv.w>0.){float d=distance(vW.xz,sv.xz);sh*=1.-.75*(1.-smoothstep(sv.w*.3,sv.w,d));}}
-    col*=sh;
-    gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),flower?.5:.02+fract(vAng)*.26);
-  }`
-});
+/* ================= çimen: Lambert tabanlı (gerçek gölge + ışık alır), sap açısını alfa kanalına yazar ================= */
+const grassBase = (() => {
+  const w = .06, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(v, 3));
+  g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
+  return g;
+})();
+export const GU = { uTime: { value: 0 }, uPlayer: { value: new THREE.Vector3() }, uAspect: { value: 1 } };
+export const grassMat = new THREE.MeshLambertMaterial({ side: THREE.DoubleSide });
+grassMat.onBeforeCompile = sh => {
+  Object.assign(sh.uniforms, GU);
+  sh.vertexShader = sh.vertexShader.replace('#include <common>', `#include <common>
+attribute vec3 offset;attribute vec3 par;uniform float uTime,uAspect;uniform vec3 uPlayer;
+varying float vH;varying float vFl;varying float vAng;varying vec3 vGCol;`).replace('#include <begin_vertex>', `
+float hgt=position.y;
+float tone=fract(sin(dot(offset.xz,vec2(12.9898,78.233)))*43758.5453);
+float fl=step(.955,tone);
+float s=par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.);
+vec3 gp=position;gp.y*=s;gp.xz*=(fl>.5?3.5:1.);
+float gc=cos(par.x),gsn=sin(par.x);
+vec3 transformed=vec3(gp.x*gc-gp.z*gsn,gp.y,gp.x*gsn+gp.z*gc);
+float gw=sin(uTime*1.6+offset.x*.21+offset.z*.17)*.3+sin(uTime*2.7+offset.z*.4)*.1;
+float bend=hgt*hgt*s;
+transformed.x+=(par.z+gw)*bend;transformed.z+=(par.z*.5+gw*.6)*bend;
+vec2 gdp=offset.xz-uPlayer.xz;float gpd=length(gdp);
+transformed.xz+=gdp/(gpd+.001)*(1.-smoothstep(0.,1.5,gpd))*.9*hgt*s;
+transformed+=offset;
+vH=hgt;vFl=fl;
+vGCol=(fl>.5&&hgt>.45)?vec3(.85,.88,.82):mix(vec3(.015,.04,.03),mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),hgt)*(.75+.5*fract(tone*7.3));
+vec3 gtip=offset+vec3((par.z+gw)*s,s,(par.z*.5+gw*.6)*s);
+vec4 GA=projectionMatrix*viewMatrix*vec4(offset,1.),GB=projectionMatrix*viewMatrix*vec4(gtip,1.);
+vec2 gd=GB.xy/GB.w-GA.xy/GA.w;gd.x*=uAspect;float gan=atan(gd.y,gd.x);if(gan<0.)gan+=3.14159265;vAng=gan/3.14159265;
+`);
+  sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>
+varying float vH;varying float vFl;varying float vAng;varying vec3 vGCol;`)
+    .replace('vec4 diffuseColor = vec4( diffuse, opacity );', 'vec4 diffuseColor = vec4( vGCol, opacity );')
+    .replace('#include <dithering_fragment>', `#include <dithering_fragment>
+gl_FragColor.a=(vFl>.5&&vH>.45)?.5:.02+fract(vAng)*.26;`);
+};
 const CH = 22, GR = 2, gchunks = new Map();
 function makeGrassChunk(cx, cz) {
   const rng = mulberry32((cx * 73856093) ^ (cz * 19349663)), N = 6500, off = new Float32Array(N * 3), par = new Float32Array(N * 3); let n = 0;
@@ -120,6 +115,7 @@ function makeGrassChunk(cx, cz) {
     if (Math.hypot(x, z) < 12 || pathDist(x, z) < 2) continue;
     if (insideCastle(x, z, -1) && r1 > .12) continue;
     if (rocky(x, z) && r1 > .2) continue;
+    if (scorched(x, z) > .3 && r1 > .05) continue;
     if (Math.abs(heightAt(x + 1, z) - h) + Math.abs(heightAt(x, z + 1) - h) > 1.5) continue;
     off[n * 3] = x; off[n * 3 + 1] = h - .05; off[n * 3 + 2] = z;
     par[n * 3] = r2 * 6.283; par[n * 3 + 1] = .45 + r3 * .55; par[n * 3 + 2] = (r4 - .5) * .7; n++;
@@ -128,7 +124,7 @@ function makeGrassChunk(cx, cz) {
   g.setAttribute('offset', new THREE.InstancedBufferAttribute(off.slice(0, n * 3), 3));
   g.setAttribute('par', new THREE.InstancedBufferAttribute(par.slice(0, n * 3), 3));
   g.instanceCount = n; g.boundingSphere = new THREE.Sphere(new THREE.Vector3((cx + .5) * CH, 0, (cz + .5) * CH), CH + 30);
-  const m = new THREE.Mesh(g, grassMat); scene.add(m); return { mesh: m, cx, cz };
+  const m = new THREE.Mesh(g, grassMat); m.receiveShadow = true; m.castShadow = false; scene.add(m); return { mesh: m, cx, cz };
 }
 export function updateGrass(px, pz, limit) {
   const pcx = Math.floor(px / CH), pcz = Math.floor(pz / CH); let made = 0;
@@ -144,7 +140,7 @@ export function updateGrass(px, pz, limit) {
   const rng = mulberry32(1234), T = [];
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z), f = fbm(x * .022 + 100, z * .022 - 50, 3), r = rng();
-    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z)) continue;
+    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z)) continue;
     if (f < .46 || (f < .54 && r > (f - .46) * 12)) continue;
     T.push({ x, z, h, s: .8 + rng() * .9, ry: rng() * 6.28, c: rng(), pine: rng() < .45 });
   }
@@ -153,8 +149,9 @@ export function updateGrass(px, pz, limit) {
   const leafM = () => lam(0xffffff, MID.LEAF);
   const p1 = new THREE.InstancedMesh(new THREE.ConeGeometry(1.9, 3.2, 7).translate(0, 3.1, 0), leafM(), pines.length);
   const p2 = new THREE.InstancedMesh(new THREE.ConeGeometry(1.35, 2.6, 7).translate(0, 4.8, 0), leafM(), pines.length);
-  const r1 = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), leafM(), rounds.length);
-  const r2 = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), leafM(), rounds.length);
+  const blob = seed => { const g = new THREE.IcosahedronGeometry(1, 2), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), f = .78 + vnoise(x * 2.2 + seed + z, y * 2.2 - z) * .45; p.setXYZ(i, x * f, y * f * (y < 0 ? .7 : 1), z * f); } g.computeVertexNormals(); return g; };
+  const r1 = new THREE.InstancedMesh(blob(1), leafM(), rounds.length);
+  const r2 = new THREE.InstancedMesh(blob(7), leafM(), rounds.length);
   T.forEach((t, i) => {
     Q.setFromAxisAngle(AX, t.ry); PV.set(t.x, t.h - .1, t.z); SV.set(t.s, t.s * (t.pine ? 1 : .8), t.s); M4.compose(PV, Q, SV); trunks.setMatrixAt(i, M4);
     addCollider(t.x, t.z, .55 * t.s, 'tree');
@@ -302,7 +299,7 @@ export const crystals = [];
     let x, z, t = 0; do { const a = rng() * 6.28, d = 45 + rng() * 120; x = Math.cos(a) * d; z = Math.sin(a) * d; t++; } while (!isLand(x, z, 0, 12) && t < 200);
     const h = heightAt(x, z), g = new THREE.Group();
     const c = new THREE.Mesh(new THREE.OctahedronGeometry(.6), gm); c.scale.y = 1.8; c.position.y = 1.5;
-    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 30, 4, 1, true), gm); beam.position.y = 15;
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 9, 4, 1, true), basic(0x1d3a52, MID.GLOW)); beam.position.y = 5.5;
     g.add(c, beam); g.position.set(x, h, z); scene.add(g); crystals.push({ id: i, x, z, mesh: g, gem: c, taken: false });
   }
 }
@@ -320,7 +317,7 @@ export const CIRCLE = findLand(118, -96);
   const L = new THREE.PointLight(0xffddaa, 1.4, 30); L.position.y = 3; g.add(alt, orb, beam, L);
   g.position.set(CIRCLE.x, h, CIRCLE.z); scene.add(g); CIRCLE.orb = orb;
 }
-export const LAIR = findLand(-118, -38);
+
 {
   const webM = tag(new THREE.LineBasicMaterial({ color: 0xd5dde8 }), MID.GLOW), rng = mulberry32(31);
   const web = (x, z, R, ry, tilt) => {
@@ -338,15 +335,24 @@ export const LAIR = findLand(-118, -38);
 
 /* ================= animasyon ================= */
 export function updateWorld(t) {
-  waterMat.uniforms.uTime.value = t; grassMat.uniforms.uTime.value = t;
+  waterMat.uniforms.uTime.value = t; GU.uTime.value = t;
   const fl = 1 + Math.sin(t * 17) * .12 + Math.sin(t * 29) * .08;
   fireLight.intensity = 2.2 * fl; gateLight.intensity = 1.6 * (1 + Math.sin(t * 13 + 1) * .12);
   for (const f of flames) { const k = 1 + Math.sin(t * 15 + f.ph) * .12 + Math.sin(t * 23 + f.ph) * .07; f.m.scale.set(f.s * k, f.s * k * (1 + Math.sin(t * 11 + f.ph) * .15), f.s * k); }
   lampLights.forEach(l => l.intensity = ENV.night * 1.6);
-  grassMat.uniforms.uLampI.value = .2 + .4 * ENV.night;
   for (const c of crystals) if (!c.taken) { c.gem.rotation.y = t * 1.5; c.gem.position.y = 1.5 + Math.sin(t * 2 + c.id) * .25; }
   CIRCLE.orb.rotation.y = t; CIRCLE.orb.position.y = 2 + Math.sin(t * 1.5) * .3;
 }
-export function setShadows(list) {
-  for (let i = 0; i < 12; i++) { const s = list[i]; if (s) shadowSlots[i].set(s.x, 0, s.z, s.r); else shadowSlots[i].w = 0; }
+/* Ejderha yuvası: kuzeybatı dağ eteğinde yanık toprak ve kemikler */
+
+{
+  const rng = mulberry32(666), bm = lam(0xbdb39a, MID.STONE), ash = lam(0x1a1614, MID.STONE);
+  for (let i = 0; i < 26; i++) {
+    const a = rng() * 6.28, d = 5 + rng() * 14, x = DRAGON_LAIR.x + Math.cos(a) * d, z = DRAGON_LAIR.z + Math.sin(a) * d, h = heightAt(x, z);
+    const m = new THREE.Mesh(i % 3 ? new THREE.CylinderGeometry(.08, .1, 1.4 + rng() * 1.5, 6) : new THREE.SphereGeometry(.35, 8, 6), i % 5 ? bm : ash);
+    m.position.set(x, h + .2, z); m.rotation.set(rng() * 2 - 1, rng() * 3, rng() * 2 - 1); scene.add(m);
+  }
+  for (let i = 0; i < 10; i++) { const a = rng() * 6.28, d = rng() * 12; box(1.4 + rng() * 2, .5 + rng(), 1.2 + rng(), ash, DRAGON_LAIR.x + Math.cos(a) * d, heightAt(DRAGON_LAIR.x + Math.cos(a) * d, DRAGON_LAIR.z + Math.sin(a) * d) + .1, DRAGON_LAIR.z + Math.sin(a) * d, rng() * 3); }
 }
+/* Tüm statik dünya nesneleri gölge atar ve alır */
+scene.traverse(o => { if (o.isMesh && !o.userData.noShadow) { o.castShadow = true; o.receiveShadow = true; } });
