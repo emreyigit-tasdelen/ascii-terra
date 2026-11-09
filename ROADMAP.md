@@ -63,9 +63,12 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [ ] Başarımlar, unvanlar
 
 ## Faz 5 — Çok oyunculu (MMO)
-- [ ] Node.js + WebSocket yetkili sunucu, sabit tick simülasyonu
-- [ ] Oyuncu senkronu, tahmin + uzlaştırma, ilgi alanı (AOI) filtresi
-- [ ] PVP düello daveti ("X seni düelloya davet ediyor", video), parti, sohbet
+- [x] Bağımlılıksız Node.js sunucusu (statik + WebSocket), oyuncu varlığı, sohbet, host seçimi ve devri
+- [x] Host yetkili ortak oyun: düşman anlık görüntüleri, vuruş/öldürme yönlendirme, paylaşılan boss uyarıları ve cadı büyüleri
+- [ ] Tam sunucu yetkili simülasyon (düşman yapay zekâsı sunucuda, sabit tick), hile koruması
+- [~] Oyuncu senkronu (15 Hz + yumuşatma) yapıldı; tahmin + uzlaştırma, ilgi alanı (AOI) filtresi yapılacak
+- [x] Sohbet
+- [ ] PVP düello daveti ("X seni düelloya davet ediyor", video), parti, ortak görev ilerlemesi
 - [ ] Hesap sistemi, sunucu tarafı kayıt (veritabanı), hile koruması
 - [ ] Ölçekleme: bölge sunucuları
 

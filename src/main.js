@@ -4,6 +4,7 @@ import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV,
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
+import { NET, connectNet, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion } from './game.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: kamera ufka kadar indirilebilir (uzağı görmek için)
@@ -13,6 +14,13 @@ let started = false, last = performance.now(), T = 0, saveT = 0, regT = 0;
 
 /* ---------------- girdi ---------------- */
 addEventListener('keydown', e => {
+  const ae = document.activeElement;
+  if (ae && ae.tagName === 'INPUT') {   // yazı alanındayken oyun tuşları çalışmaz
+    if (ae.id === 'chatin') { if (e.key === 'Enter') { e.preventDefault(); chatToggle(); } else if (e.key === 'Escape') chatCancel(); }
+    else if (ae.id === 'pname' && e.key === 'Enter') $('go').click();
+    return;
+  }
+  if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
   const k = e.key.toLowerCase();
   if ('wasd'.includes(k) && k.length === 1) keys[k] = true;
   if (e.key === 'Shift') keys.shift = true;
@@ -46,16 +54,21 @@ addEventListener('beforeunload', () => { if (started) save(); });
 
 /* ---------------- başlat ---------------- */
 function begin(fresh) {
+  const nm = ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Senje';
+  try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
+  NET.name = nm;
   if (fresh) resetSave(); else load();
   applyState(); buildHotbar();
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
   started = true; $('overlay').hidden = true; $('hud').hidden = false;
+  connectNet(nm);
   setTimeout(() => { if (!$('help').hidden) toggleHelp(); }, 15000);
 }
 $('go').onclick = () => begin(false);
 $('new').onclick = () => begin(true);
 if (hasSave()) { $('new').hidden = false; $('go').textContent = 'Devam et'; }
+try { $('pname').value = localStorage.getItem('asciiTerraName') || 'Senje'; } catch (e) { $('pname').value = 'Senje'; }
 
 /* ---------------- kamera (takip + sarsıntı) ---------------- */
 function updateCamera(dt, run) {
@@ -80,15 +93,20 @@ function embers(dt, px, pz) {
 /* ---------------- ana döngü ---------------- */
 resize();
 P.y = heightAt(P.x, P.z); updateGrass(0, 8, 999);
-function frame(now) {
-  requestAnimationFrame(frame);
+// Kare döngüsü + yedek zamanlayıcı: sekme arka planda kalınca requestAnimationFrame durur;
+// o zaman simülasyon ve ağ trafiği zamanlayıcıyla (çizim yapmadan) sürer.
+let lastFrameAt = performance.now();
+function loop(now) { requestAnimationFrame(loop); frame(now, true); }
+setInterval(() => { const n = performance.now(); if (n - lastFrameAt > 250) frame(n, false); }, 100);
+function frame(now, draw) {
+  lastFrameAt = now;
   const rdt = Math.min(.05, (now - last) / 1000); last = now; T += rdt;
   let dt = rdt; if (FXS.stop > 0) { FXS.stop -= rdt; dt = rdt * .05; }   // vuruşta kısa durma
   const run = started;
   beginLabels();
   if (run) {
     if (MOUSE.lmb) doSlash();
-    updatePlayer(dt); updateEnemies(dt); updateEffects(dt);
+    updatePlayer(dt); updateEnemies(dt); updateEffects(dt); updateNet(rdt);
     saveT += rdt; if (saveT > 8) { saveT = 0; save(); }
   }
   updateNPCs(rdt); updateFX(dt);
@@ -107,7 +125,7 @@ function frame(now) {
   GU.uPlayer.value.set(P.x, P.y, P.z); GU.uAspect.value = camera.aspect;
   if (run) { actorLabels(); updateHUD(rdt); regT -= rdt; if (regT <= 0) { regT = .5; showRegion(regionAt(P.x, P.z)); } }
   endLabels();
-  renderFrame(T, clamp(P.hurtT * 2, 0, .6));
+  if (draw) renderFrame(T, clamp(P.hurtT * 2, 0, .6));
 }
-requestAnimationFrame(frame);
-window.__game = { P, enemies, get S() { return S; }, ENV, cam, begin };
+requestAnimationFrame(loop);
+window.__game = { P, enemies, get S() { return S; }, ENV, cam, begin, NET };

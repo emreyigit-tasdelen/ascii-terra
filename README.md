@@ -47,21 +47,39 @@ hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone
 - Animation: spring-smoothed joints, walk/run blending, hip sway and counter-rotating shoulders, 3-hit sword combo,
   real dodge roll, jumping, hit flinches, cape physics, wolf trot/gallop, spider stepping, segmented dragon neck and tail
 - Real-time shadows, shiny metal armour, blood / bone / spark particles, blood decals, hit-stop and camera shake
-- 9-quest chain (village + swamp camp), inventory and equipment (weapon / armor), loot drops, leveling
+- 9-quest chain (village + swamp camp)
+- **Online co-op multiplayer** with a zero-dependency Node.js server, chat and automatic host migration, inventory and equipment (weapon / armor), loot drops, leveling
 - Day / night cycle, rain, auto-save in the browser
 
 ## Run it
 
-The game uses ES modules, so it needs a local web server (opening `index.html` directly will not work).
+### Multiplayer (recommended) — Node.js, zero dependencies
 
 ```bash
 git clone https://github.com/emreyigit-tasdelen/ascii-terra.git
 cd ascii-terra
-python -m http.server 8765
+node server/server.js
 ```
 
-Then open <http://localhost:8765/index.html>. On Windows you can simply double-click `baslat.bat`.
-Any static file server works (for example `npx serve`). A WebGL2-capable browser is required.
+Open <http://localhost:8765>. Friends on the same network open `http://<your-local-ip>:8765` (the server prints the address).
+On Windows you can simply double-click `baslat.bat`. Change the port with `PORT=9000 node server/server.js`.
+
+### Single player only
+
+Any static file server works, e.g. `python -m http.server 8765`. Without the Node server the game silently runs offline.
+A WebGL2-capable browser is required; opening `index.html` directly from disk will not work (ES modules).
+
+## Multiplayer
+
+- Up to 32 players share one world. Each knight gets a coloured tabard, a name tag and a health bar.
+- **Host-authoritative co-op:** the first visible player simulates enemies and bosses; others receive compact snapshots
+  (10 Hz) and send their hits to the host. If the host leaves or switches tab, the role moves to another player automatically.
+- Boss ground telegraphs and witch hexes are shared; every client checks damage for its own knight, so dodging stays responsive.
+- Kill rewards (XP, loot, quest progress) go to the player who landed the final blow. Quests and inventory are per player.
+- Chat: press `Enter`, type, `Enter` to send.
+- The server is a single dependency-free file (`server/server.js`): static files + a minimal WebSocket implementation,
+  path-traversal and dotfile protection, message size and rate limits, sanitised names and chat.
+- To play over the internet, run the server on a VPS or any Node host and put it behind HTTPS; the client switches to `wss://` automatically.
 
 ## Controls
 
@@ -74,6 +92,7 @@ Any static file server works (for example `npx serve`). A WebGL2-capable browser
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
+| `Enter` | chat (multiplayer) |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
 | Right-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
@@ -101,7 +120,9 @@ src/models.js           knight, NPC, skeleton, wolf and spider models + animatio
 src/actors.js           player, enemy AI, skills, projectiles, telegraphs
 src/fx.js               particles, blood decals, hit-stop, camera shake
 src/game.js             state, items, quests, dialogue, save, HUD
+src/net.js              multiplayer client: remote knights, chat, enemy snapshots
 src/main.js             input, camera, main loop
+server/server.js        zero-dependency Node.js server (static files + WebSocket)
 legacy/                 the original single-file prototype
 ```
 

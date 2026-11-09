@@ -60,3 +60,12 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 #region{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-size:22px;letter-spacing:6px;color:#d8d2c0;text-shadow:0 0 8px #000,0 0 3px #000;opacity:0;white-space:nowrap}
 #region.show{animation:regionIn 4.5s forwards}
 @keyframes regionIn{0%{opacity:0;letter-spacing:14px}15%{opacity:1;letter-spacing:6px}75%{opacity:1}100%{opacity:0}}
+#net{position:absolute;right:10px;top:8px;font-size:10px;color:#777}#net.on{color:#7fd38a}
+#help{top:24px}
+#chat{position:absolute;left:10px;bottom:96px;width:min(420px,60vw);pointer-events:none}
+#chatlog .cl{font-size:11px;color:#ddd;text-shadow:0 0 3px #000,0 0 2px #000;line-height:1.45;transition:opacity 2s}
+#chatlog .cl b{color:#9fc4ff}#chatlog .cl.me b{color:#ffd88a}#chatlog .cl.sys{color:#999;font-style:italic}#chatlog .cl.old{opacity:.25}
+#chatin{pointer-events:auto;width:100%;margin-top:4px;font:inherit;font-size:12px;background:rgba(0,0,0,.8);color:#eee;border:1px solid #888;padding:4px 6px;outline:none}
+.lbl.ally{color:#9fc4ff}
+#overlay p.name{font-size:13px;color:#ccc}
+#pname{font:inherit;font-size:14px;background:#111;color:#fff;border:1px solid #888;padding:4px 8px;width:170px;text-align:center}

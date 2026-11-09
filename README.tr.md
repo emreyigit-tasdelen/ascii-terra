@@ -47,21 +47,39 @@ kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de ye
 - Animasyon: yaylı eklemler, yürüme/koşma geçişi, kalça sallanması ve omuz karşı dönüşü, 3 vuruşluk kılıç kombosu,
   gerçek takla, zıplama, darbe sarsılması, fizikli pelerin, kurtta tırıs/dörtnala, örümcek adımı, eklemli ejderha boynu ve kuyruğu
 - Gerçek zamanlı gölgeler, parlayan metal zırh, kan / kemik / kıvılcım parçacıkları, yerde kan izleri, vuruş durması ve kamera sarsıntısı
-- 9 görevlik zincir (köy + bataklık kampı), envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
+- 9 görevlik zincir (köy + bataklık kampı)
+- **Çevrim içi ortak çok oyunculu**: bağımlılıksız Node.js sunucusu, sohbet ve otomatik host devri, envanter ve ekipman (silah / zırh), düşen eşyalar, seviye atlama
 - Gece / gündüz döngüsü, yağmur, tarayıcıda otomatik kayıt
 
 ## Çalıştırma
 
-Oyun ES modülleri kullandığı için yerel bir web sunucusu gerekir (`index.html`'e çift tıklamak çalışmaz).
+### Çok oyunculu (önerilen) — Node.js, sıfır bağımlılık
 
 ```bash
 git clone https://github.com/emreyigit-tasdelen/ascii-terra.git
 cd ascii-terra
-python -m http.server 8765
+node server/server.js
 ```
 
-Sonra <http://localhost:8765/index.html> adresini aç. Windows'ta `baslat.bat`'a çift tıklaman yeterli.
-Herhangi bir statik dosya sunucusu da olur (örneğin `npx serve`). WebGL2 destekli bir tarayıcı gerekir.
+<http://localhost:8765> adresini aç. Aynı ağdaki arkadaşların `http://<yerel-ip-adresin>:8765` adresine girer (sunucu adresi ekrana yazar).
+Windows'ta `baslat.bat`'a çift tıklaman yeterli. Portu `PORT=9000 node server/server.js` ile değiştirebilirsin.
+
+### Yalnız tek oyunculu
+
+Herhangi bir statik dosya sunucusu olur, ör. `python -m http.server 8765`. Node sunucusu yoksa oyun sessizce çevrimdışı çalışır.
+WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak çalışmaz (ES modülleri).
+
+## Çok oyunculu
+
+- 32 oyuncuya kadar aynı dünyayı paylaşır. Her şövalyenin renkli tabardı, isim etiketi ve can çubuğu vardır.
+- **Host yetkili ortak oyun:** ilk görünür oyuncu düşmanları ve bossları çalıştırır; diğerleri sıkıştırılmış anlık görüntüler alır
+  (10 Hz) ve vuruşlarını host'a gönderir. Host çıkarsa ya da sekmesini değiştirirse rol otomatik olarak başka oyuncuya geçer.
+- Boss uyarı daireleri ve cadı lanetleri herkese gider; her istemci hasarı kendi şövalyesi için kontrol eder, böylece kaçmak gecikmesiz kalır.
+- Öldürme ödülleri (XP, ganimet, görev ilerlemesi) son darbeyi vurana gider. Görevler ve envanter oyuncuya özeldir.
+- Sohbet: `Enter`'a bas, yaz, `Enter` ile gönder.
+- Sunucu tek, bağımlılıksız bir dosyadır (`server/server.js`): statik dosyalar + küçük bir WebSocket uygulaması,
+  yol gezinmesi ve gizli dosya koruması, mesaj boyutu ve hız sınırları, temizlenmiş isim ve sohbet.
+- İnternet üzerinden oynamak için sunucuyu bir VPS'te ya da herhangi bir Node barındırmada HTTPS arkasında çalıştır; istemci otomatik olarak `wss://` kullanır.
 
 ## Kontroller
 
@@ -74,6 +92,7 @@ Herhangi bir statik dosya sunucusu da olur (örneğin `npx serve`). WebGL2 deste
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
+| `Enter` | sohbet (çok oyunculu) |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
 | Sağ tık sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
@@ -99,7 +118,9 @@ src/models.js           şövalye, NPC, iskelet, kurt ve örümcek modelleri + a
 src/actors.js           oyuncu, düşman yapay zekâsı, beceriler, mermiler, uyarı daireleri
 src/fx.js               parçacıklar, kan izleri, vuruş durması, kamera sarsıntısı
 src/game.js             durum, eşyalar, görevler, diyalog, kayıt, arayüz
+src/net.js              çok oyunculu istemci: diğer şövalyeler, sohbet, düşman anlık görüntüleri
 src/main.js             girdi, kamera, ana döngü
+server/server.js        bağımlılıksız Node.js sunucusu (statik dosyalar + WebSocket)
 legacy/                 ilk tek dosyalık prototip
 ```
 

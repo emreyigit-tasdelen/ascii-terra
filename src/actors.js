@@ -8,6 +8,7 @@ import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
 import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
+import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
 
 let T = 0;
 
@@ -59,7 +60,7 @@ function spawnEnemy(kind, x, z, lvlOverride) {
   const e = { k, rig, lvl, hpMax: Math.round(k.hp * f), dmg: Math.round(k.dmg * (1 + .18 * (lvl - 1))), xp: Math.round(k.xp * (1 + .35 * (lvl - 1))), gold: Math.round(k.gold * f),
     x, z, y: heightAt(x, z), home: { x, z }, wx: x, wz: z, wt: 0, cd: 0, atkT: -1, atkType: 0, hit: false, dead: false, deadT: 0, respawnT: 0, hurtT: 0, hitT: 0, kx: 0, kz: 0,
     face: Math.random() * 6.28, ph: Math.random() * 6, moving: false, run: 0, provoked: 0, special: 4, special2: 9, flash: false, lungeT: 0 };
-  e.hp = e.hpMax; rig.g.position.set(x, e.y, z); enemies.push(e); return e;
+  e.hp = e.hpMax; e.idx = enemies.length; rig.g.position.set(x, e.y, z); enemies.push(e); return e;
 }
 {
   const rng = mulberry32(99); let s = 0, w = 0, c = 0, dk = 0;
@@ -92,7 +93,8 @@ function blast(x, z, r, type = 'fire') {
   const m = new THREE.Mesh(new THREE.RingGeometry(.75, 1, 40).rotateX(-Math.PI / 2), blastM); m.position.set(x, heightAt(x, z) + .1, z); m.scale.setScalar(.3); scene.add(m);
   effects.push({ type: 'blast', m, r, t: 0 }); burst(type, x, heightAt(x, z) + .4, z, Math.round(6 + r * 3));
 }
-function telegraph(x, z, r, delay, dmg, fire) {
+export function telegraph(x, z, r, delay, dmg, fire, net = true) {
+  if (net && isHost()) sendNet({ t: 'tele', x, z, r, dl: delay, d: dmg, f: fire ? 1 : 0 });
   const y = heightAt(x, z) + .08;
   const m = new THREE.Mesh(new THREE.RingGeometry(r - .3, r, 48).rotateX(-Math.PI / 2), fireRingM); m.position.set(x, y, z); scene.add(m);
   const inner = new THREE.Mesh(new THREE.CircleGeometry(r, 40).rotateX(-Math.PI / 2), fireFillM); inner.position.set(x, y + .01, z); inner.scale.setScalar(.01); scene.add(inner);
@@ -119,21 +121,32 @@ export function updateEffects(dt) {
     for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 1.2 + (e.k.scale || 1) * .6) { boom = true; break; }
     if (boom) {
       blast(p.x, p.z, 3.2);
-      for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5, p.x, p.z);
+      if (!p.visual) for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5, p.x, p.z);
       disposeMesh(p.m); projectiles.splice(i, 1);
     }
   }
   // düşman mermileri (cadı büyüsü): hafif güdümlü, yuvarlanarak ya da zıplayarak kaçılır
   for (let i = eproj.length - 1; i >= 0; i--) {
     const p = eproj[i]; p.life -= dt;
-    const dx = P.x - p.x, dz = P.z - p.z, d = Math.hypot(dx, dz) || 1;
+    const R = p.tid && p.tid !== NET.myId ? NET.remotes.get(p.tid) : null, me = !R;
+    const tx = R ? R.x : P.x, tz = R ? R.z : P.z, ty = R ? R.y : P.y, dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz) || 1;
     p.vx += (dx / d * 12 - p.vx) * dt * 1.2; p.vz += (dz / d * 12 - p.vz) * dt * 1.2;
     p.x += p.vx * dt; p.z += p.vz * dt; p.m.position.set(p.x, p.y, p.z); p.m.rotation.y += dt * 7;
     if (Math.random() < .8) burst('hex', p.x, p.y, p.z, 1);
     let gone = p.life <= 0;
-    if (d < 1 && Math.abs(P.y + 1.2 - p.y) < 1.1) { hurtPlayer(p.dmg); gone = true; }
+    if (d < 1 && Math.abs(ty + 1.2 - p.y) < 1.1) { if (me) hurtPlayer(p.dmg); gone = true; }
     if (gone) { burst('ichor', p.x, p.y, p.z, 10); disposeMesh(p.m); eproj.splice(i, 1); }
   }
+}
+
+export function spawnEproj(x, y, z, vx, vz, dmg, tid, net = true) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.3, 0), hexM); scene.add(m);
+  eproj.push({ m, x, y, z, vx, vz, life: 2.4, dmg, tid });
+  if (net && isHost()) sendNet({ t: 'ep', x, y, z, vx, vz, d: dmg, tid });
+}
+export function spawnFxNet(m) {
+  if (m.k === 'fb') { const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(mesh); projectiles.push({ m: mesh, x: m.x, y: heightAt(m.x, m.z) + 1.3, z: m.z, vx: m.vx, vz: m.vz, life: 1.1, visual: true }); }
+  else if (m.k === 'bl') blast(m.x, m.z, m.r || 4, 'spark');
 }
 
 /* ================= nişan + beceriler ================= */
@@ -161,9 +174,10 @@ export function doFireball() {
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(m);
   projectiles.push({ m, x: P.x + dx * .9, y: P.y + 1.3, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24, life: 1.1 });
+  sendNet({ t: 'fx', k: 'fb', x: P.x + dx * .9, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24 });
 }
 export function doWhirl() {
-  if (P.dead || CD.whirl > 0) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark');
+  if (P.dead || CD.whirl > 0) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
 }
 export function doDodge() {
@@ -176,25 +190,30 @@ export function doJump() {
   if (P.dead || P.air || P.dodgeT > 0) return; P.vy = 8.6; P.air = true; burst('dust', P.x, P.y + .05, P.z, 5);
 }
 const _dir = new THREE.Vector3();
-function hitEnemy(e, dmg, fromX, fromZ) {
+export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
   if (e.dead) return;
-  const crit = Math.random() < .12; dmg = Math.round(dmg * (crit ? 2 : 1));
-  e.hp -= dmg; e.hurtT = .12; e.hitT = e.k.boss ? .15 : .35; e.provoked = 6; TGT.e = e;
-  const dx = e.x - fromX, dz = e.z - fromZ, d = Math.hypot(dx, dz) || 1, kb = e.k.boss ? 1 : e.k.elite ? 2.5 : 7;
-  e.kx = dx / d * kb; e.kz = dz / d * kb;
-  const sc = e.k.scale || 1; _dir.set(dx / d, 0, dz / d);
+  const local = !o.remote, crit = o.crit ?? (Math.random() < .12); if (local) dmg = Math.round(dmg * (crit ? 2 : 1));
+  const dx = e.x - fromX, dz = e.z - fromZ, d = Math.hypot(dx, dz) || 1, sc = e.k.scale || 1; _dir.set(dx / d, 0, dz / d);
   burst(e.k.fx, e.x - dx / d * .3 * sc, e.y + e.k.h * .45, e.z - dz / d * .3 * sc, crit ? 18 : 9, _dir);
-  hitFeel(crit ? .07 : .045, crit ? .3 : .14);
-  floatText((crit ? 'KRİTİK ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : '');
-  if (e.hp <= 0) killEnemy(e);
+  floatText((crit ? 'KRİTİK ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : (local ? '' : 'info'));
+  e.hurtT = .12; e.hitT = e.k.boss ? .15 : .35;
+  if (local) { TGT.e = e; hitFeel(crit ? .07 : .045, crit ? .3 : .14); }
+  if (isClient() && local) { e.hp -= dmg; sendNet({ t: 'hit', e: e.idx, d: dmg, c: crit, x: fromX, z: fromZ }); return; }   // karar host'ta
+  e.hp -= dmg; e.provoked = 6;
+  const kb = e.k.boss ? 1 : e.k.elite ? 2.5 : 7; e.kx = dx / d * kb; e.kz = dz / d * kb;
+  if (e.hp <= 0) killEnemy(e, o.by);
 }
-function killEnemy(e) {
+function killEnemy(e, by) {
   e.dead = true; e.deadT = 7; e.respawnT = e.k.respawn || 35; e.atkT = -1;
-  S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
   burst(e.k.fx, e.x, e.y + e.k.h * .4, e.z, e.k.boss ? 60 : 22);
+  if (e.k.boss || e.k.elite) hitFeel(.15, .6);
+  if (by && by !== NET.myId) sendNet({ t: 'kill', to: by, e: e.idx }); else grantKill(e);
+}
+export function grantKill(e) {   // ödül öldüren oyuncuya
+  S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
   rollDrop(e.k.id, e.lvl); addXP(e.xp); S.gold += e.gold;
   floatText('+' + e.xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
-  if (e.k.boss || e.k.elite) { toast(e.k.name + ' yenildi!'); hitFeel(.15, .6); }
+  if (e.k.boss || e.k.elite) toast(e.k.name + ' yenildi!');
   checkQuests();
 }
 export function hurtPlayer(d) {
@@ -220,53 +239,71 @@ function animate(e, dt) {
   else if (e.k.anim === 'spider') animSpider(r, st);
   else if (e.k.anim === 'dragon') animDragon(r, st);
 }
+/* hedef seçimi: en yakın canlı oyuncu (host'ta uzak oyuncular da aday) */
+const myTid = () => NET.online ? NET.myId : 0;
+function targetFor(e) {
+  let best = P.dead ? null : { x: P.x, y: P.y, z: P.z, id: myTid(), local: true }, bd = best ? Math.hypot(P.x - e.x, P.z - e.z) : 1e9;
+  if (isHost()) for (const R of remoteTargets()) { const d = Math.hypot(R.x - e.x, R.z - e.z); if (d < bd) { bd = d; best = { x: R.x, y: R.y, z: R.z, id: R.id, local: false }; } }
+  return best || { x: P.x, y: P.y, z: P.z, id: myTid(), local: true, dead: true };
+}
+function nearestPlayerDist(x, z) { let d = Math.hypot(P.x - x, P.z - z); if (isHost()) for (const R of remoteTargets()) d = Math.min(d, Math.hypot(R.x - x, R.z - z)); return d; }
+function dmgTarget(tg, d) { if (tg.local) hurtPlayer(d); else sendNet({ t: 'dmg', to: tg.id, d }); }
+function deadAnim(e, dt) {
+  const g = e.rig.g; setFlash(e, false);
+  if (e.deadT > 0) {
+    e.deadT -= dt;
+    const fall = Math.min(1, (7 - e.deadT) / .6), ez = fall * fall;
+    if (e.k.biped) { g.rotation.x = -ez * 1.45; if (e.rig.legL) { e.rig.legL.kn.rotation.x = e.rig.legR.kn.rotation.x = (1 - ez) * .8 + .2; } }
+    else g.rotation.z = ez * (e.k.anim === 'spider' ? Math.PI * .95 : 1.5);
+    if (e.deadT < 1.2) g.position.y -= dt * 1.2;
+    if (e.deadT <= 0) g.visible = false;
+  }
+}
+function decorate(e, dLocal) {
+  const g = e.rig.g;
+  g.position.set(e.x, e.y + (e.k.ranged ? Math.sin(T * 1.6 + e.ph) * .06 : 0), e.z); g.rotation.y = e.face;
+  if (e.breathT > 0 && e.k.id === 'dragon') { const hx = e.x + Math.sin(e.face) * 7.5, hz = e.z + Math.cos(e.face) * 7.5; burst('fire', hx, e.y + 4, hz, 3, _dir.set(Math.sin(e.face), -.3, Math.cos(e.face))); }
+  if (e.k.ranged && e.atkT >= 0 && e.atkT < .5) burst('hex', e.x + Math.sin(e.face) * .4, e.y + 2.1, e.z + Math.cos(e.face) * .4, 1);
+  setFlash(e, e.hurtT > 0);
+  if (dLocal < 18 || TGT.e === e) label(e.k.name + ' · sv ' + e.lvl, e.x, e.y + e.k.h * (e.k.scale && !e.k.boss ? e.k.scale : 1), e.z, (e.k.boss || e.k.elite) ? 'foe boss' : 'foe', e.hp / e.hpMax);
+}
 function updateEnemy(e, dt) {
   const g = e.rig.g;
   if (e.dead) {
-    setFlash(e, false);
-    if (e.deadT > 0) {
-      e.deadT -= dt;
-      const fall = Math.min(1, (7 - e.deadT) / .6), ez = fall * fall;
-      if (e.k.biped) { g.rotation.x = -ez * 1.45; if (e.rig.legL) { e.rig.legL.kn.rotation.x = e.rig.legR.kn.rotation.x = (1 - ez) * .8 + .2; } }
-      else g.rotation.z = ez * (e.k.anim === 'spider' ? Math.PI * .95 : 1.5);
-      if (e.deadT < 1.2) g.position.y -= dt * 1.2;
-      if (e.deadT <= 0) g.visible = false;
-    }
+    deadAnim(e, dt);
     e.respawnT -= dt;
-    if (e.respawnT <= 0 && Math.hypot(P.x - e.home.x, P.z - e.home.z) > 50) {
+    if (e.respawnT <= 0 && nearestPlayerDist(e.home.x, e.home.z) > 50) {
       e.dead = false; e.hp = e.hpMax; e.x = e.home.x; e.z = e.home.z; g.visible = true; g.rotation.set(0, 0, 0);
     }
     return;
   }
-  const dxp = P.x - e.x, dzp = P.z - e.z, d = Math.hypot(dxp, dzp);
+  const tg = targetFor(e), dxp = tg.x - e.x, dzp = tg.z - e.z, d = Math.hypot(dxp, dzp), dLocal = Math.hypot(P.x - e.x, P.z - e.z);
   if (d > 90) { g.visible = false; return; }
-  g.visible = true;
+  g.visible = dLocal < 95;
   e.cd -= dt; e.hurtT -= dt; e.hitT -= dt; e.provoked -= dt; e.lungeT -= dt; if (e.breathT > 0) e.breathT -= dt;
   const aggro = e.k.aggro * (ENV.night > .5 ? 1.3 : 1);
   let tx = e.wx, tz = e.wz, sp = e.k.spd * .35; e.chasing = false; e.run = 0;
-  if (e.lungeT > 0) { sp = 0; e.x += e.lx * dt; e.z += e.lz * dt; if (d < 1.6 && !e.hit) { e.hit = true; hurtPlayer(e.dmg * 1.3); } }
+  if (e.lungeT > 0) { sp = 0; e.x += e.lx * dt; e.z += e.lz * dt; if (d < 1.6 && !e.hit) { e.hit = true; dmgTarget(tg, e.dmg * 1.3); } }
   else if (e.atkT >= 0) {
-    e.atkT += dt / e.k.atkTime; sp = 0; tx = P.x; tz = P.z;
+    e.atkT += dt / e.k.atkTime; sp = 0; tx = tg.x; tz = tg.z;
     if (!e.hit && e.atkT > .5) {
       e.hit = true;
-      if (e.k.ranged) {   // cadı: yeşil büyü fırlatır
-        const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.3, 0), hexM); scene.add(m); const ux = dxp / (d || 1), uz = dzp / (d || 1);
-        eproj.push({ m, x: e.x + ux, y: e.y + 1.7, z: e.z + uz, vx: ux * 10, vz: uz * 10, life: 2.4, dmg: e.dmg });
-      } else if (e.k.id === 'troll') { telegraph(e.x + Math.sin(e.face) * 3, e.z + Math.cos(e.face) * 3, 3.2, .05, e.dmg); hitFeel(.05, .45); }
-      else if (d < e.k.reach + .7) hurtPlayer(e.dmg);
+      if (e.k.ranged) { const ux = dxp / (d || 1), uz = dzp / (d || 1); spawnEproj(e.x + ux, e.y + 1.7, e.z + uz, ux * 10, uz * 10, e.dmg, tg.id); }
+      else if (e.k.id === 'troll') { telegraph(e.x + Math.sin(e.face) * 3, e.z + Math.cos(e.face) * 3, 3.2, .05, e.dmg); hitFeel(.05, .45); }
+      else if (d < e.k.reach + .7) dmgTarget(tg, e.dmg);
     }
     if (e.atkT >= 1) e.atkT = -1;
-  } else if ((d < aggro || e.provoked > 0) && !P.dead) {
-    tx = P.x; tz = P.z; sp = e.k.spd; e.chasing = true; e.run = 1;
-    if (e.k.ranged) {      // mesafe korur
+  } else if ((d < aggro || e.provoked > 0) && !tg.dead) {
+    tx = tg.x; tz = tg.z; sp = e.k.spd; e.chasing = true; e.run = 1;
+    if (e.k.ranged) {
       if (d < 8) { tx = e.x - dxp; tz = e.z - dzp; sp = e.k.spd * .9; }
       else if (d < e.k.reach) { sp = 0; if (e.cd <= 0) { e.atkT = 0; e.hit = false; e.cd = e.k.atkCd; e.atkType = 2; } }
     } else if (d < e.k.reach) { sp = 0; if (e.cd <= 0) { e.atkT = 0; e.hit = false; e.cd = e.k.atkCd; e.atkType = Math.floor(Math.random() * 3); } }
-    else if (e.k.lunge && d > 3 && d < 6.5 && e.cd <= 0) {   // hortlak sıçraması
+    else if (e.k.lunge && d > 3 && d < 6.5 && e.cd <= 0) {
       e.lungeT = .38; e.hit = false; e.cd = 2.2; const ux = dxp / d, uz = dzp / d; e.lx = ux * 14; e.lz = uz * 14; burst('dust', e.x, e.y + .1, e.z, 5);
     }
-    if (e.k.id === 'troll') { e.special -= dt; if (e.special <= 0) { e.special = 6; telegraph(P.x, P.z, 4, 1.2, e.dmg * 1.3); } }
-    if (e.k.id === 'widow') { e.special -= dt; if (e.special <= 0) { e.special = 6.5; telegraph(P.x, P.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } }
+    if (e.k.id === 'troll') { e.special -= dt; if (e.special <= 0) { e.special = 6; telegraph(tg.x, tg.z, 4, 1.2, e.dmg * 1.3); } }
+    if (e.k.id === 'widow') { e.special -= dt; if (e.special <= 0) { e.special = 6.5; telegraph(tg.x, tg.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } }
     if (e.k.id === 'dragon') {
       e.special -= dt; e.special2 -= dt;
       if (e.special <= 0) {
@@ -281,23 +318,62 @@ function updateEnemy(e, dt) {
     tx = e.wx; tz = e.wz; if (Math.hypot(tx - e.x, tz - e.z) < 1) sp = 0;
   }
   let dx = tx - e.x, dz = tz - e.z; const dl = Math.hypot(dx, dz) || 1; dx /= dl; dz /= dl;
-  e.curSpd = lerp(e.curSpd || 0, sp, 1 - Math.exp(-6 * dt));      // ivmelenme
+  e.curSpd = lerp(e.curSpd || 0, sp, 1 - Math.exp(-6 * dt));
   const nx = e.x + (dx * e.curSpd + e.kx) * dt, nz = e.z + (dz * e.curSpd + e.kz) * dt;
   e.kx *= Math.max(0, 1 - 9 * dt); e.kz *= Math.max(0, 1 - 9 * dt);
   const gh = heightAt(nx, nz);
   if (gh > WATER - 1.2 && Math.abs(gh - e.y) < 1.6 * (e.k.scale || 1)) { const q = { x: nx, z: nz }; collide(q, e.k.boss ? 1.8 : e.k.elite ? 1 : .6); e.x = q.x; e.z = q.z; }
   e.y = heightAt(e.x, e.z); e.moving = e.curSpd > .3;
   const faceT = e.chasing || e.atkT >= 0 ? Math.atan2(dxp, dzp) : Math.atan2(dx, dz);
-  e.face += angDiff(e.face, (e.k.ranged && e.chasing) ? Math.atan2(dxp, dzp) : faceT) * Math.min(1, dt * (e.k.id === 'dragon' ? 2.5 : 8));
+  e.face += angDiff(e.face, faceT) * Math.min(1, dt * (e.k.id === 'dragon' ? 2.5 : 8));
   e.ph += dt * (e.moving ? (e.curSpd * 1.9 + 1) / (e.k.scale || 1) : 1);
-  animate(e, dt);
-  g.position.set(e.x, e.y + (e.k.ranged ? Math.sin(T * 1.6 + e.ph) * .06 : 0), e.z); g.rotation.y = e.face;
-  if (e.breathT > 0 && e.k.id === 'dragon') { const hx = e.x + Math.sin(e.face) * 7.5, hz = e.z + Math.cos(e.face) * 7.5; burst('fire', hx, e.y + 4, hz, 3, _dir.set(Math.sin(e.face), -.3, Math.cos(e.face))); }
-  if (e.k.ranged && e.atkT >= 0 && e.atkT < .5) burst('hex', e.x + Math.sin(e.face) * .4, e.y + 2.1, e.z + Math.cos(e.face) * .4, 1);
-  setFlash(e, e.hurtT > 0);
-  if (d < 18 || TGT.e === e) label(e.k.name + ' · sv ' + e.lvl, e.x, e.y + e.k.h * (e.k.scale && !e.k.boss ? e.k.scale : 1), e.z, (e.k.boss || e.k.elite) ? 'foe boss' : 'foe', e.hp / e.hpMax);
+  if (g.visible) { animate(e, dt); decorate(e, dLocal); }
 }
-export function updateEnemies(dt) { T += dt; for (const e of enemies) updateEnemy(e, dt); if (TGT.e && TGT.e.dead) TGT.e = null; }
+/* istemci: düşmanlar host'un anlık görüntülerinden yumuşatılarak çizilir */
+function updateEnemyRemote(e, dt) {
+  const g = e.rig.g;
+  if (e.netDead && !e.dead) { e.dead = true; e.deadT = 7; e.atkT = -1; burst(e.k.fx, e.x, e.y + e.k.h * .4, e.z, e.k.boss ? 60 : 22); }
+  if (!e.netDead && e.dead) { e.dead = false; if (e.nx != null) { e.x = e.nx; e.z = e.nz; } g.visible = true; g.rotation.set(0, 0, 0); }
+  if (e.dead) { deadAnim(e, dt); return; }
+  const dLocal = Math.hypot(P.x - e.x, P.z - e.z);
+  if (dLocal > 95) { g.visible = false; if (e.nx != null) { e.x = e.nx; e.z = e.nz; } return; }
+  g.visible = true;
+  e.hurtT -= dt; e.hitT -= dt; e.lungeT -= dt; if (e.breathT > 0) e.breathT -= dt;
+  const k = 1 - Math.exp(-10 * dt);
+  if (e.nx != null) { e.x = lerp(e.x, e.nx, k); e.z = lerp(e.z, e.nz, k); e.face += angDiff(e.face, e.nf) * k; }
+  e.y = heightAt(e.x, e.z); e.curSpd = e.nspd || 0; e.moving = e.curSpd > .3; e.run = e.chasing ? 1 : 0;
+  if (e.atkT >= 0) { e.atkT += dt / e.k.atkTime; if (e.atkT >= 1) e.atkT = -1; }
+  e.ph += dt * (e.moving ? (e.curSpd * 1.9 + 1) / (e.k.scale || 1) : 1);
+  animate(e, dt); decorate(e, dLocal);
+}
+export function updateEnemies(dt) {
+  T += dt; const cl = isClient();
+  for (const e of enemies) cl ? updateEnemyRemote(e, dt) : updateEnemy(e, dt);
+  if (TGT.e && TGT.e.dead) TGT.e = null;
+}
+/* host → istemciler: yakınında oyuncu olan düşmanların sıkıştırılmış durumu */
+export function snapshotRows() {
+  const rows = [], rem = remoteTargets(); if (!rem.length) return rows;
+  enemies.forEach((e, i) => {
+    let near = false; for (const R of rem) if (Math.abs(R.x - e.x) < 110 && Math.abs(R.z - e.z) < 110) { near = true; break; }
+    if (!near) return;
+    rows.push([i, Math.round(e.x * 10), Math.round(e.z * 10), Math.round(e.face * 100), Math.max(0, Math.round(e.hp)),
+      (e.dead ? 1 : 0) | (e.provoked > 0 || e.chasing ? 2 : 0) | (e.lungeT > 0 ? 4 : 0) | (e.breathT > 0 ? 8 : 0),
+      e.atkT >= 0 ? Math.round(e.atkT * 100) : -1, e.atkType || 0, Math.round((e.curSpd || 0) * 10)]);
+  });
+  return rows;
+}
+export function applySnapshot(rows) {
+  for (const r of rows) {
+    const e = enemies[r[0]]; if (!e) continue;
+    e.nx = r[1] / 10; e.nz = r[2] / 10; e.nf = r[3] / 100;
+    if (!e.gotNet) { e.x = e.nx; e.z = e.nz; e.face = e.nf; e.gotNet = true; }
+    e.hp = r[4]; e.netDead = !!(r[5] & 1); e.chasing = !!(r[5] & 2); e.provoked = e.chasing ? 1 : 0;
+    if (r[5] & 4) e.lungeT = .15; if ((r[5] & 8) && !(e.breathT > 0)) e.breathT = 1.6;
+    if (r[6] >= 0 && (e.atkT < 0 || Math.abs(e.atkT - r[6] / 100) > .35)) { e.atkT = r[6] / 100; e.atkType = r[7]; }
+    e.nspd = r[8] / 10;
+  }
+}
 
 /* ================= oyuncu güncelleme ================= */
 export function updatePlayer(dt) {
@@ -336,7 +412,8 @@ export function updatePlayer(dt) {
   P.turn = lerp(P.turn, clamp(angDiff(oldFace, P.face) / Math.max(dt, .001) / 8, -1, 1), 1 - Math.exp(-8 * dt));
   if (P.atkT >= 0) { P.atkT += dt / .36; if (P.atkT > 1) P.atkT = -1; }
   P.ph += dt * Math.max(1.5, spd * 1.75);
-  animBiped(r, { ph: P.ph, amt: P.dodgeT > 0 ? 0 : Math.min(1, spd / 5.8), run: clamp((spd - 6) / 3.5, 0, 1), atk: P.atkT, atkType: P.atkType, hit: Math.max(0, P.hitT) * 3,
+  P.animAmt = P.dodgeT > 0 ? 0 : Math.min(1, spd / 5.8); P.animRun = clamp((spd - 6) / 3.5, 0, 1);
+  animBiped(r, { ph: P.ph, amt: P.animAmt, run: P.animRun, atk: P.atkT, atkType: P.atkType, hit: Math.max(0, P.hitT) * 3,
     dodge: P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, air: P.air ? clamp(.4 + (P.vy > 0 ? .6 : .3), 0, 1) : 0, lean: P.lean, turn: P.turn, t: T, dt, style: 'knight' });
   if (P.spinT > 0) { P.spinT -= dt; P.face += dt * 26; }
   P.arc.visible = P.atkT > .3 && P.atkT < .62; P.arc.rotation.z = [-.2, .9, -1.2][P.atkType] ?? 0;
@@ -353,7 +430,7 @@ export function updateNPCs(dt) {
   for (const n of NPCS) { n.ph += dt; animBiped(n.rig, { ph: 0, amt: 0, atk: -1, t: n.ph, dt, style: 'knight' }); }
 }
 export function actorLabels() {
-  label('Senje', P.x, P.y + 2.6, P.z, 'me');
+  label(NET.name || 'Senje', P.x, P.y + 2.6, P.z, 'me');
   NPCS.forEach(n => { if (Math.hypot(n.x - P.x, n.z - P.z) < 30) label(n.name + npcMark(n), n.x, n.y + 2.5, n.z, 'npc'); });
 }
 export function resetPlayer() { P.maxhp = 100 + 20 * (S.lvl - 1); P.hp = P.maxhp; P.dead = false; P.g.rotation.x = 0; P.air = false; P.vy = 0; }

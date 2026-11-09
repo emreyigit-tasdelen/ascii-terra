@@ -17,6 +17,8 @@
   <div id="target" hidden><div id="tName"></div><div class="tb"><i id="tFill"></i></div></div>
   <div id="toasts"></div>
   <div id="region"></div>
+  <div id="net"></div>
+  <div id="chat"><div id="chatlog"></div><input id="chatin" maxlength="140" autocomplete="off" placeholder="Mesaj yaz, Enter ile gönder" hidden></div>
   <div id="prompt"></div>
   <div id="inv" class="panel" hidden></div>
   <div id="dialog" class="panel" hidden></div>
@@ -27,7 +29,7 @@
   </div>
   <div id="help" class="panel">WASD yürü · Shift koş · Boşluk zıpla · C yuvarlan
 Sol tık / 1 kılıç · 2 ateş topu · 3 kasırga · 4 / Q iksir
-E konuş · I envanter · M harita · R yağmur
+E konuş · I envanter · M harita · R yağmur · Enter sohbet
 Sağ tık sürükle / oklar: kamera (ufka kadar indir) · Tekerlek: yakınlaş
 [ ] harf boyutu · H bu yardımı gizle</div>
 </div>
@@ -42,6 +44,7 @@ Sağ tık sürükle / oklar: kamera (ufka kadar indir) · Tekerlek: yakınlaş
   <p>Karakterlerden örülü bir şövalye dünyası. Sen <b>Senje</b>'sin: kaledeki iskeletleri temizle, kurtları avla,
   Alacakaranlık Dulu'nu yen, Taş Çember'in yeminini al.</p>
   <p class="keys">WASD yürü · Boşluk zıpla · C yuvarlan · Sol tık saldır · 2 ateş topu · 3 kasırga · E konuş · I envanter</p>
+  <p class="name">Şövalye adın: <input id="pname" maxlength="16" autocomplete="off" spellcheck="false"></p>
   <button id="go">Başla</button><button id="new" hidden>Yeni oyun</button>
   <p class="support">Projeyi destekle:
     <a href="https://github.com/sponsors/emreyigit-tasdelen" target="_blank" rel="noopener">[ GitHub Sponsors ]</a>
