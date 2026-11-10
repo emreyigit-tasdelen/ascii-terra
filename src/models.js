@@ -55,6 +55,7 @@ function kmat(kind, id) {
   let m;
   if (kind === 'glow') m = tag(new THREE.MeshBasicMaterial({ vertexColors: true }), MID.GLOW);
   else if (kind === 'metal') m = tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 70, specular: 0x8a8a8a }), id);
+  else if (kind === 'chain') m = tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 60, specular: 0x9a9a9a }), MID.CHAIN);
   else if (kind === 'gloss') m = tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 40, specular: 0x404040 }), id);
   else if (kind === 'cloth') m = tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 4, specular: 0x080808, side: THREE.DoubleSide }), id);
   else m = tag(new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 8, specular: 0x141414 }), id);
@@ -157,7 +158,7 @@ export function makeKnight(o = {}) {
   const r = rig(), P = () => new PB(id), chain = { vary: .45, freq: 70 };
   // waist + skirt
   const pel = P();
-  pel.add(cyl(.2, .27, .44, 18, true), CH, 'metal', [0, -.16, 0], 0, 0, chain);
+  pel.add(cyl(.2, .27, .44, 18, true), CH, 'chain', [0, -.16, 0], 0, 0, chain);
   pel.add(foldCloth(.235, .34, .6, 9, o.tattered), CL, 'cloth', [0, -.24, 0], 0, 0, { vary: .22, freq: 9 });
   pel.add(new THREE.TorusGeometry(.215, .028, 6, 22), LE, 'matte', [0, .03, 0], [Math.PI / 2, 0, 0]);
   pel.add(box(.07, .06, .03), GD, 'metal', [0, .03, .225]);
@@ -176,7 +177,7 @@ export function makeKnight(o = {}) {
   [-1, 1].forEach(s => hd.add(box(.062, .013, .03), 0x050505, 'matte', [s * .045, .19, .165]));
   for (let i = 0; i < 4; i++) hd.add(box(.01, .01, .02), 0x050505, 'matte', [-.03 + i * .02, .1, .232]);
   hd.add(box(.014, .05, .26), AD, 'metal', [0, .385, -.01]);
-  hd.add(cyl(.16, .25, .2, 18, true), CH, 'metal', [0, -.05, -.01], 0, 0, chain);
+  hd.add(cyl(.16, .25, .2, 18, true), CH, 'chain', [0, -.05, -.01], 0, 0, chain);
   if (o.glowEyes) [-1, 1].forEach(s => hd.add(box(.05, .012, .02), 0xff2a10, 'glow', [s * .045, .19, .17]));
   const head = hd.build(); head.scale.setScalar(.92); r.neck.add(head);
   // arms: layered pauldron, vambrace, couter, gauntlet
@@ -197,7 +198,7 @@ export function makeKnight(o = {}) {
   [r.legL, r.legR].forEach((L, i) => {
     const s = i ? 1 : -1, th = P();
     th.add(cyl(.088, .072, .42, 12), A, 'metal', [0, -.23, 0]);
-    th.add(cyl(.098, .092, .12, 12, true), CH, 'metal', [0, -.04, 0], 0, 0, chain);
+    th.add(cyl(.098, .092, .12, 12, true), CH, 'chain', [0, -.04, 0], 0, 0, chain);
     L.p.add(th.build());
     const sh = P();
     sh.add(sph(.07), A, 'metal', [0, 0, .01]);

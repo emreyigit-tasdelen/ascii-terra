@@ -29,7 +29,8 @@ const SETS = {
   GLOW: "+x*#@",
   RAIN: "/'/",
   GRASS: "-~_/'/|!l\\`\\",   // 4 direction buckets x 3 variants: horizontal, /, vertical, \
-  EDGE: "-/|\\"
+  EDGE: "-/|\\",
+  CHAIN: " .:o8S8$"
 };
 let GLYPHS = '', defs = '';
 { let o = 0; for (const k in SETS) { const n = SETS[k].length; defs += `#define ${k} ${o}.,${n}.\n#define ${k}_O ${o}.\n#define ${k}_N ${n}.\n`; GLYPHS += SETS[k]; o += n; } }
@@ -63,7 +64,7 @@ const asciiMat = new THREE.ShaderMaterial({
   float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
   bool isD(float a,float v){return abs(a-v)<.012;}
   bool isGrass(float a){return a<.3;}
-  bool isFig(float a){return isD(a,.65)||isD(a,.7);}            // character / creature: fine grid
+  bool isFig(float a){return isD(a,.65)||isD(a,.7)||isD(a,.45);}            // character / creature: fine grid
   bool isThin(float a){return isD(a,.5)||isD(a,.55)||isD(a,.6);} // flower, rain, glow
   vec4 S(vec2 p){return texture2D(tScene,p/res);}
   float pick(float o,float n,float l,float h,float j){return o+clamp(floor(pow(l,.6)*(n-1.)+(h-.5)*j+.5),l>.02?1.:0.,n-1.);}
@@ -88,8 +89,9 @@ const asciiMat = new THREE.ShaderMaterial({
     }
     else if(isFig(a)){
       // characters and creatures: fine grid with small cells
-      bool cre=isD(a,.7);
-      vec2 cp=fpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
+      bool cre=isD(a,.7),chn=isD(a,.45);
+      vec2 cp=chn?cpx:fpx,sf=fc;if(chn)sf.x+=mod(floor(fc.y/cp.y),2.)*cp.x*.5;   // chainmail: every other row shifted half a cell → rings
+      vec2 cell=floor(sf/cp),base=cell*cp-(sf-fc),lp=mod(sf,cp);
       vec3 acc=vec3(0.);float n=0.;float L[9];
       for(int j=0;j<3;j++){for(int i=0;i<3;i++){
         vec4 s=S(base+cp*vec2((float(i)+.5)/3.,(float(j)+.5)/3.));
@@ -100,9 +102,15 @@ const asciiMat = new THREE.ShaderMaterial({
       float l=clamp(lum(c),0.,1.),hc=h21(cell+vec2(37.,11.));
       float gx=(L[2]+2.*L[5]+L[8])-(L[0]+2.*L[3]+L[6]),gy=(L[6]+2.*L[7]+L[8])-(L[0]+2.*L[1]+L[2]);
       float mag=length(vec2(gx,gy))/4.,sl;
-      if(mag>.16+.2*l&&n>2.){float an=atan(-gx,gy);if(an<0.)an+=3.14159265;sl=EDGE_O+mod(floor(an/.785398+.5),4.);}  // plate/bone edges
-      else sl=cre?pick(FINE,l*1.25,hc,2.):pick(ACTOR,l*1.2,hc,1.5);
-      o=c*glyphF(sl,lp)*2.05+c*.08;
+      if(mag>.16+.2*l&&n>2.&&!chn){float an=atan(-gx,gy);if(an<0.)an+=3.14159265;sl=EDGE_O+mod(floor(an/.785398+.5),4.);}  // plate/bone edges
+      else sl=chn?pick(CHAIN,l*1.5,hc,1.):cre?pick(FINE,l*1.25,hc,2.):pick(ACTOR,l*1.2,hc,1.5);
+      o=c*(chn?glyphN(sl,lp)*2.2:glyphF(sl,lp)*2.05)+c*.08;
+      if(cre){   // fur: short hair strokes across the shading gradient, slightly random per cell
+        float an=atan(gy,gx)+1.5708+(hc-.5)*1.8;vec2 v=vec2(cos(an),sin(an));
+        vec2 q=lp-cp*.5+vec2(h21(cell+3.1)-.5,h21(cell+5.3)-.5)*cp*.5;
+        float d=abs(q.x*v.y-q.y*v.x),al=abs(dot(q,v));
+        o=c*smoothstep(.8,.2,d)*step(al,cp.y*.65)*2.3+c*.1;
+      }
     }else{
       vec2 cp=cpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
       vec4 cen=S(base+cp*.5);

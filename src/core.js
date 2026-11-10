@@ -106,6 +106,7 @@ export const MID = {
   ACTOR: .65,    // fine grid, armor glyphs (knight, NPC, skeleton)
   CREATURE: .7,  // fine grid, fur glyphs (wolf, spider)
   WATER: .75, LEAF: .8, WOOD: .85, STONE: .9, GROUND: .95,
+  CHAIN: .45,    // chainmail: fine staggered grid, ring glyphs o 8 S
   TEXT: .925     // world-anchored letters already drawn in the scene pass → shown as they are
 };
 export function tag(m, id) { m.opacity = id; m.transparent = false; if (id === MID.STONE) worldGlyphs(m); return m; }

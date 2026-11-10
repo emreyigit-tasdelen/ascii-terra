@@ -27,7 +27,8 @@ Each material writes its ID into the render target's alpha channel (`src/core.js
 | Bright thin object (shard, window, web) | normal | `+ x * # @` |
 | Rain | normal | `/ '` |
 | Character (knight, NPC, skeleton) | fine (0.65x) | armor set `. : ; + = x o O 0 Q 8 % # @` |
-| Creature (wolf, spider) | fine (0.65x) | fur set `. ' : ; ! / \| \ ( ) { } o x % # 8 @` |
+| Creature (wolf, spider) | fine (0.65x) | fur: short hair strokes across the shading gradient |
+| Chainmail | normal, staggered rows | ring glyphs `o 8 S`, every other row shifted half a cell |
 
 Thin objects (rain, webs, flowers) stamp their glyph on a cell if they touch even one of its 9 samples, so 1-pixel lines never vanish.
 
