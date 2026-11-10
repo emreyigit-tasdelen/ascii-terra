@@ -110,65 +110,29 @@ export const MID = {
 };
 export function tag(m, id) { m.opacity = id; m.transparent = false; if (id === MID.STONE) worldGlyphs(m); return m; }
 
-/* ---------------- world-anchored glyphs ----------------
-   Stone surfaces carry their letters in world space (triplanar), like text carved into the wall:
-   near the camera the letters are big, far away they are small. Brightness picks a denser letter. */
-const WG_CHARS = ".,:;-~+=*ivxzrnucsoaewqpdbkhQ0O8&%$#@MWN";
-const WG_MOSS = "(){}~/\;,'`*";      // ivy / moss glyphs
-const WG_ALL = WG_CHARS + WG_MOSS, WG_ROWS = Math.ceil(WG_ALL.length / 16);
-let WG_TEX = null;
-function wgAtlas() {
-  if (WG_TEX) return WG_TEX;
-  const cw = 32, ch = 48, cols = 16, rows = WG_ROWS;
-  const c = document.createElement('canvas'); c.width = cw * cols; c.height = ch * rows;
-  const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
-  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 44px Consolas,"Courier New",monospace';
-  WG_ALL.split('').forEach((g, i) => x.fillText(g, (i % cols) * cw + cw / 2, Math.floor(i / cols) * ch + ch * .54));
-  WG_TEX = new THREE.CanvasTexture(c); WG_TEX.flipY = false; WG_TEX.anisotropy = 4;
-  WG_TEX.minFilter = THREE.LinearMipmapLinearFilter; WG_TEX.magFilter = THREE.LinearFilter;
-  return WG_TEX;
-}
-export const WG = { cell: new THREE.Vector2(.28, .42) };   // letter size in metres (width, height)
+/* ---------------- moss on stone ----------------
+   Stone stays a screen-grid letter texture (drawn by the ASCII pass). The stone shader only marks
+   world-space moss/ivy patches (thicker on top faces) as foliage, so they come out as green leaf glyphs. */
 function worldGlyphs(m) {
-  m.opacity = MID.TEXT;
   m.onBeforeCompile = sh => {
-    sh.uniforms.tWG = { value: wgAtlas() }; sh.uniforms.wgCell = { value: WG.cell };
     sh.vertexShader = 'varying vec3 vWP; varying vec3 vWN;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
       vec4 wgp = vec4(transformed, 1.); vec3 wgn = objectNormal;
       #ifdef USE_INSTANCING
         wgp = instanceMatrix * wgp; wgn = mat3(instanceMatrix) * wgn;
       #endif
       vWP = (modelMatrix * wgp).xyz; vWN = normalize(mat3(modelMatrix) * wgn);`);
-    sh.fragmentShader = `varying vec3 vWP; varying vec3 vWN; uniform sampler2D tWG; uniform vec2 wgCell;
-      float wgH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    sh.fragmentShader = `varying vec3 vWP; varying vec3 vWN;
       float wgN3(vec3 p){ vec3 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
         float n = i.x + i.y * 57. + i.z * 113.;
         #define WGR(o) fract(sin(n + o) * 43758.5453)
         return mix(mix(mix(WGR(0.), WGR(1.), f.x), mix(WGR(57.), WGR(58.), f.x), f.y), mix(mix(WGR(113.), WGR(114.), f.x), mix(WGR(170.), WGR(171.), f.x), f.y), f.z); }
-      float wgGlyph(float idx, vec2 lp){ return texture2D(tWG, vec2((mod(idx, 16.) + lp.x) / 16., (floor(idx / 16.) + 1. - lp.y) / ${WG_ROWS}.)).r; }
-      vec2 wgUV(vec3 p, vec3 n){
-        vec3 a = abs(n);
-        if (a.y > a.x && a.y > a.z) return vec2(p.x, -p.z);   // top faces
-        return a.x > a.z ? vec2(-p.z * sign(n.x), p.y) : vec2(p.x * sign(n.z), p.y);
-      }\n` + sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', `
+`
+      + sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', `
       vec3 wn = normalize(vWN);
-      vec2 g = wgUV(vWP, wn) / wgCell, cell = floor(g), lp = fract(g);
-      float face = abs(wn.y) > .7 ? 3. : (abs(wn.x) > abs(wn.z) ? 1. : 2.);
-      float h = wgH(cell + face * 17.31), l = clamp(dot(outgoingLight, vec3(.299, .587, .114)) * 1.05, 0., 1.);
-      float idx = clamp(floor(pow(l, .7) * ${WG_CHARS.length - 1}. + (h - .5) * 10.), 0., ${WG_CHARS.length - 1}.);
-      float ink = wgGlyph(idx, lp) * step(.035, l);
-      vec3 col = outgoingLight * (ink * 1.35 + .05);
-      // ivy and moss: patches in world space, thicker on top faces, drawn with smaller curly glyphs
-      float mn = wgN3(vWP * .42) * .65 + wgN3(vWP * 1.3 + 7.) * .35 + (abs(wn.y) > .7 ? .16 : 0.);
-      if (mn > .63) {
-        vec2 mg = g * 2.3, mc = floor(mg), ml = fract(mg); float mh = wgH(mc + 3.7);
-        float mi = ${WG_CHARS.length}. + floor(mh * ${WG_MOSS.length}.);
-        float mink = wgGlyph(mi, ml) * step(.4, mh + (mn - .63) * 3.);
-        float lit = clamp(dot(outgoingLight, vec3(.333)) * 2.2 + .15, 0., 1.4);
-        vec3 green = mix(vec3(.18, .32, .14), vec3(.4, .62, .3), wgH(mc + 9.1)) * lit;
-        col = mix(col * .5, green * 1.35, mink);
-      }
-      gl_FragColor = vec4(col, diffuseColor.a );`);
+      float mn = wgN3(vWP * .42) * .65 + wgN3(vWP * 1.6 + 7.) * .35 + (wn.y > .7 ? .14 : 0.);
+      float lit = dot(outgoingLight, vec3(.333));
+      if (mn > .68) gl_FragColor = vec4(mix(vec3(.08, .15, .08), vec3(.16, .28, .14), wgN3(vWP * 3.1)) * (lit * 1.3 + .04), ${MID.LEAF.toFixed(3)});
+      else gl_FragColor = vec4(outgoingLight, diffuseColor.a);`);
   };
   m.customProgramCacheKey = () => 'wg';
 }

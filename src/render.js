@@ -82,25 +82,9 @@ const asciiMat = new THREE.ShaderMaterial({
     vec4 own=S(fc);float a=own.a;vec3 o;
     if(isD(a,.925)){o=own.rgb*uExp;}   // world-anchored letters: already glyphs
     else if(isGrass(a)){
-      // grass: its own fine grid, thin directional strokes, muted grey-green; flowers as white dots
-      vec2 cp=floor(fpx*vec2(.9,.8)+.5),cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp)*(fpx/cp);
-      vec3 gacc=vec3(0.),fcol=vec3(0.);float gn=0.,gang=0.,gbest=-1.,fl=0.;
-      for(int j=0;j<2;j++){for(int i=0;i<2;i++){
-        vec4 s=S(base+cp*vec2((float(i)+.5)/2.,(float(j)+.5)/2.));
-        if(isGrass(s.a)){gacc+=s.rgb;gn+=1.;float sl=lum(s.rgb);if(sl>gbest){gbest=sl;gang=(s.a-.02)/.26;}}
-        else if(isD(s.a,.5)){fl=1.;fcol=s.rgb;}
-      }}
-      float hc=h21(cell+vec2(5.,9.));
-      if(fl>.5){o=fcol*uExp*glyphF(FLOWER_O+floor(hc*FLOWER_N),lp)*1.4;}
-      else{
-        vec3 c=(gn>0.?gacc/gn:own.rgb)*uExp;c=mix(vec3(lum(c)),c,.45)*vec3(.9,1.,.92);
-        // one thin stroke per cell along the blade direction ( - / | \ ), slightly jittered
-        float an=(floor(gang*4.+.5)/4.+(hc-.5)*.12)*3.14159265;vec2 v=vec2(cos(an),sin(an));
-        vec2 q=mod(fc,cp)-cp*.5+vec2(h21(cell+1.7)-.5,h21(cell+2.9)-.5)*.8;
-        float d=abs(q.x*v.y-q.y*v.x),along=abs(dot(q,v));
-        float ink=smoothstep(.85,.25,d)*step(along,cp.y*.55);
-        o=c*ink*1.9+c*.08;
-      }
+      // grass: every blade is rendered as a thin stroke in the scene; keep it, with stepped colour
+      vec3 c=own.rgb*uExp;c=floor(c*14.+.5)/14.;
+      o=c*1.7;
     }
     else if(isFig(a)){
       // characters and creatures: fine grid with small cells
@@ -145,7 +129,7 @@ const asciiMat = new THREE.ShaderMaterial({
           if(c.b>c.g*1.04&&l>.03){sl=pick(STONE,l*1.2,hc,5.);k=1.8;}
           else{sl=pick(GROUND,l*2.5,hc,1.);k=1.5;bg=.05;}
         }
-        else if(isD(m,.9)){sl=pick(STONE,l,hc,7.);k=1.9;bg=.09;}
+        else if(isD(m,.9)){c*=vec3(.62,.65,.85);l*=.85;sl=pick(STONE,l,hc,6.);k=1.6;bg=.04;}   // stone: blue-lavender letter texture
         else if(isD(m,.85)){sl=pick(WOOD,l,hc,1.5);k=1.8;bg=.08;}
         else if(isD(m,.8)){sl=pick(LEAF,l*1.3,hc,2.5);k=1.9;bg=.08;}
         else if(isD(m,.75)){sl=pick(WATER,l*1.4,hc,1.);k=1.8;bg=.05;}

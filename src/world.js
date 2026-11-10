@@ -75,7 +75,7 @@ export const waterMat = new THREE.ShaderMaterial({
 
 /* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {
-  const w = .045, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
+  const w = .016, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(v, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
   return g;
@@ -91,7 +91,7 @@ float hgt=position.y;
 float tone=fract(sin(dot(offset.xz,vec2(12.9898,78.233)))*43758.5453);
 float fl=step(.955,tone);
 float gsw=1.-smoothstep(32.,58.,distance(offset.xz,vec2(135.,20.)));
-float s=.72*par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.)*(1.+gsw*.65);
+float s=1.05*par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.)*(1.+gsw*.65);
 vec3 gp=position;gp.y*=s;gp.xz*=(fl>.5?3.5:1.);
 float gc=cos(par.x),gsn=sin(par.x);
 vec3 transformed=vec3(gp.x*gc-gp.z*gsn,gp.y,gp.x*gsn+gp.z*gc);
@@ -102,7 +102,7 @@ vec2 gdp=offset.xz-uPlayer.xz;float gpd=length(gdp);
 transformed.xz+=gdp/(gpd+.001)*(1.-smoothstep(0.,1.5,gpd))*.9*hgt*s;
 transformed+=offset;
 vH=hgt;vFl=fl;
-vGCol=(fl>.5&&hgt>.45&&gsw<.5)?vec3(.85,.88,.82):mix(vec3(.05,.09,.07),mix(mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),vec3(.26,.24,.11),gsw),hgt)*(.75+.5*fract(tone*7.3));
+vGCol=(fl>.5&&hgt>.45&&gsw<.5)?vec3(.85,.88,.82):mix(vec3(.02,.05,.045),mix(mix(vec3(.1,.34,.27),vec3(.16,.36,.2),fract(tone*3.7)),vec3(.26,.24,.11),gsw),hgt*hgt)*(.55+.9*fract(tone*7.3));
 if(gsw>.5)fl=0.;vFl=fl;
 vec3 gtip=offset+vec3((par.z+gw)*s,s,(par.z*.5+gw*.6)*s);
 vec4 GA=projectionMatrix*viewMatrix*vec4(offset,1.),GB=projectionMatrix*viewMatrix*vec4(gtip,1.);

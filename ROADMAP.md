@@ -22,7 +22,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 
 ## Phase 1 — Visual fidelity (match the reference videos)
 - [x] Real shadow map (character, wall, tree shadows); grass receives shadows too
-- [x] World-anchored letters on stone (big near the camera), ivy/moss glyphs, dense fine-grid grass, planar water reflections
+- [x] Moss/ivy glyphs on stone, per-blade stroke grass, planar water reflections
 - [x] High ground: watchtower with spiral stair, camera zooms in on high ground; horse mount
 - [ ] Coastal mist/haze particles, foam curls on the sea, wave animation
 - [x] Fire/ember/blood/bone/spark particles, fireball trail, blood decals, hit-stop and camera shake

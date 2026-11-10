@@ -16,10 +16,10 @@ Each material writes its ID into the render target's alpha channel (`src/core.js
 
 | Material | Grid | Glyphs / colour |
 |---|---|---|
-| Grass | fine | one thin stroke per cell along the on-screen blade direction (`- / \| \`), dense, muted grey-green |
+| Grass | per blade | every blade is a thin stroke (rendered as it is), teal-to-green palette, dense; white `o *` flowers |
 | Flower | normal | white `o * + .` |
 | Ground | normal | sparse ` . , : ; '`; stone set on bluish ground |
-| Stone (walls, menhirs, rocks, houses) | **world-anchored** | letters carved into the surface in world space (triplanar): big near the camera, small far away; brightness picks a denser letter |
+| Stone (walls, menhirs, rocks, houses) | normal | small screen-grid letters `oaeswqpdbmOQ0&%$#@MW`, blue-lavender, dim; world-space moss patches become green leaf glyphs |
 | Wood | normal | `. : - = \| # H` |
 | Foliage | normal | `. , ; : * o % & 8 @ #` dark pine green |
 | Water | normal | black base, white foam parallel to the shore `- ~ = *` |
