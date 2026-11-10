@@ -429,9 +429,9 @@ export function updatePlayer(dt) {
   P.turn = lerp(P.turn, clamp(angDiff(oldFace, P.face) / Math.max(dt, .001) / 8, -1, 1), 1 - Math.exp(-8 * dt));
   if (P.atkT >= 0) { P.atkT += dt / .36; if (P.atkT > 1) P.atkT = -1; }
   P.ph += dt * Math.max(1.5, spd * 1.75);
-  // kalkan: Ctrl basılıyken
+  // kalkan: Alt basılıyken
   P.stunT -= dt; P.stCd -= dt;
-  const wantBlock = keys.ctrl && P.dodgeT <= 0 && !P.air && P.stunT <= 0 && P.st > 3;
+  const wantBlock = keys.alt && P.dodgeT <= 0 && !P.air && P.stunT <= 0 && P.st > 3;
   if (wantBlock && !P.block) P.blockT = 0;
   P.block = wantBlock;
   if (P.block) { P.blockT += dt; P.st -= 3 * dt; P.stCd = Math.max(P.stCd, .5); P.atkT = -1; faceAim(); }

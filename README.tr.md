@@ -94,7 +94,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `Boşluk` | zıpla |
 | `C` | yuvarlan |
 | Sol tık / `1` | imlece doğru kılıç (3 vuruşluk kombo) |
-| `Ctrl` (basılı) | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
+| `Alt` (basılı) | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
