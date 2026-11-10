@@ -3,7 +3,7 @@ import {
   THREE, clamp, lerp, smooth, angDiff, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
   heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
 } from './core.js';
-import { scene, ENV } from './render.js';
+import { scene, ENV, REFL } from './render.js';
 import { makeDeadTree, PB } from './models.js';
 
 const insideCastle = (x, z, pad = 0) => Math.abs(x - CASTLE.x) < CASTLE.half - pad && Math.abs(z - CASTLE.z) < CASTLE.half - pad;
@@ -50,9 +50,9 @@ for (let j = 0; j < DT; j++) for (let i = 0; i < DT; i++) {
 const depthTex = new THREE.DataTexture(dd, DT, DT, THREE.RGBAFormat);
 depthTex.minFilter = depthTex.magFilter = THREE.LinearFilter; depthTex.needsUpdate = true;
 export const waterMat = new THREE.ShaderMaterial({
-  uniforms: { tDepth: { value: depthTex }, uTime: { value: 0 }, uLight: { value: ENV.light }, uFogColor: { value: ENV.sky }, uFogNear: { value: 30 }, uFogFar: { value: 170 } },
+  uniforms: { tDepth: { value: depthTex }, tRefl: { value: REFL.rt.texture }, uRefl: REFL.mat, uTime: { value: 0 }, uLight: { value: ENV.light }, uFogColor: { value: ENV.sky }, uFogNear: { value: 30 }, uFogFar: { value: 170 } },
   vertexShader: `varying vec3 vW;varying float vFog;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vFog=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader: `uniform sampler2D tDepth;uniform float uTime,uFogNear,uFogFar;uniform vec3 uLight,uFogColor;varying vec3 vW;varying float vFog;
+  fragmentShader: `uniform sampler2D tDepth,tRefl;uniform mat4 uRefl;uniform float uTime,uFogNear,uFogFar;uniform vec3 uLight,uFogColor;varying vec3 vW;varying float vFog;
   void main(){
     float d=texture2D(tDepth,(vW.xz+200.)/400.).r;
     float shore=1.-smoothstep(0.,.2,d);
@@ -66,10 +66,12 @@ export const waterMat = new THREE.ShaderMaterial({
     vec3 col=mix(mix(vec3(.008,.014,.032),vec3(.02,.035,.02),sw),vec3(.72,.77,.84),clamp(foam+mist*(1.-sw),0.,1.));
     col=mix(col,vec3(.12,.16,.06),algae*.8);
     col*=uLight*.9+.15;
+    vec4 rp=uRefl*vec4(vW,1.);vec2 ruv=rp.xy/rp.w*.5+.5+vec2(sin(vW.z*1.3+uTime*1.1),sin(vW.x*1.1-uTime*.9))*.004*(1.-shore);
+    vec3 rc=texture2D(tRefl,ruv).rgb;col+=rc*1.4*(1.-clamp(foam,0.,1.))*(1.-sw*.5);   // mirrored world
     gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),.75);
   }`
 });
-{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; scene.add(w); }
+{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; w.layers.set(1); scene.add(w); REFL.y = WATER; }
 
 /* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {
@@ -131,7 +133,7 @@ function makeGrassChunk(cx, cz) {
   g.setAttribute('offset', new THREE.InstancedBufferAttribute(off.slice(0, n * 3), 3));
   g.setAttribute('par', new THREE.InstancedBufferAttribute(par.slice(0, n * 3), 3));
   g.instanceCount = n; g.boundingSphere = new THREE.Sphere(new THREE.Vector3((cx + .5) * CH, 0, (cz + .5) * CH), CH + 30);
-  const m = new THREE.Mesh(g, grassMat); m.receiveShadow = true; m.castShadow = false; scene.add(m); return { mesh: m, cx, cz };
+  const m = new THREE.Mesh(g, grassMat); m.layers.set(1); m.receiveShadow = true; m.castShadow = false; scene.add(m); return { mesh: m, cx, cz };
 }
 export function updateGrass(px, pz, limit) {
   const pcx = Math.floor(px / CH), pcz = Math.floor(pz / CH); let made = 0;

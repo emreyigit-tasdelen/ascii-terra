@@ -172,7 +172,7 @@ const _bs = new THREE.Vector2();
 export function resize() {
   const W = innerWidth, H = innerHeight; VIEW.dpr = Math.min(devicePixelRatio || 1, 1.5);
   renderer.setPixelRatio(VIEW.dpr); renderer.setSize(W, H);
-  renderer.getDrawingBufferSize(_bs); rt.setSize(_bs.x, _bs.y);
+  renderer.getDrawingBufferSize(_bs); rt.setSize(_bs.x, _bs.y); REFL.rt.setSize(Math.ceil(_bs.x / 2), Math.ceil(_bs.y / 2));
   const cw = Math.max(3, Math.round(VIEW.cellW * VIEW.dpr)), ch = Math.max(5, Math.round(VIEW.cellH * VIEW.dpr));
   const fw = Math.max(3, Math.round(cw * .65)), fh = Math.max(5, Math.round(ch * .65));
   U.res.value.copy(_bs);
@@ -180,8 +180,28 @@ export function resize() {
   U.fpx.value.set(fw, fh); U.fatlas.value.set(fw * 16, fh * ROWS); U.tFine.value = buildAtlas('f', fw, fh);
   camera.aspect = W / H; camera.updateProjectionMatrix();
 }
+/* ---------------- planar water reflection ----------------
+   The scene is drawn once more from a camera mirrored under the water plane (half resolution, no grass,
+   no water, clipped at the surface); the water shader samples it, and the ASCII pass turns it into water glyphs. */
+export const REFL = { on: true, y: 0, rt: new THREE.WebGLRenderTarget(8, 8, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat }),
+  cam: new THREE.PerspectiveCamera(), mat: { value: new THREE.Matrix4() } };
+camera.layers.enable(1);   // layer 1 = grass + water: seen by the main camera, skipped by the reflection
+const _rp = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _rd = new THREE.Vector3(), _rt = new THREE.Vector3();
+function renderReflection() {
+  const c = REFL.cam, Y = REFL.y;
+  c.fov = camera.fov; c.aspect = camera.aspect; c.near = camera.near; c.far = camera.far; c.updateProjectionMatrix();
+  c.position.set(camera.position.x, 2 * Y - camera.position.y, camera.position.z);
+  camera.getWorldDirection(_rd); _rt.copy(camera.position).add(_rd); _rt.y = 2 * Y - _rt.y;
+  c.up.set(0, 1, 0); c.lookAt(_rt); c.updateMatrixWorld();
+  REFL.mat.value.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
+  _rp.constant = -Y + .05;
+  const au = renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate = false; renderer.clippingPlanes = [_rp];
+  renderer.setRenderTarget(REFL.rt); renderer.clear(); renderer.render(scene, c);
+  renderer.clippingPlanes = []; renderer.shadowMap.autoUpdate = au;
+}
 export function renderFrame(t, hurt) {
   U.uTime.value = t; U.uHurt.value = hurt;
+  if (REFL.on) renderReflection();
   renderer.setRenderTarget(rt); renderer.render(scene, camera);
   renderer.setRenderTarget(null); renderer.render(quadScene, quadCam);
 }
