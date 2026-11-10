@@ -36,3 +36,5 @@
 - The user said multiplayer "could not be entered": sign up/log in/play tested fine with the Node server. Started with the Python fallback or by opening index.html directly, there is no online mode. How the user launches it is still unclear.
 - Sword/whirlwind hits in multiplayer still need a manual test (two tabs).
 - Shield-in-front pose: user has not confirmed the latest version.
+- Graphics overhaul: not yet tested on the user's machine for FPS (extra reflection pass + 14000 grass blades/chunk). Horse not synced in multiplayer. Enemies cannot climb the tower.
+- Testing tip: if the browser pane is hidden the game stops drawing; call `renderFrame` from `/src/render.js` manually before screenshots.
