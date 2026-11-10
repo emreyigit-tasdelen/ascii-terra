@@ -94,7 +94,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `Boşluk` | zıpla |
 | `C` | yuvarlan |
 | Sol tık / `1` | imlece doğru kılıç (3 vuruşluk kombo) |
-| Sağ tık (basılı) / `F` | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
+| `V` (basılı) | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
@@ -102,7 +102,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
-| Orta tuş sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
+| Sağ ya da orta tuşla sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
 | `[` `]` | harf boyutu |
 
 ## ASCII çizici nasıl çalışır?

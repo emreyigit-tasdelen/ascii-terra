@@ -26,7 +26,7 @@ addEventListener('keydown', e => {
   if (paused) return;
   if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
   const k = e.key.toLowerCase();
-  if ('wasdf'.includes(k) && k.length === 1) keys[k] = true;
+  if ('wasdv'.includes(k) && k.length === 1) keys[k] = true;
   if (e.key === 'Shift') keys.shift = true;
   if (e.code === 'Space') { e.preventDefault(); if (started && !e.repeat) doJump(); }
   if (!started || e.repeat) return;
@@ -41,12 +41,12 @@ addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') cam.yaw += .2; else if (e.key === 'ArrowRight') cam.yaw -= .2;
   else if (e.key === 'ArrowUp') cam.pitch = clamp(cam.pitch + .06, PMIN, 1.35); else if (e.key === 'ArrowDown') cam.pitch = clamp(cam.pitch - .06, PMIN, 1.35);
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); if ('wasdf'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; });
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); if ('wasdv'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false; });
 addEventListener('mousemove', e => {
   MOUSE.x = e.clientX; MOUSE.y = e.clientY;
   const c = $('cross'); c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
-  if (MOUSE.mmb && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
+  if ((MOUSE.mmb || MOUSE.rmb) && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
 });
 /* ---------------- duraklatma menüsü ---------------- */
 let paused = false;

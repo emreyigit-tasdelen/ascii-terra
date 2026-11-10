@@ -94,7 +94,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Space` | jump |
 | `C` | dodge roll |
 | Left click / `1` | sword attack toward the cursor (3-hit combo) |
-| Right click (hold) / `F` | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
+| `V` (hold) | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
@@ -102,7 +102,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
-| Middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
+| Right- or middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
 | `[` `]` | glyph size |
 
 ## How the ASCII renderer works
