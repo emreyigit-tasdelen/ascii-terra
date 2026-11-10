@@ -13,7 +13,7 @@
 `src/core.js` (yükseklik, çarpışma, MID) · `render.js` (ASCII geçişi, ışık, gölge) · `world.js` (arazi, köy, kale, bataklık) · `models.js` (modeller + `animBiped`) · `actors.js` (oyuncu, düşman AI, beceriler, kalkan) · `fx.js` (parçacık) · `game.js` (görev, envanter, HUD, kayıt) · `net.js` (çok oyunculu istemci) · `main.js` (girdi, döngü, giriş ekranı, duraklatma) · `server/server.js` (bağımlılıksız Node: statik + WebSocket + hesaplar).
 
 ## Yapılanlar (en yeni üstte)
-- Kalkan V tuşunda (sağ tık/F kaldırıldı), blokta kalkan 90° yatay döner (`r.shield`). Kamera sağ veya orta tuşla sürüklenir.
+- Kalkan Ctrl tuşunda (sağ tık/F/V kaldırıldı; Ctrl+W tarayıcıda engellenemez), blokta kalkan 90° yatay döner (`r.shield`). Kamera sağ veya orta tuşla sürüklenir.
 - MIT lisansı, README'ye ekran görüntüsü (docs/screenshot.jpg). Düello/parti/ortak görev ve DB/şifre sıfırlama planı ROADMAP Faz 5'e yazıldı.
 - v0.7 Esc/P duraklatma menüsü (tek oyunculuda dünya donar, çevrimiçide oyuncu dokunulmaz).
 - v0.6 Kalkan (sağ tık/F, blok + savuşturma + dayanıklılık), hesaplar (kayıt/giriş/misafir, scrypt, belirteç, sunucu kaydı). Kamera döndürme orta tuşta.

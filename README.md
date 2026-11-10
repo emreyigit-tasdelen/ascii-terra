@@ -94,7 +94,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Space` | jump |
 | `C` | dodge roll |
 | Left click / `1` | sword attack toward the cursor (3-hit combo) |
-| `V` (hold) | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
+| `Ctrl` (hold) | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
