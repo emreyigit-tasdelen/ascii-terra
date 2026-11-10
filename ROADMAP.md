@@ -74,6 +74,44 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [ ] Gerçek veritabanı (SQLite/Postgres), şifre sıfırlama, hile koruması
 - [ ] Ölçekleme: bölge sunucuları
 
+### Faz 5 ayrıntılı plan — Düello, parti, ortak görev
+
+**Ortak altyapı (önce):** sunucuya `party` ve `duel` durumları (bellekte, oyuncu kimliğine bağlı); istemci `net.js`'e
+mesaj tipleri: `invite`, `invite_reply`, `party_*`, `duel_*`. Davetler 20 sn sonra düşer, aynı anda tek bekleyen davet.
+
+**1. Parti (v0.8)**
+- Oyuncuya yakın dur + `G` veya sohbette `/davet <ad>` → karşıya "X seni partiye davet ediyor [Y/N]".
+- En fazla 4 kişi, lider ayrılınca liderlik sıradakine geçer, `/ayril` ile çıkış.
+- HUD: sol tarafta parti üyelerinin adı + can çubuğu; haritada üye noktaları.
+- Parti üyeleri birbirine vuramaz; aynı bölgedeki üyeler öldürme XP'sini paylaşır (eşit bölüşüm, +%10 parti bonusu).
+
+**2. Ortak görev ilerlemesi (v0.9)**
+- Görev ilerlemesi parti düzeyinde: lider görevi kabul edince tüm üyelere eklenir.
+- "N düşman öldür" sayaçları parti içinde ortak; host öldürmeyi bildirirken `partyId` de gönderir.
+- Teslimde her üye kendi ödülünü alır; partiden çıkan oyuncu o anki ilerlemeyi kendi kaydına kopyalar.
+- Sunucu kaydı (DB) görevi kişi başı saklar, parti yalnızca çalışma anında yaşar.
+
+**3. PVP düello (v0.10)**
+- `/duello <ad>` veya oyuncuya bakıp `V` → "X seni düelloya davet ediyor [Y/N]".
+- Kabulde 3-2-1 geri sayım, yerde ASCII halka (yarıçap ~12 m); halkadan çıkan kaybeder.
+- Yalnız iki düellocu birbirine hasar verebilir; can 1'in altına düşmez, 1'e inen kaybeder (ölüm/eşya kaybı yok).
+- Sonuç sohbete duyurulur; DB'de galibiyet/mağlubiyet sayacı.
+- Hile koruması: düello hasarı sunucuda menzil + bekleme süresi kontrolünden geçer.
+
+**Test:** iki tarayıcı sekmesiyle (biri gizli pencere) davet/kabul/ret, parti XP paylaşımı, düello halkası ve sonuç.
+
+### Faz 5 ayrıntılı plan — Veritabanı ve şifre sıfırlama (öneri, onay bekliyor)
+- **Depolama:** Node'un yerleşik `node:sqlite` modülü (Node 22.5+; bağımlılık yok), dosya `server/data/terra.db`, WAL modu.
+  Tablolar: `users(id, name, name_lc UNIQUE, salt, hash, created, last_login, banned)`, `saves(user_id, data JSON, updated)`,
+  `tokens(hash, user_id, expires)` (belirtecin kendisi değil SHA-256 özeti saklanır), `stats(user_id, duel_w, duel_l)`.
+  Mevcut `users.json` ilk açılışta otomatik içe aktarılır ve `users.json.bak` olarak bırakılır.
+- **Verim:** hazır sorgular (prepared statement), kayıtlar 1,5 sn birleştirilerek tek işlemde yazılır.
+- **Güvenlik:** scrypt kalır; girişte IP başına hız sınırı (5 deneme/dk); belirteçler 30 gün; günlük `terra.db` yedeği (son 7).
+- **Şifre sıfırlama (e-posta yok, kişisel veri tutulmaz):** kayıtta bir kez gösterilen 12 karakterlik **kurtarma kodu**
+  (özeti saklanır). "Şifremi unuttum" → ad + kurtarma kodu + yeni şifre; kullanınca yeni kod verilir.
+- **Yönetim:** `node server/admin.js` komut satırı aracı: `list`, `reset <ad>` (geçici şifre üretir), `ban/unban <ad>`,
+  `delete <ad>`, `backup`. Web yönetim paneli yok (saldırı yüzeyi açmamak için).
+
 ## Faz 6 — Yayın
 - [ ] Masaüstü paketi (Tauri/Electron), Steam sayfası
 - [ ] Ayarlar menüsü, tuş atama, gamepad

@@ -17,6 +17,8 @@ Grass, armor, castle walls, the sea, fire and rain are all drawn with glyphs —
 
 **English** · [Türkçe](README.tr.md)
 
+<img src="docs/screenshot.jpg" alt="ASCII-Terra gameplay" width="800">
+
 </div>
 
 ---
@@ -141,3 +143,7 @@ ASCII-Terra is developed in the open. If you enjoy it, you can support developme
 ## Contributing
 
 Issues and pull requests are welcome. Please keep the core rule: everything that appears on screen must be ASCII.
+
+## License
+
+[MIT](LICENSE)

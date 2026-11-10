@@ -13,6 +13,7 @@
 `src/core.js` (yükseklik, çarpışma, MID) · `render.js` (ASCII geçişi, ışık, gölge) · `world.js` (arazi, köy, kale, bataklık) · `models.js` (modeller + `animBiped`) · `actors.js` (oyuncu, düşman AI, beceriler, kalkan) · `fx.js` (parçacık) · `game.js` (görev, envanter, HUD, kayıt) · `net.js` (çok oyunculu istemci) · `main.js` (girdi, döngü, giriş ekranı, duraklatma) · `server/server.js` (bağımlılıksız Node: statik + WebSocket + hesaplar).
 
 ## Yapılanlar (en yeni üstte)
+- MIT lisansı, README'ye ekran görüntüsü (docs/screenshot.jpg). Düello/parti/ortak görev ve DB/şifre sıfırlama planı ROADMAP Faz 5'e yazıldı.
 - v0.7 Esc/P duraklatma menüsü (tek oyunculuda dünya donar, çevrimiçide oyuncu dokunulmaz).
 - v0.6 Kalkan (sağ tık/F, blok + savuşturma + dayanıklılık), hesaplar (kayıt/giriş/misafir, scrypt, belirteç, sunucu kaydı). Kamera döndürme orta tuşta.
 - v0.5 Çok oyunculu: host yetkili ortak oyun, sohbet, host devri, arka plan sekmesi için yedek tick.
@@ -21,7 +22,7 @@
 - v0.2 Her şey ASCII, modüler kod, public repo, README EN/TR, sponsor linkleri.
 
 ## Açık işler / sıradaki
-- Lisans kararı (MIT önerildi, kullanıcı cevap vermedi).
-- README'ye ekran görüntüsü.
-- Gerçek veritabanı, şifre sıfırlama; düello/parti; ortak görev ilerlemesi.
-- Bilinen: kılıç/kasırga vuruşu çok oyunculu testte otomatik doğrulanamadı (elle test edilmeli).
+- DB önerisi (node:sqlite + kurtarma kodu + admin.js CLI) kullanıcı onayı bekliyor → onaylanınca uygula.
+- Sonra: parti (v0.8) → ortak görev (v0.9) → düello (v0.10), ayrıntı ROADMAP Faz 5.
+- Kullanıcı "çok oyunculuya girilemiyor" dedi: Node sunucusuyla kayıt/giriş/oyun test edildi, çalışıyor. Python yedek sunucusu veya index.html doğrudan açılırsa çevrimiçi olmaz. Kullanıcının nasıl başlattığı netleşmedi.
+- Kılıç/kasırga vuruşu çok oyunculu elle test edilmeli (iki sekme).

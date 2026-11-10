@@ -17,6 +17,8 @@
 
 [English](README.md) · **Türkçe**
 
+<img src="docs/screenshot.jpg" alt="ASCII-Terra oyun içi" width="800">
+
 </div>
 
 ---
@@ -139,3 +141,7 @@ ASCII-Terra açık geliştiriliyor. Beğendiysen geliştirmeye destek olabilirsi
 ## Katkı
 
 Issue ve pull request'ler açıktır. Tek temel kural: ekranda görünen her şey ASCII olmalı.
+
+## Lisans
+
+[MIT](LICENSE)
