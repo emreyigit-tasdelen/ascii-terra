@@ -19,7 +19,7 @@ Each material writes its ID into the render target's alpha channel (`src/core.js
 | Grass | normal | by on-screen blade direction `- ~ _` · `/ '` · `\| ! l` · `\ ``` green-grey |
 | Flower | normal | white `o * + .` |
 | Ground | normal | sparse ` . , : ; '`; stone set on bluish ground |
-| Stone (walls, menhirs, rocks, houses) | normal | `oaeswqpdbmOQ0&%$#@MW` random letter texture, blue-grey |
+| Stone (walls, menhirs, rocks, houses) | **world-anchored** | letters carved into the surface in world space (triplanar): big near the camera, small far away; brightness picks a denser letter |
 | Wood | normal | `. : - = \| # H` |
 | Foliage | normal | `. , ; : * o % & 8 @ #` dark pine green |
 | Water | normal | black base, white foam parallel to the shore `- ~ = *` |

@@ -61,7 +61,7 @@ const asciiMat = new THREE.ShaderMaterial({
   uniform sampler2D tScene,tFont,tFine;uniform vec2 res,cpx,atlas,fpx,fatlas;uniform float uTime,uHurt,uExp;
   float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
-  bool isD(float a,float v){return abs(a-v)<.02;}
+  bool isD(float a,float v){return abs(a-v)<.012;}
   bool isGrass(float a){return a<.3;}
   bool isFig(float a){return isD(a,.65)||isD(a,.7);}            // character / creature: fine grid
   bool isThin(float a){return isD(a,.5)||isD(a,.55)||isD(a,.6);} // flower, rain, glow
@@ -80,7 +80,8 @@ const asciiMat = new THREE.ShaderMaterial({
   void main(){
     vec2 fc=gl_FragCoord.xy;
     vec4 own=S(fc);float a=own.a;vec3 o;
-    if(isFig(a)){
+    if(isD(a,.925)){o=own.rgb*uExp;}   // world-anchored letters: already glyphs
+    else if(isFig(a)){
       // characters and creatures: fine grid with small cells
       bool cre=isD(a,.7);
       vec2 cp=fpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
@@ -108,7 +109,7 @@ const asciiMat = new THREE.ShaderMaterial({
         else if(isD(s.a,.6)){thin=3.;tcol=s.rgb;}
         else if(isD(s.a,.55)){if(thin<3.){thin=2.;tcol=s.rgb;}}
         else if(isD(s.a,.5)){if(thin<2.){thin=1.;tcol=s.rgb;}}
-        else if(!isFig(s.a)){acc+=s.rgb;n+=1.;mcat=s.a;}
+        else if(!isFig(s.a)&&!isD(s.a,.925)){acc+=s.rgb;n+=1.;mcat=s.a;}
       }}
       float m=(isGrass(cen.a)||isThin(cen.a)||isFig(cen.a))?mcat:cen.a;
       float hc=h21(cell),sl,k=1.8,bg=.07;vec3 c;

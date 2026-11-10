@@ -87,8 +87,55 @@ export const MID = {
   GLOW: .6,      // bright thin objects (shard, window, web) → + x * # @
   ACTOR: .65,    // fine grid, armor glyphs (knight, NPC, skeleton)
   CREATURE: .7,  // fine grid, fur glyphs (wolf, spider)
-  WATER: .75, LEAF: .8, WOOD: .85, STONE: .9, GROUND: .95
+  WATER: .75, LEAF: .8, WOOD: .85, STONE: .9, GROUND: .95,
+  TEXT: .925     // world-anchored letters already drawn in the scene pass → shown as they are
 };
-export function tag(m, id) { m.opacity = id; m.transparent = false; return m; }
+export function tag(m, id) { m.opacity = id; m.transparent = false; if (id === MID.STONE) worldGlyphs(m); return m; }
+
+/* ---------------- world-anchored glyphs ----------------
+   Stone surfaces carry their letters in world space (triplanar), like text carved into the wall:
+   near the camera the letters are big, far away they are small. Brightness picks a denser letter. */
+const WG_CHARS = ".,:;-~+=*ivxzrnucsoaewqpdbkhQ0O8&%$#@MWN";
+let WG_TEX = null;
+function wgAtlas() {
+  if (WG_TEX) return WG_TEX;
+  const cw = 32, ch = 48, cols = 16, rows = Math.ceil(WG_CHARS.length / cols);
+  const c = document.createElement('canvas'); c.width = cw * cols; c.height = ch * rows;
+  const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = 'bold 44px Consolas,"Courier New",monospace';
+  WG_CHARS.split('').forEach((g, i) => x.fillText(g, (i % cols) * cw + cw / 2, Math.floor(i / cols) * ch + ch * .54));
+  WG_TEX = new THREE.CanvasTexture(c); WG_TEX.flipY = false; WG_TEX.anisotropy = 4;
+  WG_TEX.minFilter = THREE.LinearMipmapLinearFilter; WG_TEX.magFilter = THREE.LinearFilter;
+  return WG_TEX;
+}
+export const WG = { cell: new THREE.Vector2(.28, .42) };   // letter size in metres (width, height)
+function worldGlyphs(m) {
+  m.opacity = MID.TEXT;
+  m.onBeforeCompile = sh => {
+    sh.uniforms.tWG = { value: wgAtlas() }; sh.uniforms.wgCell = { value: WG.cell };
+    sh.vertexShader = 'varying vec3 vWP; varying vec3 vWN;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+      vec4 wgp = vec4(transformed, 1.); vec3 wgn = objectNormal;
+      #ifdef USE_INSTANCING
+        wgp = instanceMatrix * wgp; wgn = mat3(instanceMatrix) * wgn;
+      #endif
+      vWP = (modelMatrix * wgp).xyz; vWN = normalize(mat3(modelMatrix) * wgn);`);
+    sh.fragmentShader = `varying vec3 vWP; varying vec3 vWN; uniform sampler2D tWG; uniform vec2 wgCell;
+      float wgH(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      vec2 wgUV(vec3 p, vec3 n){
+        vec3 a = abs(n);
+        if (a.y > a.x && a.y > a.z) return vec2(p.x, -p.z);   // top faces
+        return a.x > a.z ? vec2(-p.z * sign(n.x), p.y) : vec2(p.x * sign(n.z), p.y);
+      }\n` + sh.fragmentShader.replace('gl_FragColor = vec4( outgoingLight, diffuseColor.a );', `
+      vec3 wn = normalize(vWN);
+      vec2 g = wgUV(vWP, wn) / wgCell, cell = floor(g), lp = fract(g);
+      float face = abs(wn.y) > .7 ? 3. : (abs(wn.x) > abs(wn.z) ? 1. : 2.);
+      float h = wgH(cell + face * 17.31), l = clamp(dot(outgoingLight, vec3(.299, .587, .114)) * 1.05, 0., 1.);
+      float idx = clamp(floor(pow(l, .7) * ${WG_CHARS.length - 1}. + (h - .5) * 10.), 0., ${WG_CHARS.length - 1}.);
+      vec2 at = vec2((mod(idx, 16.) + lp.x) / 16., (floor(idx / 16.) + 1. - lp.y) / ${Math.ceil(WG_CHARS.length / 16)}.);
+      float ink = texture2D(tWG, at).r * step(.035, l);
+      gl_FragColor = vec4(outgoingLight * (ink * 1.35 + .05), diffuseColor.a );`);
+  };
+  m.customProgramCacheKey = () => 'wg';
+}
 export const lam = (color, id, o = {}) => tag(new THREE.MeshLambertMaterial(Object.assign({ color }, o)), id);
 export const basic = (color, id) => tag(new THREE.MeshBasicMaterial({ color }), id);
