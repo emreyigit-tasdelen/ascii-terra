@@ -104,6 +104,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `2` / `3` | ateş topu / kasırga |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
+| `F` | atı çağır / bin / in (daha hızlı; binerken yuvarlanma ve zıplama yok) |
 | `Enter` | sohbet (çok oyunculu) |
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |

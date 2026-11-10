@@ -355,6 +355,45 @@ export function makeWolf(seed = 1) {
   return { g, body, head, jaw, legs, tail, meshes: meshesOf(g) };
 }
 
+/* ================= horse (mount): same rig layout as the wolf, so animWolf drives it; scaled up ================= */
+export function makeHorse(seed = 3) {
+  const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); body.position.y = .82; g.add(body);
+  const C = 0xd9d5cc, LT = 0xf4f1ea, MANE = 0xeeeae2, HOOF = 0x2a2622;
+  const fur = { color2: LT, mix: (x, y, z, nx, ny) => .35 + ny * .5, vary: .12, freq: 26 };
+  const tb = new PB(id);
+  tb.add(displace(ell(.24, .27, .56, 22, 14), .012, 10, seed), C, 'matte', [0, .06, -.02], 0, 0, fur);   // barrel
+  tb.add(displace(ell(.25, .27, .26, 18, 12), .012, 10, seed + 2), C, 'matte', [0, .08, .34], 0, 0, fur);   // chest
+  tb.add(displace(ell(.25, .26, .26, 18, 12), .012, 10, seed + 4), C, 'matte', [0, .1, -.4], 0, 0, fur);    // rump
+  tb.add(taper([[0, .14, .42], [0, .38, .6], [0, .6, .7]], .17, .1, 8, 12), C, 'matte', 0, 0, 0, fur);         // neck
+  for (let k = 0; k < 16; k++) { const t = k / 15, y = .2 + t * .44, z = .38 + t * .3; tb.add(cone(.03, .16, 4), MANE, 'cloth', [(hash2(k, seed) - .5) * .06, y + .06, z - .05], [-2.2 + t * .5, 0, (hash2(k, 4) - .5) * .5], 0, { vary: .15 }); }
+  tb.add(ell(.2, .05, .24, 12, 6), 0x3a2418, 'matte', [0, .32, .02]);   // saddle
+  body.add(tb.build());
+  const head = new THREE.Group(); head.position.set(0, .6, .7); body.add(head);
+  const hb = new PB(id);
+  hb.add(taper([[0, 0, 0], [0, -.08, .18], [0, -.2, .34]], .1, .055, 8, 10), C, 'matte', 0, 0, 0, fur);   // long face
+  hb.add(sph(.06, 8, 6), LT, 'matte', [0, -.21, .35]);
+  [-1, 1].forEach(s => { hb.add(cone(.03, .1, 5), C, 'matte', [s * .05, .1, -.02], [-.3, 0, s * .15]); hb.add(sph(.018, 6, 5), 0x0a0a0a, 'gloss', [s * .07, -.02, .12]); });
+  for (let k = 0; k < 4; k++) hb.add(cone(.03, .14, 4), MANE, 'cloth', [(k - 1.5) * .02, .06, .06], [-.6, 0, (k - 1.5) * .2]);   // forelock
+  head.add(hb.build());
+  const jaw = new THREE.Group(); jaw.position.set(0, -.2, .3); head.add(jaw);
+  const legs = [];
+  [[-.14, -.02, .36, 1], [.14, -.02, .36, 1], [-.14, 0, -.42, 0], [.14, 0, -.42, 0]].forEach(([x, y, z, front]) => {
+    const piv = new THREE.Group(); piv.position.set(x, y, z); body.add(piv);
+    const up = new PB(id), kn = new THREE.Group(), lo = new PB(id);
+    up.add(taper([[0, .06, 0], [0, -.4, front ? .0 : .04]], front ? .085 : .1, .045, 6, 9), C, 'matte', 0, 0, 0, fur);
+    kn.position.set(0, -.4, front ? 0 : .04);
+    lo.add(taper([[0, 0, 0], [0, -.38, front ? .02 : -.03]], .04, .032, 5, 8), C, 'matte', 0, 0, 0, { vary: .1 });
+    lo.add(taper([[0, -.34, 0], [0, -.42, .01]], .045, .05, 6, 4), HOOF, 'gloss');
+    piv.add(up.build()); piv.add(kn); kn.add(lo.build()); legs.push({ piv, kn, front });
+  });
+  const tail = new THREE.Group(); tail.position.set(0, .2, -.64); body.add(tail);
+  const tl = new PB(id);
+  for (let k = 0; k < 7; k++) tl.add(taper([[0, 0, 0], [(k - 3) * .015, -.25, -.12], [(k - 3) * .03, -.62, -.1]], .035, .012, 8, 5), MANE, 'cloth', 0, 0, 0, { vary: .15 });
+  tail.add(tl.build());
+  g.scale.setScalar(1.55);
+  return { g, body, head, jaw, legs, tail, meshes: meshesOf(g) };
+}
+
 /* ================= giant spider ================= */
 export function makeSpider() {
   const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); body.position.y = 1.3; g.add(body);

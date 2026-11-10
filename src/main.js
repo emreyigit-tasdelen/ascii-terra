@@ -2,7 +2,7 @@
 import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
-import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC } from './actors.js';
+import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC, toggleMount } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion } from './game.js';
@@ -36,6 +36,7 @@ addEventListener('keydown', e => {
   else if (k === '4' || k === 'q') usePotion();
   else if (k === 'e') { const n = nearestNPC(); if (n) interact(n); else closeDialog(); }
   else if (k === 'c') doDodge();
+  else if (k === 'f') toggleMount();
   else if (k === 'i') toggleInv(); else if (k === 'm') toggleMini(); else if (k === 'h') toggleHelp();
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }

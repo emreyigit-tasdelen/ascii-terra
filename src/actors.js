@@ -5,7 +5,7 @@ import {
 } from './core.js';
 import { scene, camera, ENV } from './render.js';
 import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
-import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
+import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeHorse, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
@@ -22,6 +22,16 @@ export const TGT = { e: null };
   P.lamp = new THREE.PointLight(0xffb070, 1.1, 18); P.lamp.position.set(-.3, 1.3, .4); r.g.add(P.lamp);
   const arc = new THREE.Mesh(new THREE.TorusGeometry(1.9, .04, 3, 24, Math.PI * .9), basic(0xe8eef8, MID.GLOW));
   arc.rotation.x = Math.PI / 2; arc.position.set(0, 1.15, .3); arc.visible = false; r.g.add(arc); P.arc = arc;
+}
+
+/* ================= horse (mount): F to call / mount / dismount ================= */
+export const HORSE = { rig: null, on: false, ph: 0, x: 0, z: 0, face: 0 };
+{ const h = makeHorse(); h.g.visible = false; scene.add(h.g); HORSE.rig = h; }
+export function toggleMount() {
+  if (P.dead) return;
+  if (HORSE.on) { HORSE.on = false; HORSE.rig.g.visible = false; P.x += Math.cos(P.face) * 1.3; P.z -= Math.sin(P.face) * 1.3; toast('Dismounted'); return; }
+  if (P.air || P.dodgeT > 0 || P.high > .5) return;
+  HORSE.on = true; HORSE.rig.g.visible = true; HORSE.x = P.x; HORSE.z = P.z; HORSE.face = P.face; toast('Mounted — F to dismount');
 }
 
 /* ================= NPC'ler ================= */
@@ -181,13 +191,13 @@ export function doWhirl() {
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
 }
 export function doDodge() {
-  if (P.dead || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
+  if (P.dead || HORSE.on || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
   const l = Math.hypot(P.mx || 0, P.mz || 0);
   if (l > .1) { P.ddx = P.mx / l; P.ddz = P.mz / l; } else { P.ddx = Math.sin(P.face); P.ddz = Math.cos(P.face); }
   P.face = Math.atan2(P.ddx, P.ddz); burst('dust', P.x, P.y + .1, P.z, 8);
 }
 export function doJump() {
-  if (P.dead || P.air || P.dodgeT > 0) return; P.vy = 8.6; P.air = true; burst('dust', P.x, P.y + .05, P.z, 5);
+  if (P.dead || HORSE.on || P.air || P.dodgeT > 0) return; P.vy = 8.6; P.air = true; burst('dust', P.x, P.y + .05, P.z, 5);
 }
 const _dir = new THREE.Vector3();
 export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
@@ -398,6 +408,7 @@ export function updatePlayer(dt) {
   P.dodgeCd -= dt; P.lastHit += dt; P.hurtT -= dt; P.hitT -= dt; P.aimLock -= dt; P.comboT -= dt;
   const r = P.rig;
   if (P.dead) {
+    if (HORSE.on) { HORSE.on = false; HORSE.rig.g.visible = false; }
     P.deadT -= dt; P.g.rotation.x = Math.max(-1.45, P.g.rotation.x - dt * 3);
     if (P.deadT <= 0) { P.dead = false; P.hp = P.maxhp; P.x = 0; P.z = 6; P.vx = P.vz = 0; S.gold = Math.floor(S.gold * .9); P.g.rotation.x = 0; }
     P.g.position.set(P.x, P.y, P.z); return;
@@ -410,7 +421,7 @@ export function updatePlayer(dt) {
   const pvx = P.vx, pvz = P.vz;
   if (P.dodgeT > 0) { P.dodgeT -= dt; P.vx = P.ddx * 13; P.vz = P.ddz * 13; }
   else {
-    const run = keys.shift && !P.block ? 1 : 0, sp = (run ? 9.5 : 5.8) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
+    const run = keys.shift && !P.block ? 1 : 0, sp = (HORSE.on ? (run ? 17 : 10) : (run ? 9.5 : 5.8)) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
     P.vx += (mx * sp - P.vx) * a; P.vz += (mz * sp - P.vz) * a;
   }
   let nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;
@@ -443,7 +454,15 @@ export function updatePlayer(dt) {
   if (P.stunT > 0) r.spine.rotation.x -= .35;
   if (P.spinT > 0) { P.spinT -= dt; P.face += dt * 26; }
   P.arc.visible = P.atkT > .3 && P.atkT < .62; P.arc.rotation.z = [-.2, .9, -1.2][P.atkType] ?? 0;
-  P.g.position.set(P.x, P.y, P.z); P.g.rotation.y = P.face;
+  if (HORSE.on) {   // riding: sit in the saddle, legs astride; the horse runs under the knight
+    const H = HORSE.rig, hs = Math.hypot(P.vx, P.vz);
+    HORSE.ph += dt * Math.max(1.2, hs * 1.05);
+    animWolf(H, { amt: Math.min(1, hs / 6), run: clamp((hs - 11) / 4, 0, 1), ph: HORSE.ph, t: T, dt, atk: -1 });
+    H.g.position.set(P.x, P.y, P.z); H.g.rotation.y = P.face;
+    r.legL.p.rotation.x = r.legR.p.rotation.x = -1.35; r.legL.kn.rotation.x = r.legR.kn.rotation.x = 1.45;
+    r.legL.p.rotation.z = .42; r.legR.p.rotation.z = -.42;
+    P.g.position.set(P.x, P.y + H.body.position.y * 1.55 - .25, P.z); P.g.rotation.y = P.face;
+  } else P.g.position.set(P.x, P.y, P.z), P.g.rotation.y = P.face;
   P.lamp.intensity = .5 + ENV.night * 1.1;
   if ((Math.hypot(P.x, P.z) < 9 || Math.hypot(P.x - CAMP.x, P.z - CAMP.z) < 6) && P.hp < P.maxhp) P.hp = Math.min(P.maxhp, P.hp + 8 * dt);
   else if (P.lastHit > 6 && P.hp < P.maxhp) P.hp = Math.min(P.maxhp, P.hp + 1.5 * dt);

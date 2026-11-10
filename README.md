@@ -102,6 +102,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `2` / `3` | fireball / whirlwind |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
+| `F` | call / mount / dismount your horse (faster; no roll or jump while riding) |
 | `Enter` | chat (multiplayer) |
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` | inventory / map |
