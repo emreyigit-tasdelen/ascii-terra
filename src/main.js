@@ -2,6 +2,7 @@
 import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
+import { toggleCraft, initCraft, craftOpen } from './craft.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC, toggleMount } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
@@ -20,6 +21,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (started && (e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !e.repeat) {   // Esc: close an open window first, otherwise pause
+    if (e.key === 'Escape' && !paused && craftOpen()) { toggleCraft(false); return; }
     if (e.key === 'Escape' && !paused && ($('dialog').hidden === false || invOpen())) { closeDialog(); if (invOpen()) toggleInv(); return; }
     setPaused(!paused); return;
   }
@@ -37,6 +39,7 @@ addEventListener('keydown', e => {
   else if (k === 'e') { const n = nearestNPC(); if (n) interact(n); else closeDialog(); }
   else if (k === 'c') doDodge();
   else if (k === 'f') toggleMount();
+  else if (k === 'k') toggleCraft();
   else if (k === 'i') toggleInv(); else if (k === 'm') toggleMini(); else if (k === 'h') toggleHelp();
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
@@ -74,7 +77,7 @@ function begin(fresh) {
   if (!NET.account) try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
   NET.name = nm;
   if (fresh) resetSave(); else load();
-  applyState(); buildHotbar();
+  applyState(); buildHotbar(); initCraft();
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
   started = true; $('overlay').hidden = true; $('hud').hidden = false;

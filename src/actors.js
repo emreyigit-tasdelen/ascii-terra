@@ -7,6 +7,7 @@ import { scene, camera, ENV } from './render.js';
 import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
 import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeHorse, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
+import { craftMods } from './craft.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
 
@@ -202,7 +203,13 @@ export function doJump() {
 const _dir = new THREE.Vector3();
 export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
   if (e.dead) return;
-  const local = !o.remote, crit = o.crit ?? (Math.random() < .12); if (local) dmg = Math.round(dmg * (crit ? 2 : 1));
+  const M = craftMods(), id = e.k.id, undead = id === 'skeleton' || id === 'ghoul', beast = id === 'wolf' || id === 'widow' || id === 'troll' || id === 'dragon';
+  const local = !o.remote, crit = o.crit ?? (Math.random() < .12 + M.crit);
+  if (local) {   // crafted blade: metal + runes
+    dmg = (dmg + M.atk + (beast ? M.beast : 0)) * (1 + M.dmg + (undead ? M.undead : 0) + (beast ? M.beastPct : 0) + (e.k.boss ? M.boss : 0) + (keys.shift ? M.run : 0) + M.extra);
+    dmg = Math.round(dmg * (crit ? 2 + M.critDmg : 1));
+    if (M.leech > 0) P.hp = Math.min(P.maxhp, P.hp + dmg * M.leech);
+  }
   const dx = e.x - fromX, dz = e.z - fromZ, d = Math.hypot(dx, dz) || 1, sc = e.k.scale || 1; _dir.set(dx / d, 0, dz / d);
   burst(e.k.fx, e.x - dx / d * .3 * sc, e.y + e.k.h * .45, e.z - dz / d * .3 * sc, crit ? 18 : 9, _dir);
   floatText((crit ? 'CRIT ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : (local ? '' : 'info'));
@@ -221,9 +228,9 @@ function killEnemy(e, by) {
 }
 export function grantKill(e) {   // reward goes to the killer
   S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
-  rollDrop(e.k.id, e.lvl); addXP(e.xp); S.gold += e.gold;
+  rollDrop(e.k.id, e.lvl); addXP(e.xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
   floatText('+' + e.xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
-  if (e.k.boss || e.k.elite) toast(e.k.name + ' yenildi!');
+  if (e.k.boss || e.k.elite) toast(e.k.name + ' defeated!');
   checkQuests();
 }
 // src: where the attack came from {x, z, e?}; without it (area attacks) it cannot be blocked

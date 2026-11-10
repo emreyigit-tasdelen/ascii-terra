@@ -105,6 +105,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
 | `F` | atı çağır / bin / in (daha hızlı; binerken yuvarlanma ve zıplama yok) |
+| `K` | üretim: kılıç metali ve en fazla 3 rün seç (bonuslar her kılıç vuruşuna uygulanır) |
 | `Enter` | sohbet (çok oyunculu) |
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |

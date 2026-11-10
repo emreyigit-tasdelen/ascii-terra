@@ -91,3 +91,12 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 #recbox{border:1px solid #c9a227;padding:8px 12px;margin:8px auto;max-width:360px;font-size:12px;color:#ccc}
 #recbox p{margin:4px 0!important;font-size:12px!important}
 #reccode{font-size:20px;color:#ffd88a;letter-spacing:2px;margin:6px 0;user-select:all}
+#craft{position:absolute;left:50%;top:50%;background:#07090df2;padding:10px 14px;transform:translate(-50%,-50%);width:min(760px,94vw);max-height:90vh;overflow:auto;font-size:12px;z-index:30}
+#craft .ctop{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}#craft .ctop b{color:#fff;letter-spacing:1px}
+#craft .clabel{color:#888;margin:6px 0 3px;font-size:11px}
+#craft .crow{display:flex;flex-wrap:wrap;gap:4px}
+#craft button{background:#0d0f14;border:1px solid #333;color:#ccc;font:inherit;padding:2px 7px;cursor:pointer}
+#craft button.on{border-color:#c9a227;color:#fff}#craft button:hover{border-color:#777}
+#craft .cmain{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #222;border-bottom:1px solid #222;margin:6px 0;padding:6px 0}
+#craftArt{margin:0;font-size:15px;line-height:15px;min-width:300px;flex:1;text-shadow:0 0 6px currentColor}
+#craft .cside{width:220px;line-height:1.6}#craftSlots button{width:30px;height:30px;font-size:16px}
