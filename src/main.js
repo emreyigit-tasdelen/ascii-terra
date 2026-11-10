@@ -1,5 +1,5 @@
 // Entry point: input, camera, main loop
-import { $, clamp, lerp, keys, MOUSE, heightAt, swampF } from './core.js';
+import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC } from './actors.js';
@@ -141,8 +141,9 @@ function updateCamera(dt, run) {
   const k = 1 - Math.exp(-8 * dt);
   if (run) { cam.tx = lerp(cam.tx, P.x, k); cam.ty = lerp(cam.ty, P.y, k); cam.tz = lerp(cam.tz, P.z, k); }
   else { cam.yaw += dt * .05; cam.tx = 0; cam.tz = 8; cam.ty = heightAt(0, 8); }
-  const cp = Math.cos(cam.pitch), sh = FXS.shake * FXS.shake;
-  let cx = cam.tx + Math.sin(cam.yaw) * cp * cam.dist, cy = cam.ty + 1 + Math.sin(cam.pitch) * cam.dist, cz = cam.tz + Math.cos(cam.yaw) * cp * cam.dist;
+  cam.hk = lerp(cam.hk || 0, run ? smooth(1.5, 6, P.high || 0) : 0, 1 - Math.exp(-2.5 * dt));   // high ground: zoom in
+  const D = cam.dist * (1 - .5 * cam.hk), cp = Math.cos(cam.pitch), sh = FXS.shake * FXS.shake;
+  let cx = cam.tx + Math.sin(cam.yaw) * cp * D, cy = cam.ty + 1 + Math.sin(cam.pitch) * D, cz = cam.tz + Math.cos(cam.yaw) * cp * D;
   cy = Math.max(cy, heightAt(cx, cz) + 2);
   cx += (Math.random() - .5) * sh * 1.2; cy += (Math.random() - .5) * sh * 1.2; cz += (Math.random() - .5) * sh * 1.2;
   const lowK = clamp(1 - cam.pitch / .6, 0, 1);   // look up when near the horizon

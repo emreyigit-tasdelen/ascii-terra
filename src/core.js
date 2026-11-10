@@ -59,16 +59,34 @@ export function findLand(cx, cz) {
 const CG = 8;
 export const cgrid = new Map();
 const ck = (x, z) => Math.floor(x / CG) + ',' + Math.floor(z / CG);
-export function addCollider(x, z, r, type) { const k = ck(x, z); let a = cgrid.get(k); if (!a) cgrid.set(k, a = []); a.push({ x, z, r, type }); }
+// top: optional height of the obstacle; a body standing at or above it walks over it (towers, merlons)
+export function addCollider(x, z, r, type, top = Infinity) { const k = ck(x, z); let a = cgrid.get(k); if (!a) cgrid.set(k, a = []); a.push({ x, z, r, type, top }); }
+
+/* ---------------- walkable platforms (high ground: tower tops, stairs) ---------------- */
+export const PLATS = [];
+// box: centre x/z, half sizes hx/hz, rotation ry; cyl: centre x/z, radius r. top = walkable height
+export function addPlat(p) { PLATS.push(p); }
+const onPlat = (p, x, z) => {
+  if (p.r) return (x - p.x) ** 2 + (z - p.z) ** 2 < p.r * p.r;
+  const dx = x - p.x, dz = z - p.z, c = Math.cos(p.ry || 0), s = Math.sin(p.ry || 0);
+  return Math.abs(dx * c - dz * s) < p.hx && Math.abs(dx * s + dz * c) < p.hz;
+};
+// highest walkable height under (x, z) that a body at height y can step onto
+export function standAt(x, z, y = Infinity, step = .7) {
+  let h = heightAt(x, z);
+  for (const p of PLATS) if (p.top > h && p.top <= y + step && onPlat(p, x, z)) h = p.top;
+  return h;
+}
 export function addWall(x1, z1, x2, z2, r, type) {
   const L = Math.hypot(x2 - x1, z2 - z1), n = Math.max(1, Math.ceil(L / (r * 1.1)));
   for (let i = 0; i <= n; i++) { const t = i / n; addCollider(lerp(x1, x2, t), lerp(z1, z2, t), r, type); }
 }
-export function collide(p, rad) {
+export function collide(p, rad, y = -Infinity) {
   const cx = Math.floor(p.x / CG), cz = Math.floor(p.z / CG);
   for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
     const a = cgrid.get((cx + i) + ',' + (cz + j)); if (!a) continue;
     for (const c of a) {
+      if (y >= c.top - .15) continue;
       const dx = p.x - c.x, dz = p.z - c.z, m = c.r + rad, d2 = dx * dx + dz * dz;
       if (d2 < m * m && d2 > 1e-6) { const d = Math.sqrt(d2); p.x = c.x + dx / d * m; p.z = c.z + dz / d * m; }
     }

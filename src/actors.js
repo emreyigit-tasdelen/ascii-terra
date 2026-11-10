@@ -1,7 +1,7 @@
 // Player (Senje), NPCs, enemies and their AI, skills, projectiles, effects
 import {
   THREE, clamp, lerp, mulberry32, fbm, angDiff, WATER, HALF, CASTLE, SWAMP, CHAPEL, CAMP, keys, MOUSE,
-  heightAt, collide, MID, basic
+  heightAt, standAt, collide, MID, basic
 } from './core.js';
 import { scene, camera, ENV } from './render.js';
 import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
@@ -406,7 +406,7 @@ export function updatePlayer(dt) {
   const sy = Math.sin(P.camYaw || 0), cy = Math.cos(P.camYaw || 0);
   let mx = ix * cy - iz * sy, mz = -ix * sy - iz * cy; const len = Math.hypot(mx, mz); if (len > 0) { mx /= len; mz /= len; }
   P.mx = mx; P.mz = mz;
-  const ground = heightAt(P.x, P.z), inWater = ground < WATER - .2 && !P.air;
+  const ground = standAt(P.x, P.z, P.y), inWater = ground < WATER - .2 && !P.air;
   const pvx = P.vx, pvz = P.vz;
   if (P.dodgeT > 0) { P.dodgeT -= dt; P.vx = P.ddx * 13; P.vz = P.ddz * 13; }
   else {
@@ -414,11 +414,12 @@ export function updatePlayer(dt) {
     P.vx += (mx * sp - P.vx) * a; P.vz += (mz * sp - P.vz) * a;
   }
   let nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;
-  const bad = (x, z) => { const h = heightAt(x, z); return h - P.y > (P.air ? 2.2 : 1.25) || h < WATER - 1.5; };
+  const bad = (x, z) => { const h = standAt(x, z, P.y); return h - P.y > (P.air ? 2.2 : 1.25) || h < WATER - 1.5; };
   if (bad(nx, nz)) { const okx = !bad(nx, P.z), okz = !bad(P.x, nz); if (!okx) { nx = P.x; P.vx = 0; } if (!okz) { nz = P.z; P.vz = 0; } }
-  const q = { x: clamp(nx, -HALF + 3, HALF - 3), z: clamp(nz, -HALF + 3, HALF - 3) }; collide(q, .5); P.x = q.x; P.z = q.z;
+  const q = { x: clamp(nx, -HALF + 3, HALF - 3), z: clamp(nz, -HALF + 3, HALF - 3) }; collide(q, .5, P.y); P.x = q.x; P.z = q.z;
   // jump / gravity
-  const gy = heightAt(P.x, P.z);
+  const gy = standAt(P.x, P.z, P.y);
+  P.high = gy - heightAt(P.x, P.z);   // > 0 on a tower or stairs (camera zooms in)
   if (P.air) { P.vy -= 24 * dt; P.y += P.vy * dt; if (P.y <= gy) { P.y = gy; P.air = false; P.vy = 0; burst('dust', P.x, P.y + .05, P.z, 6); } }
   else { if (P.y - gy > .7) { P.air = true; P.vy = 0; } else P.y = lerp(P.y, gy, 1 - Math.exp(-20 * dt)); }
   // acceleration → lean, turn rate

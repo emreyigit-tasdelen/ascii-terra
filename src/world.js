@@ -1,7 +1,7 @@
 // Static world: terrain, water, grass, trees, village, castle ruins, coastal menhirs, shards, spider lair
 import {
-  THREE, clamp, lerp, smooth, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
-  heightAt, isLand, findLand, pathDist, addCollider, addWall, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
+  THREE, clamp, lerp, smooth, angDiff, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
+  heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
 } from './core.js';
 import { scene, ENV } from './render.js';
 import { makeDeadTree, PB } from './models.js';
@@ -143,11 +143,12 @@ export function updateGrass(px, pz, limit) {
 }
 
 /* ================= trees + rocks ================= */
+export const TOWER = { x: 18, z: -26, r: 3.6, h: 9 };   // watchtower (built further below)
 {
   const rng = mulberry32(1234), T = [];
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z), f = fbm(x * .022 + 100, z * .022 - 50, 3), r = rng();
-    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15) continue;
+    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15 || Math.hypot(x - TOWER.x, z - TOWER.z) < 16) continue;
     if (f < .46 || (f < .54 && r > (f - .46) * 12)) continue;
     T.push({ x, z, h, s: .8 + rng() * .9, ry: rng() * 6.28, c: rng(), pine: rng() < .45 });
   }
@@ -179,7 +180,7 @@ export function updateGrass(px, pz, limit) {
   const R = [];
   for (let i = 0; i < 5000 && R.length < 240; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z);
-    if (Math.hypot(x, z) < 24 || insideCastle(x, z, -3) || pathDist(x, z) < 3 || h < WATER + .5) continue;
+    if (Math.hypot(x, z) < 24 || insideCastle(x, z, -3) || pathDist(x, z) < 3 || h < WATER + .5 || Math.hypot(x - TOWER.x, z - TOWER.z) < 10) continue;
     if (rng() > .1 + smooth(8, 16, h) * .7 + (rocky(x, z) ? .5 : 0)) continue;
     R.push({ x, z, h, s: .6 + rng() * 1.8, ry: rng() * 6.28 });
   }
@@ -361,6 +362,33 @@ export function updateWorld(t) {
   }
   for (let i = 0; i < 10; i++) { const a = rng() * 6.28, d = rng() * 12; box(1.4 + rng() * 2, .5 + rng(), 1.2 + rng(), ash, DRAGON_LAIR.x + Math.cos(a) * d, heightAt(DRAGON_LAIR.x + Math.cos(a) * d, DRAGON_LAIR.z + Math.sin(a) * d) + .1, DRAGON_LAIR.z + Math.sin(a) * d, rng() * 3); }
 }
+/* ================= watchtower (high ground): round tower with a spiral stair ================= */
+{
+  const T = TOWER, hy = heightAt(T.x, T.z) - .3, top = hy + .3 + T.h, rng = mulberry32(4242);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(T.r, T.r + .35, T.h + .3, 20, 1), stoneM[0]);
+  body.position.set(T.x, hy + (T.h + .3) / 2, T.z); scene.add(body);
+  addCollider(T.x, T.z, T.r, 'wall', top); addPlat({ x: T.x, z: T.z, r: T.r - .05, top });
+  // floor slab + merlons (gap where the stair arrives)
+  const slab = new THREE.Mesh(new THREE.CylinderGeometry(T.r + .2, T.r + .2, .35, 20), stoneM[2]); slab.position.set(T.x, top - .17, T.z); scene.add(slab);
+  const N = 14, gapA = -Math.PI / 2;
+  for (let i = 0; i < N; i++) {
+    const a = i / N * Math.PI * 2; if (Math.abs(angDiff(a, gapA)) < .5) continue;
+    const mx = T.x + Math.sin(a) * (T.r - .05), mz = T.z + Math.cos(a) * (T.r - .05);
+    if (rng() < .15) continue;   // a few broken ones
+    box(.9, 1 + rng() * .3, .55, stoneM[i % 3], mx, top + .5, mz, a);
+    addCollider(mx, mz, .45, 'wall', top + 1.1);
+  }
+  // spiral stair: steps climb a full turn around the outside and arrive at the gap
+  const STEPS = 26, R0 = T.r + .1, R1 = T.r + 2, rm = (R0 + R1) / 2;
+  for (let i = 0; i < STEPS; i++) {
+    const a = gapA - (STEPS - i) / STEPS * Math.PI * 2 * .92, st = hy + .3 + (i + 1) * (T.h / STEPS);
+    const x = T.x + Math.sin(a) * rm, z = T.z + Math.cos(a) * rm, w = R1 - R0, d = 2 * Math.PI * rm / STEPS * 1.05;
+    const sb = box(d, st - hy, w, stoneM[i % 3], x, (st + hy) / 2, z, a); sb.geometry.computeBoundingBox();
+    addPlat({ x, z, hx: d / 2 + .05, hz: w / 2, ry: a, top: st });
+  }
+  torch(T.x + Math.sin(gapA + .7) * (T.r - .3), T.z + Math.cos(gapA + .7) * (T.r - .3), top, 1.6);
+}
+
 /* ================= Misty Swamp: dead trees, ruined chapel, graveyard, priest camp ================= */
 export const campLight = new THREE.PointLight(0xff8833, 1.8, 26);
 export const GRAVES = [];
