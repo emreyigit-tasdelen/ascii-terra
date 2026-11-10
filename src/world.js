@@ -1,7 +1,7 @@
 // Static world: terrain, water, grass, trees, village, castle ruins, coastal menhirs, shards, spider lair
 import {
   THREE, clamp, lerp, smooth, angDiff, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
-  heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
+  heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, sketchAt, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
 } from './core.js';
 import { scene, ENV, REFL } from './render.js';
 import { makeDeadTree, PB } from './models.js';
@@ -151,7 +151,8 @@ export const TOWER = { x: 18, z: -26, r: 3.6, h: 9 };   // watchtower (built fur
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z), f = fbm(x * .022 + 100, z * .022 - 50, 3), r = rng();
     if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15 || Math.hypot(x - TOWER.x, z - TOWER.z) < 16) continue;
-    if (f < .46 || (f < .54 && r > (f - .46) * 12)) continue;
+    const sk = sketchAt(x, z), fs = f + sk.T * .2 - sk['.'] * .25;   // map sketch: forests and meadows
+    if (fs < .46 || (fs < .54 && r > (fs - .46) * 12)) continue;
     T.push({ x, z, h, s: .8 + rng() * .9, ry: rng() * 6.28, c: rng(), pine: rng() < .45 });
   }
   const pines = T.filter(t => t.pine), rounds = T.filter(t => !t.pine);

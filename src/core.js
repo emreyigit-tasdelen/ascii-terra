@@ -34,9 +34,53 @@ export const SWAMP = { x: 135, z: 20, r: 58 };                 // Misty Swamp (e
 export const CHAPEL = { x: 150, z: 34 }, CAMP = { x: 93, z: 13.5 };
 export const swampF = (x, z) => 1 - smooth(32, 58, Math.hypot(x - SWAMP.x, z - SWAMP.z));
 
+/* ---------------- map sketch ----------------
+   A hand-drawn 20x20 sketch of the whole map (one char = 20 m, row 0 = north, z -200). The terrain,
+   lakes and forests follow it, blended smoothly between cells; the fixed places (village, castle,
+   swamp, coast) still flatten or carve their own ground on top.
+   M mountains · ^ hills · T forest · . meadow · ~ lake · , open land */
+export const SKETCH = [
+  'MMMMMMMMMMMMMMMMMMMM',
+  'MM^^^^,,,,,,,,^^^^MM',
+  'M^^TT,,,,,,,,,,TT^^M',
+  'M^TT,,,^,,,,,,TTT^^M',
+  'M^T,,,^^,,,,,,,TT,^M',
+  'MTT,,,~~,,,,,,,,T,,M',
+  'MTT,TT~~,,,,,,T,,,,M',
+  'M^,TT,,,,.,,,,,,,,,M',
+  'M^,,TT,,,.,.,,TT,,,M',
+  'M,,,,,,,,..,,TT,,,,M',
+  'M^,,,,,,,...,,,,,,,M',
+  'M^,,,,,,,,.,,,,,,,,M',
+  'MTT,,,,,,,,,,,TT,,,M',
+  'M,TT,,,,,,,,,,,,,,,M',
+  'M,,,,,,,,,,,,,,,,,,M',
+  ',,,,,,,,,,,,,,,,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,',
+  ',,,,,,,,,,,,,,,,,,,,'
+];
+const SK_N = SKETCH.length, SK_C = 400 / SK_N, SK_KEYS = 'M^T.~';
+// blended weights of each sketch class at (x, z): { M, '^', T, '.', '~' } in 0..1
+export function sketchAt(x, z) {
+  const fx = clamp((x + 200) / SK_C - .5, 0, SK_N - 1.001), fz = clamp((z + 200) / SK_C - .5, 0, SK_N - 1.001);
+  const i = Math.floor(fx), j = Math.floor(fz), u = smooth(0, 1, fx - i), v = smooth(0, 1, fz - j), w = {};
+  for (const k of SK_KEYS) w[k] = 0;
+  const add = (ii, jj, k) => { const c = SKETCH[Math.min(jj, SK_N - 1)][Math.min(ii, SK_N - 1)]; if (c in w) w[c] += k; };
+  add(i, j, (1 - u) * (1 - v)); add(i + 1, j, u * (1 - v)); add(i, j + 1, (1 - u) * v); add(i + 1, j + 1, u * v);
+  return w;
+}
+
 export function heightAt(x, z) {
   let h = (fbm(x * .0065 + 31.7, z * .0065 + 12.3, 5) - .5) * 52;
   if (h > 5) h += (h - 5) * .9;
+  { // follow the map sketch
+    const w = sketchAt(x, z);
+    h += w['^'] * 7 + w.M * 16;
+    if (w['.'] > 0) h = lerp(h, 2.5 + (h - 2.5) * .3, w['.'] * .7);
+    if (w['~'] > 0) h = lerp(h, WATER - 2.6, smooth(.25, .75, w['~'] + (vnoise(x * .06, z * .06) - .5) * .5));   // ragged shore
+  }
   h = lerp(2.2, h, smooth(20, 70, Math.hypot(x, z)));                       // village plateau
   h = lerp(3, h, smooth(26, 44, Math.hypot(x - CASTLE.x, z - CASTLE.z)));   // castle plateau
   h -= smooth(70, 150, z) * 26;                                             // sea to the south
