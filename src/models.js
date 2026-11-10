@@ -1,9 +1,9 @@
-// Detaylı prosedürel modeller: plaka zırhlı şövalyeler, iskeletler, dev kurt, dev örümcek, ejderha.
-// Her vücut parçası tek bir birleşik geometriye (köşe renkli) indirgenir; malzeme türüne göre
-// metal (parlak), mat, kumaş (çift yüzlü) ve parlayan olarak ayrılır. Böylece detay yüksek, çizim çağrısı düşük kalır.
+// Detailed procedural models: plate-armored knights, skeletons, giant wolf, giant spider, dragon.
+// Each body part is merged into one vertex-coloured geometry, split by material type into
+// metal (shiny), matte, cloth (double-sided) and glowing. High detail, few draw calls.
 import { THREE, lerp, clamp, vnoise, hash2, mulberry32, MID, tag } from './core.js';
 
-/* ================= geometri yardımcıları ================= */
+/* ================= geometry helpers ================= */
 const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _p = new THREE.Vector3(), _s = new THREE.Vector3(), _up = new THREE.Vector3(0, 1, 0), _d = new THREE.Vector3();
 const n3 = (x, y, z) => vnoise(x + z * 1.71, y - z * .93) * .6 + vnoise(x * 2.1 - z * .37 + 9, y * 2.1 + z * 1.3) * .4;
 function xf(g, p, r, s) { _e.set(r ? r[0] : 0, r ? r[1] : 0, r ? r[2] : 0); _q.setFromEuler(_e); _m.compose(_p.set(...(p || [0, 0, 0])), _q, _s.set(...(s || [1, 1, 1]))); g.applyMatrix4(_m); return g; }
@@ -15,7 +15,7 @@ const cone = (r, h, s = 7) => new THREE.ConeGeometry(r, h, s);
 const lathe = (pts, seg = 16) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg);
 const ell = (rx, ry, rz, w = 16, h = 12) => new THREE.SphereGeometry(1, w, h).scale(rx, ry, rz);
 
-/* Eğri boyunca incelen tüp: r0/r1 sayı ya da r(t) fonksiyonu */
+/* Tube tapering along a curve: r0/r1 are numbers or an r(t) function */
 function taper(pts, r0, r1, ts = 10, rs = 8) {
   const curve = new THREE.CatmullRomCurve3(pts.map(p => new THREE.Vector3(...p)));
   const g = new THREE.TubeGeometry(curve, ts, 1, rs, false), pos = g.attributes.position, P = new THREE.Vector3();
@@ -25,7 +25,7 @@ function taper(pts, r0, r1, ts = 10, rs = 8) {
   }
   g.computeVertexNormals(); g.userData.curve = curve; return g;
 }
-/* Normal yönünde gürültüyle yüzey bozma (tüy, pul, kas) */
+/* Displace a surface with noise along the normal (fur, scales, muscle) */
 function displace(g, amp, freq, seed = 0, fn) {
   const p = g.attributes.position, n = g.attributes.normal;
   for (let i = 0; i < p.count; i++) {
@@ -35,7 +35,7 @@ function displace(g, amp, freq, seed = 0, fn) {
   }
   g.computeVertexNormals(); return g;
 }
-/* Kıvrımlı kumaş etek/pelerin */
+/* Wavy cloth skirt/cape */
 function foldCloth(rt, rb, h, folds = 9, tat = false) {
   const g = new THREE.CylinderGeometry(rt, rb, h, 32, 6, true), p = g.attributes.position;
   for (let i = 0; i < p.count; i++) {
@@ -48,7 +48,7 @@ function foldCloth(rt, rb, h, folds = 9, tat = false) {
 }
 function orientTo(g, dir) { _q.setFromUnitVectors(_up, _d.copy(dir).normalize()); _m.makeRotationFromQuaternion(_q); g.applyMatrix4(_m); return g; }
 
-/* ================= malzemeler ================= */
+/* ================= materials ================= */
 const MATS = {};
 function kmat(kind, id) {
   const key = kind + id; if (MATS[key]) return MATS[key];
@@ -72,7 +72,7 @@ function merge(list) {
   r.computeBoundingSphere(); return r;
 }
 
-/* Parça kurucu: geometrileri renklendirip malzeme türüne göre birleştirir */
+/* Part builder: colours geometries and merges them by material type */
 export class PB {
   constructor(id) { this.id = id; this.k = {}; }
   add(geo, color, kind = 'matte', p, r, s, o = {}) {
@@ -103,7 +103,7 @@ export class PB {
 }
 export function meshesOf(g) { const a = []; g.traverse(o => { if (o.isMesh) a.push(o); }); return a; }
 
-/* ================= iki ayaklı iskelet (rig) ================= */
+/* ================= biped rig ================= */
 function rig() {
   const g = new THREE.Group(), body = new THREE.Group(); body.position.y = .98; g.add(body);
   const spine = new THREE.Group(); spine.position.y = .06; body.add(spine);
@@ -113,7 +113,7 @@ function rig() {
   return { g, body, spine, neck, armL: arm(-1), armR: arm(1), legL: leg(-1), legR: leg(1) };
 }
 
-/* ================= silahlar ================= */
+/* ================= weapons ================= */
 export function makeSword(o = {}) {
   const pb = new PB(o.id ?? MID.ACTOR), G = o.guard ?? 0x8a7a5a, L = o.len ?? .92;
   const sh = new THREE.Shape(); sh.moveTo(-.026, 0); sh.lineTo(-.023, L - .12); sh.lineTo(0, L); sh.lineTo(.023, L - .12); sh.lineTo(.026, 0); sh.closePath();
@@ -151,25 +151,25 @@ function makeRoundShield(id) {
   return pb.build();
 }
 
-/* ================= şövalye ================= */
+/* ================= knight ================= */
 export function makeKnight(o = {}) {
   const id = o.id ?? MID.ACTOR, A = o.armor ?? 0xb3bac5, AD = o.armorDark ?? 0x737a84, CL = o.cloth ?? 0x7a1414, CH = o.chain ?? 0x4a4d53, LE = 0x3a2616, GD = o.gold ?? 0xa88a3a;
   const r = rig(), P = () => new PB(id), chain = { vary: .45, freq: 70 };
-  // bel + etek
+  // waist + skirt
   const pel = P();
   pel.add(cyl(.2, .27, .44, 18, true), CH, 'metal', [0, -.16, 0], 0, 0, chain);
   pel.add(foldCloth(.235, .34, .6, 9, o.tattered), CL, 'cloth', [0, -.24, 0], 0, 0, { vary: .22, freq: 9 });
   pel.add(new THREE.TorusGeometry(.215, .028, 6, 22), LE, 'matte', [0, .03, 0], [Math.PI / 2, 0, 0]);
   pel.add(box(.07, .06, .03), GD, 'metal', [0, .03, .225]);
   r.body.add(pel.build());
-  // gövde: göğüs zırhı, tabard, boyunluk
+  // torso: breastplate, tabard, gorget
   const ch = P();
   ch.add(lathe([[0, -.02], [.17, -.02], [.2, .08], [.215, .2], [.205, .32], [.17, .42], [.12, .47], [0, .48]], 22), A, 'metal', 0, 0, [1, 1, .74], { vary: .06, freq: 8 });
   ch.add(lathe([[.19, -.05], [.216, .06], [.229, .18], [.223, .3], [.2, .35]], 22), CL, 'cloth', 0, 0, [1, 1, .77], { vary: .18, freq: 10 });
   if (o.emblem != null) { ch.add(box(.035, .2, .012), o.emblem, 'matte', [0, .17, .178]); ch.add(box(.13, .035, .012), o.emblem, 'matte', [0, .21, .176]); }
   ch.add(lathe([[.12, .43], [.15, .47], [.115, .55], [.09, .565]], 16), A, 'metal');
   r.spine.add(ch.build());
-  // miğfer (sivri vizörlü bascinet) + zincir başlık
+  // helmet (pointed-visor bascinet) + mail coif
   const hd = P();
   hd.add(lathe([[0, .32], [.07, .315], [.125, .285], [.158, .22], [.17, .12], [.168, .02], [.152, -.06], [.125, -.1]], 20), A, 'metal', [0, .08, 0], 0, 0, { vary: .05 });
   hd.add(cone(.115, .2, 14), A, 'metal', [0, .12, .14], [Math.PI / 2, 0, 0], [1, .75, 1]);
@@ -179,7 +179,7 @@ export function makeKnight(o = {}) {
   hd.add(cyl(.16, .25, .2, 18, true), CH, 'metal', [0, -.05, -.01], 0, 0, chain);
   if (o.glowEyes) [-1, 1].forEach(s => hd.add(box(.05, .012, .02), 0xff2a10, 'glow', [s * .045, .19, .17]));
   const head = hd.build(); head.scale.setScalar(.92); r.neck.add(head);
-  // kollar: katmanlı omuzluk, kolluk, dirsek kanadı, eldiven
+  // arms: layered pauldron, vambrace, couter, gauntlet
   [r.armL, r.armR].forEach((a, i) => {
     const s = i ? 1 : -1, up = P();
     [[.155, .03], [.168, -.03], [.178, -.09]].forEach(([rr, yy], k) => up.add(cap(rr), k % 2 ? AD : A, 'metal', [s * .03, yy, 0], 0, [1.1, .62, 1.05]));
@@ -193,7 +193,7 @@ export function makeKnight(o = {}) {
     lo.add(box(.075, .06, .07), AD, 'metal', [0, -.36, .02]);
     a.el.add(lo.build());
   });
-  // bacaklar: kalçalık, dizlik, baldırlık, çelik pabuç
+  // legs: tasset, poleyn, greave, sabaton
   [r.legL, r.legR].forEach((L, i) => {
     const s = i ? 1 : -1, th = P();
     th.add(cyl(.088, .072, .42, 12), A, 'metal', [0, -.23, 0]);
@@ -209,7 +209,7 @@ export function makeKnight(o = {}) {
     for (let k = 0; k < 3; k++) ft.add(sph(.05, 8, 6), A, 'metal', [0, 0, .1 + k * .04], 0, [1.1, .5, .8]);
     L.ft.add(ft.build());
   });
-  // pelerin
+  // cape
   if (o.cape !== false) {
     const CL2 = .98, cg = new THREE.PlaneGeometry(.44, CL2, 10, 14), p = cg.attributes.position;
     for (let i = 0; i < p.count; i++) {
@@ -221,14 +221,14 @@ export function makeKnight(o = {}) {
     const cp = new PB(id); cp.add(cg, o.capeColor ?? 0x1c0505, 'cloth', [0, -CL2 / 2, 0], 0, 0, { vary: .3, freq: 20 });
     const cape = new THREE.Group(); cape.position.set(0, .43, -.17); cape.add(cp.build()); r.spine.add(cape); r.cape = cape;
   }
-  // silah ve kalkan
+  // weapon and shield
   const sw = makeSword({ id, blade: o.blade, guard: o.guardColor ?? GD }); sw.rotation.x = 1.35; r.armR.hand.add(sw); r.weapon = sw;
   if (o.shield !== false) { const sd = makeShield({ id, face: o.shieldFace ?? CL, emblem: o.emblem, rim: A }); sd.position.set(-.1, -.13, .04); sd.rotation.y = -Math.PI / 2 + .4; r.armL.el.add(sd); r.shield = sd;
-    const sf = makeShield({ id, face: o.shieldFace ?? CL, emblem: o.emblem, rim: A }); sf.position.set(-.06, .16, .3); sf.visible = false; r.spine.add(sf); r.shieldFront = sf; }   // blokta göğüs önünde
+    const sf = makeShield({ id, face: o.shieldFace ?? CL, emblem: o.emblem, rim: A }); sf.position.set(-.06, .16, .3); sf.visible = false; r.spine.add(sf); r.shieldFront = sf; }   // in front of the chest while blocking
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= cübbeli köylü / bilge ================= */
+/* ================= robed villager / sage ================= */
 export function makeRobed(o) {
   const id = MID.ACTOR, r = rig(); r.legL.p.visible = r.legR.p.visible = false;
   const robe = new PB(id), RB = o.robe, HD = o.hood ?? o.robe, SK = o.skin ?? 0xb08a6a;
@@ -255,19 +255,19 @@ export function makeRobed(o) {
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= iskelet savaşçı ================= */
+/* ================= skeleton warrior ================= */
 export function makeSkeleton(seed = 1) {
   const id = MID.ACTOR, B = 0xcdc3a9, D = 0x120d08, rng = mulberry32(seed * 977 + 13), r = rig(), bv = { vary: .25, freq: 22 };
   const bone = (pb, len, rad, p) => {
     pb.add(cyl(rad, rad * .85, len, 6), B, 'matte', [p[0], p[1] - len / 2, p[2]], 0, 0, bv);
     pb.add(sph(rad * 1.7, 7, 5), B, 'matte', [p[0], p[1], p[2]], 0, 0, bv); pb.add(sph(rad * 1.5, 7, 5), B, 'matte', [p[0], p[1] - len, p[2]], 0, 0, bv);
   };
-  // leğen
+  // pelvis
   const pel = new PB(id);
   pel.add(lathe([[.05, .07], [.13, .05], [.15, -.01], [.11, -.07], [.04, -.08]], 12), B, 'matte', 0, 0, [1, 1, .7], bv);
   if (rng() < .7) pel.add(foldCloth(.17, .24, .38, 7, true), 0x2e2218, 'cloth', [0, -.17, 0], 0, 0, { vary: .35 });
   r.body.add(pel.build());
-  // omurga + kaburgalar
+  // spine + ribs
   const sp = new PB(id);
   for (let k = 0; k < 9; k++) { const z = -.02 - .025 * Math.sin(k * .45); sp.add(cyl(.026, .026, .034, 6), B, 'matte', [0, k * .054, z], 0, 0, bv); sp.add(box(.012, .02, .045), B, 'matte', [0, k * .054, z - .04], 0, 0, bv); }
   for (let k = 0; k < 6; k++) {
@@ -278,7 +278,7 @@ export function makeSkeleton(seed = 1) {
   sp.add(box(.026, .17, .016), B, 'matte', [0, .3, .11], 0, 0, bv);
   sp.add(box(.34, .017, .017), B, 'matte', [0, .44, .03], 0, 0, bv);
   r.spine.add(sp.build());
-  // kafatası
+  // skull
   const hd = new PB(id);
   hd.add(sph(.11, 16, 12), B, 'matte', [0, .13, 0], 0, [.95, 1, 1.12], bv);
   hd.add(sph(.07, 12, 8), B, 'matte', [0, .06, .06], 0, [1, .7, 1], bv);
@@ -292,7 +292,7 @@ export function makeSkeleton(seed = 1) {
   jaw.add(jg, B, 'matte', [0, 0, .05], 0, [1, 1, 1.1], bv); jaw.add(box(.04, .03, .02), B, 'matte', [0, -.005, .1], 0, 0, bv);
   for (let i = 0; i < 5; i++) jaw.add(box(.01, .014, .01), 0xe8e0c8, 'matte', [-.024 + i * .012, .014, .1]);
   const jawG = jaw.build(); jawG.position.set(0, .05, 0); r.neck.add(jawG); r.jaw = jawG;
-  // kollar
+  // arms
   [r.armL, r.armR].forEach(a => {
     const u = new PB(id); bone(u, .27, .018, [0, 0, 0]); a.p.add(u.build());
     const l = new PB(id); bone(l, .24, .011, [.012, 0, 0]); bone(l, .24, .011, [-.012, 0, 0]);
@@ -300,20 +300,20 @@ export function makeSkeleton(seed = 1) {
     for (let f = 0; f < 4; f++) l.add(cone(.006, .08, 4), B, 'matte', [-.018 + f * .012, -.33, .005], [Math.PI, 0, (f - 1.5) * .12]);
     a.el.add(l.build());
   });
-  // bacaklar
+  // legs
   [r.legL, r.legR].forEach(L => {
     const t = new PB(id); bone(t, .43, .024, [0, 0, 0]); L.p.add(t.build());
     const s = new PB(id); bone(s, .42, .02, [0, 0, 0]); bone(s, .4, .009, [.025, -.01, -.01]); L.kn.add(s.build());
     const f = new PB(id); f.add(box(.05, .025, .12), B, 'matte', [0, -.01, .04], 0, 0, bv); for (let k = 0; k < 4; k++) f.add(cone(.006, .05, 4), B, 'matte', [-.018 + k * .012, -.015, .12], [Math.PI / 2, 0, 0]); L.ft.add(f.build());
   });
-  // silah + kalkan
+  // weapon + shield
   const w = rng() < .55 ? makeSword({ id, blade: 0x6e6050, guard: 0x4a3a2a, rust: true, len: .8 }) : makeAxe({ id });
   w.rotation.x = 1.35; r.armR.hand.add(w); r.weapon = w;
   if (rng() < .45) { const sh = makeRoundShield(id); sh.position.set(-.08, -.15, .03); sh.rotation.y = -Math.PI / 2 + .4; r.armL.el.add(sh); }
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= dev kurt ================= */
+/* ================= giant wolf ================= */
 export function makeWolf(seed = 1) {
   const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); body.position.y = .82; g.add(body);
   const DK = 0x3a342d, LT = 0x7a7062, fur = { color2: LT, mix: (x, y, z, nx, ny) => .45 - ny * .7, vary: .35, freq: 32 };
@@ -355,7 +355,7 @@ export function makeWolf(seed = 1) {
   return { g, body, head, jaw, legs, tail, meshes: meshesOf(g) };
 }
 
-/* ================= dev örümcek ================= */
+/* ================= giant spider ================= */
 export function makeSpider() {
   const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); body.position.y = 1.3; g.add(body);
   const DK = 0x2e241b, rng = mulberry32(31337), pb = new PB(id);
@@ -364,7 +364,7 @@ export function makeSpider() {
     color2: 0x8a1010, vary: .45, freq: 55,
     mix: (x, y, z, nx, ny) => (ny > .55 && Math.abs(x) < .12 + Math.abs(z - abC[2]) * .25 && Math.abs(z - abC[2]) < .55 && Math.abs(Math.abs(z - abC[2]) - .28) > .06) ? 1 : 0
   });
-  for (let k = 0; k < 240; k++) {   // abdomen kılları
+  for (let k = 0; k < 240; k++) {   // abdomen hairs
     const u = rng() * 2 - 1, a = rng() * 6.283, s = Math.sqrt(1 - u * u), dir = new THREE.Vector3(Math.cos(a) * s, u, Math.sin(a) * s);
     if (dir.y < -.5) continue;
     const pnt = new THREE.Vector3(dir.x * abR[0], dir.y * abR[1], dir.z * abR[2]).multiplyScalar(1.01).add(new THREE.Vector3(...abC));
@@ -393,20 +393,20 @@ export function makeSpider() {
   return { g, body, legs, meshes: meshesOf(g) };
 }
 
-/* ================= ejderha (eklemli boyun ve kuyruk zinciri) ================= */
+/* ================= dragon (jointed neck and tail chain) ================= */
 export function makeDragon() {
   const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const SC = 0x4e2c1f, BL = 0x8f6c48, HN = 0x24140e, BN = 0x9a8a6c;
   const scales = { color2: BL, mix: (x, y, z, nx, ny) => clamp(-ny * 1.6 - .1, 0, 1), vary: .4, freq: 7 };
   const bumps = (x, y, z) => Math.max(0, Math.sin(x * 9 + Math.sin(z * 9) * 1.5) * Math.sin(z * 9)) * .05;
-  // gövde (göğüs → kalça)
+  // body (chest → hips)
   const tor = new PB(id), torPts = [[0, 2.7, 3.3], [0, 2.4, 1.6], [0, 2.2, 0], [0, 2.3, -1.9]];
   const rad = t => t < .15 ? lerp(.6, 1.05, t / .15) : t < .6 ? lerp(1.05, 1.15, (t - .15) / .45) : lerp(1.15, .8, (t - .6) / .4);
   const tg = displace(taper(torPts, rad, 0, 30, 18), .02, 6, 0, bumps); tg.scale(.85, 1, 1); tor.add(tg, SC, 'matte', 0, 0, 0, scales);
   const curve = new THREE.CatmullRomCurve3(torPts.map(p => new THREE.Vector3(...p))), P = new THREE.Vector3();
   for (let t = .05; t < 1; t += .09) { curve.getPointAt(t, P); tor.add(cone(.13, .6, 5), HN, 'gloss', [P.x, P.y + rad(t) * .93, P.z], [-.5, 0, 0]); }
   body.add(tor.build());
-  // kuyruk zinciri
+  // tail chain
   const tail = []; let parent = new THREE.Group(); parent.position.set(0, 2.3, -1.9); parent.rotation.x = .22; body.add(parent);
   const TL = [1.25, 1.2, 1.15, 1.1, 1.05, 1, .95, .9]; let r0 = .8;
   TL.forEach((L, i) => {
@@ -417,7 +417,7 @@ export function makeDragon() {
     parent.add(seg.build()); tail.push(parent);
     const nx = new THREE.Group(); nx.position.z = -L; nx.rotation.x = .05; parent.add(nx); parent = nx; r0 = r1;
   });
-  // boyun zinciri + kafa
+  // neck chain + head
   const neck = []; parent = new THREE.Group(); parent.position.set(0, 2.75, 3.25); parent.rotation.x = -.78; body.add(parent);
   [.95, .9, .85].forEach((L, i) => {
     const rr = .62 - i * .08, seg = new PB(id);
@@ -443,7 +443,7 @@ export function makeDragon() {
   const jb = new PB(id); jb.add(taper([[0, 0, 0], [0, -.05, 1.25]], .25, .13, 8, 10), SC, 'matte', 0, 0, 0, scales);
   [-1, 1].forEach(s => { for (let k = 0; k < 7; k++) jb.add(cone(.02, .09, 4), 0xe0d6bc, 'gloss', [s * (.16 - k * .013), .1, .15 + k * .14]); });
   jaw.add(jb.build());
-  // bacaklar
+  // legs
   const legs = [];
   [[-.95, 1.9, 1.7], [.95, 1.9, 1.7], [-.85, 2.0, -1.7], [.85, 2.0, -1.7]].forEach(([x, y, z], i) => {
     const piv = new THREE.Group(); piv.position.set(x, y, z); body.add(piv);
@@ -454,7 +454,7 @@ export function makeDragon() {
     for (let k = 0; k < 3; k++) lo.add(cone(.05, .28, 5), BN, 'gloss', [(k - 1) * .16, -.95, .45], [Math.PI / 2 - .3, 0, 0]);
     kn.add(lo.build()); legs.push({ piv, kn, front: i < 2 });
   });
-  // kanatlar
+  // wings
   const wings = [];
   [-1, 1].forEach(s => {
     const wg = new THREE.Group(); wg.position.set(s * .75, 2.9, 1.3); body.add(wg);
@@ -470,7 +470,7 @@ export function makeDragon() {
   return { g, body, head, jaw, legs, wings, tail, neck, meshes: meshesOf(g) };
 }
 
-/* ================= hortlak (kambur, uzun pençeli ölü) ================= */
+/* ================= ghoul (hunched, long-clawed undead) ================= */
 export function makeGhoul(seed = 1) {
   const id = MID.ACTOR, SK = 0x5e665a, DK = 0x2a2620, r = rig(), sk = { vary: .3, freq: 18, color2: 0x3e443a, mix: (x, y, z, nx, ny) => .5 - ny * .5 };
   const pel = new PB(id); pel.add(ell(.13, .1, .09), SK, 'matte', 0, 0, 0, sk); pel.add(foldCloth(.15, .2, .3, 7, true), DK, 'cloth', [0, -.13, 0], 0, 0, { vary: .4 }); r.body.add(pel.build());
@@ -500,7 +500,7 @@ export function makeGhoul(seed = 1) {
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= bataklık cadısı ================= */
+/* ================= swamp witch ================= */
 export function makeWitch() {
   const r = makeRobed({ robe: 0x1c2618, hood: 0x121a10, skin: 0x7e8c6e, staff: 0x66ff44, tattered: true });
   const n = new PB(MID.ACTOR); n.add(cone(.022, .11, 5), 0x7e8c6e, 'matte', [0, .1, .12], [Math.PI / 2 + .3, 0, 0]);
@@ -511,7 +511,7 @@ export function makeWitch() {
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= bataklık trolü ================= */
+/* ================= swamp troll ================= */
 export function makeTroll() {
   const id = MID.ACTOR, SK = 0x56634a, r = rig(), sk = { vary: .35, freq: 10, color2: 0x7a8466, mix: (x, y, z, nx, ny) => clamp(nz(nx, ny), 0, 1) };
   function nz(nx, ny) { return -ny * .6 + .2; }
@@ -522,7 +522,7 @@ export function makeTroll() {
   r.body.add(pel.build());
   const ch = new PB(id);
   ch.add(displace(ell(.42, .34, .3, 20, 14), .035, 7, 2), SK, 'matte', [0, .28, -.02], 0, 0, sk);
-  ch.add(displace(ell(.3, .22, .24, 16, 10), .03, 8, 3), SK, 'matte', [0, .48, -.1], 0, 0, sk);   // kambur
+  ch.add(displace(ell(.3, .22, .24, 16, 10), .03, 8, 3), SK, 'matte', [0, .48, -.1], 0, 0, sk);   // hunch
   [-1, 1].forEach(s => ch.add(displace(ell(.16, .14, .15, 12, 8), .02, 10, s + 5), SK, 'matte', [s * .33, .42, 0], 0, 0, sk));
   r.spine.add(ch.build());
   const hd = new PB(id);
@@ -552,7 +552,7 @@ export function makeTroll() {
   r.meshes = meshesOf(r.g); return r;
 }
 
-/* ================= kuru ağaç (bataklık) ================= */
+/* ================= dead tree (swamp) ================= */
 export function makeDeadTree(seed) {
   const rng = mulberry32(seed * 131 + 7), pb = new PB(MID.WOOD), C = 0x2c2620, h = 4 + rng() * 3;
   const lean = (rng() - .5) * .8;
@@ -567,14 +567,14 @@ export function makeDeadTree(seed) {
   return pb.build();
 }
 
-/* ================= animasyon: yaylı eklemler ================= */
-// s: { ph, amt (0-1 hız), run (0-1), atk (-1 | 0-1), atkType (0-2), hit (0-1), dodge (-1 | 0-1), lean, turn, t, dt, style }
+/* ================= animation: spring joints ================= */
+// s: { ph, amt (0-1 speed), run (0-1), atk (-1 | 0-1), atkType (0-2), hit (0-1), dodge (-1 | 0-1), lean, turn, t, dt, style }
 const ez = k => k * k * (3 - 2 * k), eo = k => 1 - (1 - k) * (1 - k);
 const ATK = [
-  // [omuz x, omuz z, dirsek, gövde dönüşü] : bekle → kurulma → vuruş → takip
-  [[-2.7, .3, -1.2, .45], [.3, -.1, -.15, -.55], [.5, -.2, -.25, -.6]],     // tepeden çapraz
-  [[-1.45, 1.3, -.4, .85], [-1.45, -1.0, -.2, -.85], [-1.2, -1.15, -.5, -.95]], // yatay sağdan sola
-  [[-.7, -1.1, -.9, -.7], [-2.25, .85, -.2, .6], [-2.45, 1.0, -.3, .65]]       // aşağıdan yukarı ters
+  // [shoulder x, shoulder z, elbow, torso twist] : idle → wind-up → strike → follow-through
+  [[-2.7, .3, -1.2, .45], [.3, -.1, -.15, -.55], [.5, -.2, -.25, -.6]],     // overhead diagonal
+  [[-1.45, 1.3, -.4, .85], [-1.45, -1.0, -.2, -.85], [-1.2, -1.15, -.5, -.95]], // horizontal right to left
+  [[-.7, -1.1, -.9, -.7], [-2.25, .85, -.2, .6], [-2.45, 1.0, -.3, .65]]       // rising backhand
 ];
 function atkPose(k, type) {
   const A = ATK[type % 3], N = [-.25, .1, -.6, 0];
@@ -593,16 +593,16 @@ export function animBiped(r, s) {
   const hunch = st === 'hunch', heavy = st === 'heavy', sham = st === 'shamble';
   let stride = (.5 + .25 * run) * (heavy ? .8 : 1), kneeBase = hunch ? .4 : heavy ? .15 : .04;
   let jit = sham ? Math.sin(t * 7.3 + (r.seed || 0)) * .06 : 0;
-  // bacaklar
+  // legs
   let hL = s1 * stride * amt + jit, hR = -s1 * stride * amt - jit;
   let kL = kneeBase + (.65 + .5 * run) * Math.max(0, Math.sin(ph - .9)) * amt;
   let kR = kneeBase + (.65 + .5 * run) * Math.max(0, Math.sin(ph + Math.PI - .9)) * amt * (sham ? .6 : 1);
   if (hunch) { hL -= .35; hR -= .35; }
-  // gövde
+  // torso
   let by = .98 + (Math.abs(c1) * (.035 + .04 * run) - .03) * amt - .04 * run - (hunch ? .12 : heavy ? .05 : 0);
   let bx = (.1 * run + (s.lean || 0) * .6) * amt, bz = s1 * (heavy ? .09 : .05) * amt + Math.sin(t * .5) * .02 * idle - (s.turn || 0) * .05, bry = s1 * .08 * amt;
   let sx = .04 * amt + .08 * run + Math.sin(t * 1.8) * .02 + (hunch ? .55 : 0) + (st === 'robe-hunch' ? .3 : 0), sy = -s1 * .14 * amt, sz = -bz * .6;
-  // kollar
+  // arms
   let laX = -s1 * (.4 + .35 * run) * amt - .05, laZ = -.1 - .05 * run, laE = -(.2 + .25 * amt + .7 * run);
   let raX = s1 * (.3 + .25 * run) * amt - .25 * idle - .1, raZ = .1, raE = -(.35 + .25 * idle + .6 * run);
   if (hunch) { laX = -.5 + s1 * .5 * amt; raX = -.5 - s1 * .5 * amt; laE = raE = -.35; }
@@ -612,22 +612,22 @@ export function animBiped(r, s) {
   if (atkK >= 0 && atkK <= 1) {
     const [px, pz, pe, tw] = atkPose(atkK, s.atkType || 0);
     raX = px; raZ = pz; raE = pe; sy = tw; bry = tw * .3;
-    if (hunch || heavy) { laX = px; laZ = -pz; laE = pe; }       // iki elle
-    else { laX = -.8; laE = -1.2; laZ = -.2; }                   // kalkan önde
+    if (hunch || heavy) { laX = px; laZ = -pz; laE = pe; }       // two-handed
+    else { laX = -.8; laE = -1.2; laZ = -.2; }                   // shield forward
     by -= Math.sin(atkK * Math.PI) * .05; bx += Math.sin(atkK * Math.PI) * .12;
   }
   const hit = s.hit || 0;
   sx -= hit * .35; laZ -= hit * .4; raZ += hit * .4;
-  if (s.block > 0) {   // kalkan önde, kılıç geride, hafif çömelme
+  if (s.block > 0) {   // shield forward, sword back, slight crouch
     const b = s.block; laX = lerp(laX, -1.25, b); laE = lerp(laE, -1.55, b); laZ = lerp(laZ, .35, b);
     raX = lerp(raX, -.45, b); raE = lerp(raE, -1.1, b); raZ = lerp(raZ, .3, b); sx += .12 * b; by -= .06 * b; kL += .25 * b; kR += .25 * b;
   }
-  if (r.shieldFront) { const fb = (s.block || 0) > .35; r.shieldFront.visible = fb; r.shield.visible = !fb; }   // blokta kalkan önde
-  if (s.air > 0) {   // zıplama: dizler toplanır, kollar dengede açılır
+  if (r.shieldFront) { const fb = (s.block || 0) > .35; r.shieldFront.visible = fb; r.shield.visible = !fb; }   // shield forward while blocking
+  if (s.air > 0) {   // jump: knees tuck, arms open for balance
     const a = s.air; hL = lerp(hL, -.6, a); hR = lerp(hR, .1, a); kL = lerp(kL, 1.0, a); kR = lerp(kR, .55, a);
     laZ -= .55 * a; raZ += .35 * a; laX -= .3 * a; bx -= .08 * a;
   }
-  // yerleştir
+  // apply
   const kk = atkK >= 0 ? kf : k;
   set(r.legL.p, 'x', 'hL', hL); set(r.legR.p, 'x', 'hR', hR);
   set(r.legL.kn, 'x', 'kL', kL); set(r.legR.kn, 'x', 'kR', kR);
@@ -639,7 +639,7 @@ export function animBiped(r, s) {
   if (sham) r.neck.rotation.z = .2 + Math.sin(t * .9) * .1;
   set(r.armL.p, 'x', 'laX', laX, kk); set(r.armL.p, 'z', 'laZ', laZ, kk); set(r.armL.el, 'x', 'laE', laE, kk);
   set(r.armR.p, 'x', 'raX', raX, kk); set(r.armR.p, 'z', 'raZ', raZ, kk); set(r.armR.el, 'x', 'raE', raE, kk);
-  // takla (yuvarlanma): yumuşatmayı atla
+  // roll: skip smoothing
   if (s.dodge >= 0 && s.dodge <= 1) {
     const d = s.dodge, sn = Math.sin(d * Math.PI);
     r.body.rotation.x = d * Math.PI * 2; r.body.position.y = .98 - sn * .55;
@@ -647,7 +647,7 @@ export function animBiped(r, s) {
     r.armL.p.rotation.x = r.armR.p.rotation.x = -1 * sn; r.armL.el.rotation.x = r.armR.el.rotation.x = -1.6 * sn;
     P.bx = 0;
   }
-  // pelerin: yaylı salınım
+  // cape: spring sway
   if (r.cape) {
     const target = .14 + amt * .3 + run * .4 + (s.lean || 0) * .5 + hit * .3;
     r._cv = (r._cv || 0) + ((target - (r._ca ?? target)) * 60 - (r._cv || 0) * 9) * dt; r._ca = (r._ca ?? target) + r._cv * dt;
@@ -655,7 +655,7 @@ export function animBiped(r, s) {
   }
 }
 
-/* Kurt: tırıs / dörtnala, kafa ve kuyruk gecikmesi */
+/* Wolf: trot / gallop, head and tail lag */
 export function animWolf(r, s) {
   const mv = s.amt, run = s.run, ph = s.ph, t = s.t, k = 1 - Math.exp(-s.dt * 12);
   r.legs.forEach((L, i) => {
@@ -676,7 +676,7 @@ export function animWolf(r, s) {
   if (s.lunge) { r.body.rotation.x = -.25; }
 }
 
-/* Örümcek: dörtlü adım düzeni, bacak kaldırma */
+/* Spider: four-phase gait, leg lift */
 export function animSpider(r, s) {
   const mv = s.amt, ph = s.ph * 1.5;
   r.legs.forEach(L => {
@@ -691,14 +691,14 @@ export function animSpider(r, s) {
   r.legs.forEach(L => { if (L.i === 0) L.up.rotation.z -= L.s * a * .9; });
 }
 
-/* Ejderha: ağır yürüyüş, dalgalanan kuyruk, nefeste boyun geri-ileri */
+/* Dragon: heavy walk, rippling tail, neck pulls back then forward on breath */
 export function animDragon(r, s) {
   const mv = s.amt, ph = s.ph, t = s.t, br = s.breath || 0, a = s.atk >= 0 ? Math.sin(s.atk * Math.PI) : 0;
   r.legs.forEach((L, i) => { const p = ph + (i % 2 ? Math.PI : 0) + (L.front ? 0 : Math.PI / 2); L.piv.rotation.x = Math.sin(p) * .4 * mv; L.kn.rotation.x = Math.max(0, Math.sin(p + 1)) * .5 * mv; });
   r.body.position.y = Math.abs(Math.sin(ph)) * .12 * mv + Math.sin(t * 1.1) * .04;
   r.body.rotation.z = Math.sin(ph) * .03 * mv;
   r.tail.forEach((seg, i) => { seg.rotation.y = Math.sin(t * 1.4 - i * .55) * (.06 + i * .025) * (1 + mv); seg.rotation.x = (i ? .05 : .22) + Math.sin(t * .9 - i * .4) * .03; });
-  const rear = br > 0 ? (br > .7 ? -(1 - br) * 2.2 : .25) : 0;    // nefes: önce geri, sonra ileri
+  const rear = br > 0 ? (br > .7 ? -(1 - br) * 2.2 : .25) : 0;    // breath: first back, then forward
   r.neck.forEach((seg, i) => { seg.rotation.x = (i ? .12 : -.78) + rear * .25 - a * .12 + Math.sin(t * .8 + i) * .03; seg.rotation.y = Math.sin(t * .5 - i * .3) * .08; });
   r.head.rotation.x = .55 - a * .25 + rear * .2; r.jaw.rotation.x = .08 + a * .55 + (br > 0 && br < .75 ? .6 : 0);
   r.wings.forEach(W => { W.g.rotation.z = W.s * (br > 0 || s.alert ? Math.sin(t * 5) * .45 : .25 + Math.sin(t * 1.1) * .06); W.g.rotation.y = W.s * (br > 0 ? -.2 : .35); });

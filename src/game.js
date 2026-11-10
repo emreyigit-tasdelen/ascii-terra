@@ -1,4 +1,4 @@
-// Oyun durumu, eşyalar, görevler, diyalog, kayıt ve arayüz (HUD)
+// Game state, items, quests, dialogue, saving and HUD
 import { THREE, $, clamp, heightAt } from './core.js';
 import { camera, ENV } from './render.js';
 import { crystals, CIRCLE } from './world.js';
@@ -9,22 +9,22 @@ const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
 function freshState() { return { lvl: 1, xp: 0, gold: 0, kills: {}, shards: 0, circle: false, taken: [], q: {}, inv: { pot: 3 }, eq: { weapon: 'rust', armor: null }, x: 0, z: 14, dayT: .3 }; }
 
-/* ================= eşyalar ================= */
+/* ================= items ================= */
 export const ITEMS = {
-  pot: { n: 'Şifa İksiri', t: 'use', heal: 60, c: '#f77', d: '+60 HP', icon: '!' },
-  rust: { n: 'Paslı Kılıç', t: 'weapon', atk: 0, c: '#aaa', d: 'ATK +0', icon: '/' },
-  iron: { n: 'Demir Kılıç', t: 'weapon', atk: 6, c: '#9cf', d: 'ATK +6', icon: '/' },
-  steel: { n: 'Çelik Kılıç', t: 'weapon', atk: 12, c: '#6f6', d: 'ATK +12', icon: '/' },
-  silver: { n: 'Kutsanmış Gümüş Kılıç', t: 'weapon', atk: 16, c: '#ddf', d: 'ATK +16', icon: '/' },
-  moon: { n: 'Ay Çeliği Kılıcı', t: 'weapon', atk: 22, c: '#6ff', d: 'ATK +22', icon: '/' },
-  gamb: { n: 'Kapitone Zırh', t: 'armor', def: 2, c: '#9cf', d: 'DEF +2', icon: '#' },
-  chain: { n: 'Zincir Zırh', t: 'armor', def: 5, c: '#6f6', d: 'DEF +5', icon: '#' },
-  plate: { n: 'Plaka Zırh', t: 'armor', def: 9, c: '#fd6', d: 'DEF +9', icon: '#' },
-  moonp: { n: 'Ay Çeliği Zırh', t: 'armor', def: 14, c: '#6ff', d: 'DEF +14', icon: '#' }
+  pot: { n: 'Healing Potion', t: 'use', heal: 60, c: '#f77', d: '+60 HP', icon: '!' },
+  rust: { n: 'Rusty Sword', t: 'weapon', atk: 0, c: '#aaa', d: 'ATK +0', icon: '/' },
+  iron: { n: 'Iron Sword', t: 'weapon', atk: 6, c: '#9cf', d: 'ATK +6', icon: '/' },
+  steel: { n: 'Steel Sword', t: 'weapon', atk: 12, c: '#6f6', d: 'ATK +12', icon: '/' },
+  silver: { n: 'Blessed Silver Sword', t: 'weapon', atk: 16, c: '#ddf', d: 'ATK +16', icon: '/' },
+  moon: { n: 'Moonsteel Sword', t: 'weapon', atk: 22, c: '#6ff', d: 'ATK +22', icon: '/' },
+  gamb: { n: 'Gambeson', t: 'armor', def: 2, c: '#9cf', d: 'DEF +2', icon: '#' },
+  chain: { n: 'Chainmail', t: 'armor', def: 5, c: '#6f6', d: 'DEF +5', icon: '#' },
+  plate: { n: 'Plate Armor', t: 'armor', def: 9, c: '#fd6', d: 'DEF +9', icon: '#' },
+  moonp: { n: 'Moonsteel Armor', t: 'armor', def: 14, c: '#6ff', d: 'DEF +14', icon: '#' }
 };
 export const need = l => 50 * l, maxHpFor = l => 100 + 20 * (l - 1), dmgFor = l => 9 + 3 * l;
 export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = () => (ITEMS[S.eq.armor] || {}).def || 0;
-export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('Eşya: ' + ITEMS[id].n + (n > 1 ? ' x' + n : '')); renderInv(); }
+export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('Item: ' + ITEMS[id].n + (n > 1 ? ' x' + n : '')); renderInv(); }
 export function rollDrop(kind, lvl) {
   if (kind === 'widow') { giveItem('plate'); giveItem('pot', 2); return; }
   if (kind === 'dragon') { giveItem('pot', 5); return; }
@@ -49,81 +49,81 @@ export function toggleInv() { $('inv').hidden = !$('inv').hidden; renderInv(); }
 export function renderInv() {
   invList = Object.keys(S.inv).filter(id => S.inv[id] > 0 && ITEMS[id]).slice(0, 9);
   const w = ITEMS[S.eq.weapon], a = ITEMS[S.eq.armor];
-  let h = '<b>ENVANTER</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>Silah: <span style="color:' + (w ? w.c : '#888') + '">' + (w ? w.n : '-') + '</span><br>Zırh: <span style="color:' + (a ? a.c : '#888') + '">' + (a ? a.n : '-') + '</span><br>';
-  invList.forEach((id, i) => { const it = ITEMS[id]; h += '[' + (i + 1) + '] <span style="color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (kullan)' : ' (kuşan)') + '</small><br>'; });
-  if (!invList.length) h += '<small>Boş</small><br>';
-  $('inv').innerHTML = h + '<small>Numara: kullan/kuşan · I: kapat</small>';
+  let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>Weapon: <span style="color:' + (w ? w.c : '#888') + '">' + (w ? w.n : '-') + '</span><br>Armor: <span style="color:' + (a ? a.c : '#888') + '">' + (a ? a.n : '-') + '</span><br>';
+  invList.forEach((id, i) => { const it = ITEMS[id]; h += '[' + (i + 1) + '] <span style="color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
+  if (!invList.length) h += '<small>Empty</small><br>';
+  $('inv').innerHTML = h + '<small>Number: use/equip · I: close</small>';
 }
 export function invPress(n) {
   const id = invList[n - 1]; if (!id) return; const it = ITEMS[id];
   if (it.t === 'use') usePotion();
-  else { const slot = it.t; const old = S.eq[slot]; S.eq[slot] = id; if (old && old !== id) S.inv[old] = (S.inv[old] || 0) + 1; S.inv[id]--; if (!S.inv[id]) delete S.inv[id]; toast('Kuşanıldı: ' + it.n); }
+  else { const slot = it.t; const old = S.eq[slot]; S.eq[slot] = id; if (old && old !== id) S.inv[old] = (S.inv[old] || 0) + 1; S.inv[id]--; if (!S.inv[id]) delete S.inv[id]; toast('Equipped: ' + it.n); }
   renderInv();
 }
 
-/* ================= görevler ================= */
+/* ================= quests ================= */
 export const Q = [
-  { id: 'skel', giver: 'mira', title: 'Kale Harabeleri', obj: 'slay', kind: 'skeleton', n: 6, xp: 80, gold: 40, item: ['chain'],
-    offer: 'Kuzeydeki eski kalede ölüler yeniden ayaklandı. Senje, 6 iskelet savaşçıyı toprağa geri gönder.',
-    hint: 'Köyden kuzeye uzanan taş yolu izle; kale kapısında meşaleler yanıyor.', done: 'Kalenin sessizliği geri döndü. Bu zinciri hak ettin.' },
-  { id: 'wolves', giver: 'brant', title: 'Kurt Sürüsü', obj: 'slay', kind: 'wolf', n: 4, xp: 90, gold: 60, item: ['iron'],
-    offer: 'Ormanda bir kurt sürüsü dolaşıyor. 4 tanesini avlarsan köy rahat uyur.',
-    hint: 'Sık ağaçlıklı ormanlarda kurtları ara. Hızlılar; yuvarlanmayı unutma (Boşluk).', done: 'Güzel av! Bu kılıç artık senin.' },
-  { id: 'shards', giver: 'lyra', title: 'Ay Kristalleri', obj: 'collect', n: 3, xp: 80, gold: 50, item: ['pot', 3],
-    offer: 'Gökten düşen Ay Kristalleri vahşi doğada parlıyor. 3 tanesini bana getirir misin?',
-    hint: 'Gökyüzüne uzanan ince mavi ışıkları takip et.', done: 'Harika! Bu kristallerde eski bir güç var. Al, iksirler senin.' },
-  { id: 'widow', giver: 'brant', title: 'Alacakaranlık Dulu', obj: 'slay', kind: 'widow', n: 1, xp: 400, gold: 150, item: ['steel'], req: ['wolves'],
-    offer: 'Batı ormanında dev bir örümcek yuvalanmış. Beyaz ağlarını göreceksin. Onu öldür, Senje.',
-    hint: 'Batıdaki ormanda beyaz ağları ara. Yerde turuncu daire belirirse hemen Boşluk ile kaç!', done: 'Yaratık öldü ha? Efsane olacaksın. Bu çelik kılıcı al.' },
-  { id: 'circle', giver: 'mira', title: 'Taş Çember', obj: 'reach', n: 1, xp: 250, gold: 150, item: ['moonp'], req: ['skel', 'shards', 'widow'],
-    offer: 'Artık hazırsın. Kuzeydoğuda eski şövalyelerin yemin ettiği Taş Çember var. Oraya git.',
-    hint: 'Gökyüzüne uzanan altın sütuna doğru yürü.', done: 'Çemberi gördün... Şövalye yemini artık senin, Senje. Bu zırh seni korusun.' },
-  { id: 'dragon', giver: 'mira', title: 'Kül Ejderhası', obj: 'slay', kind: 'dragon', n: 1, xp: 1200, gold: 500, item: ['moon'], req: ['circle'],
-    offer: 'Kuzeybatı dağlarının eteğinde kadim bir ejderha uyandı. Yemin ettin, Senje; köyü ondan ancak sen koruyabilirsin.',
-    hint: 'Kuzeybatıdaki yanık topraklara git. Ateş nefesinden önce yerde sıra sıra turuncu daireler belirir; yana yuvarlan (C)!', done: 'Ejderha düştü... Ozanlar bu geceyi yüz yıl anlatacak. Al, Ay Çeliği Kılıcı artık senin.' },
-  { id: 'ghouls', giver: 'osric', title: 'Mezarlıktan Kalkanlar', obj: 'slay', kind: 'ghoul', n: 8, xp: 220, gold: 90, item: ['silver'],
-    offer: 'Şapelin mezarlığı huzursuz, evlat. Hortlaklar topraktan çıkıp bataklığa yayıldı. 8 tanesini sonsuz uykusuna gönder.',
-    hint: 'Doğudaki yıkık şapelin batısındaki mezarlık. Hortlaklar uzaktan üstüne atılır; atılmadan yana çekil.', done: 'Tanrı ruhlarına huzur versin. Bu kutsanmış gümüş kılıç ölülere karşı keskindir.' },
-  { id: 'witches', giver: 'osric', title: 'Sisteki Cadılar', obj: 'slay', kind: 'witch', n: 3, xp: 260, gold: 120, item: ['pot', 4],
-    offer: 'Sisin içinde yeşil ışıklar görürsen, cadılar orada demektir. Uzaktan lanet fırlatırlar. 3 tanesini sustur.',
-    hint: 'Yeşil büyü toplarından zıplayarak (Boşluk) ya da yuvarlanarak (C) kaç, sonra üstlerine koş.', done: 'Sis biraz incelmiş gibi... Al, bu iksirler yoluna ışık olsun.' },
-  { id: 'troll', giver: 'osric', title: 'Bataklık Trolü', obj: 'slay', kind: 'troll', n: 1, xp: 480, gold: 200, item: ['plate'], req: ['ghouls'],
-    offer: 'Şapelin önündeki bataklıkta dev bir trol yaşıyor. Hacıların yolunu kesiyor. Gücün yeterse onu indir.',
-    hint: 'Trol yere çakmadan önce turuncu daire belirir. Sabırlı ol, arkasından vur.', done: 'Trolü mü devirdin? Bu zırh bir zamanlar bir tapınak şövalyesinindi; artık senin.' }
+  { id: 'skel', giver: 'mira', title: 'Castle Ruins', obj: 'slay', kind: 'skeleton', n: 6, xp: 80, gold: 40, item: ['chain'],
+    offer: 'The dead have risen again in the old castle to the north. Senje, send 6 skeleton warriors back to the earth.',
+    hint: 'Follow the stone road north from the village; torches burn at the castle gate.', done: 'Silence has returned to the castle. You have earned this mail.' },
+  { id: 'wolves', giver: 'brant', title: 'The Wolf Pack', obj: 'slay', kind: 'wolf', n: 4, xp: 90, gold: 60, item: ['iron'],
+    offer: 'A wolf pack roams the forest. Hunt 4 of them and the village will sleep soundly.',
+    hint: 'Look for wolves in the dense forests. They are fast; remember to roll (C).', done: 'Fine hunting! This sword is yours now.' },
+  { id: 'shards', giver: 'lyra', title: 'Moon Shards', obj: 'collect', n: 3, xp: 80, gold: 50, item: ['pot', 3],
+    offer: 'Moon Shards fallen from the sky glow out in the wilds. Will you bring me 3 of them?',
+    hint: 'Follow the thin blue lights reaching into the sky.', done: 'Wonderful! There is an old power in these shards. Here, the potions are yours.' },
+  { id: 'widow', giver: 'brant', title: 'The Dusk Widow', obj: 'slay', kind: 'widow', n: 1, xp: 400, gold: 150, item: ['steel'], req: ['wolves'],
+    offer: 'A giant spider has nested in the western forest. You will see its white webs. Kill it, Senje.',
+    hint: 'Look for white webs in the western forest. If an orange circle appears on the ground, get out of it at once!', done: 'The beast is dead? You will be a legend. Take this steel sword.' },
+  { id: 'circle', giver: 'mira', title: 'The Stone Circle', obj: 'reach', n: 1, xp: 250, gold: 150, item: ['moonp'], req: ['skel', 'shards', 'widow'],
+    offer: 'You are ready now. In the northeast lies the Stone Circle where knights of old swore their oaths. Go there.',
+    hint: 'Walk toward the golden pillar reaching into the sky.', done: 'You have seen the circle... The knight oath is yours now, Senje. May this armor protect you.' },
+  { id: 'dragon', giver: 'mira', title: 'The Ash Dragon', obj: 'slay', kind: 'dragon', n: 1, xp: 1200, gold: 500, item: ['moon'], req: ['circle'],
+    offer: 'An ancient dragon has woken at the foot of the northwest mountains. You swore the oath, Senje; only you can protect the village from it.',
+    hint: 'Go to the burnt lands in the northwest. Before its fire breath, rows of orange circles appear on the ground; roll aside (C)!', done: 'The dragon has fallen... Bards will sing of this night for a hundred years. Here, the Moonsteel Sword is yours.' },
+  { id: 'ghouls', giver: 'osric', title: 'Risen from the Graves', obj: 'slay', kind: 'ghoul', n: 8, xp: 220, gold: 90, item: ['silver'],
+    offer: 'The chapel graveyard is restless, child. Ghouls have crawled from the earth and spread into the swamp. Send 8 of them to eternal sleep.',
+    hint: 'The graveyard west of the ruined chapel in the east. Ghouls leap at you from afar; step aside before they pounce.', done: 'May their souls rest in peace. This blessed silver sword cuts deep against the dead.' },
+  { id: 'witches', giver: 'osric', title: 'Witches in the Mist', obj: 'slay', kind: 'witch', n: 3, xp: 260, gold: 120, item: ['pot', 4],
+    offer: 'If you see green lights in the mist, the witches are there. They hurl curses from afar. Silence 3 of them.',
+    hint: 'Dodge the green hexes by jumping (Space) or rolling (C), then charge them.', done: 'The mist seems a little thinner... Here, may these potions light your way.' },
+  { id: 'troll', giver: 'osric', title: 'The Swamp Troll', obj: 'slay', kind: 'troll', n: 1, xp: 480, gold: 200, item: ['plate'], req: ['ghouls'],
+    offer: 'A giant troll lives in the swamp before the chapel. It blocks the pilgrim road. Bring it down if you are strong enough.',
+    hint: 'An orange circle appears before the troll slams the ground. Be patient and strike from behind.', done: 'You felled the troll? This armor once belonged to a temple knight; now it is yours.' }
 ];
 const qById = {}; Q.forEach(q => { q.st = 0; qById[q.id] = q; });
 export function progress(q) { return q.obj === 'slay' ? Math.min(q.n, S.kills[q.kind] || 0) : q.obj === 'collect' ? Math.min(q.n, S.shards) : (S.circle ? 1 : 0); }
-export function checkQuests() { Q.forEach(q => { if (q.st === 1 && progress(q) >= q.n) { q.st = 2; toast('Görev tamam: ' + q.title + ' — ödül için dön'); } }); }
+export function checkQuests() { Q.forEach(q => { if (q.st === 1 && progress(q) >= q.n) { q.st = 2; toast('Quest complete: ' + q.title + ' — return for your reward'); } }); }
 export function addXP(v) {
   S.xp += v;
-  while (S.xp >= need(S.lvl)) { S.xp -= need(S.lvl); S.lvl++; P.maxhp = maxHpFor(S.lvl); P.hp = P.maxhp; toast('SEVİYE ATLADIN! Sv.' + S.lvl); }
+  while (S.xp >= need(S.lvl)) { S.xp -= need(S.lvl); S.lvl++; P.maxhp = maxHpFor(S.lvl); P.hp = P.maxhp; toast('LEVEL UP! Lv.' + S.lvl); }
 }
 function turnIn(q) {
-  q.st = 3; if (q.item) giveItem(q.item[0], q.item[1] || 1); addXP(q.xp); S.gold += q.gold; toast('Ödül: +' + q.xp + ' XP, +' + q.gold + ' altın');
-  if (q.id === 'circle') setTimeout(() => toast('Başlangıç görevleri tamam! Dünya açık.'), 1800);
+  q.st = 3; if (q.item) giveItem(q.item[0], q.item[1] || 1); addXP(q.xp); S.gold += q.gold; toast('Reward: +' + q.xp + ' XP, +' + q.gold + ' gold');
+  if (q.id === 'circle') setTimeout(() => toast('Starting quests done! The world is open.'), 1800);
 }
 const questsFor = n => Q.filter(q => q.giver === n.id && q.st < 3 && (!q.req || q.req.every(id => qById[id].st === 3)));
 export function npcMark(n) { const qs = questsFor(n); return qs.some(q => q.st === 2) ? ' [?]' : qs.some(q => q.st === 0) ? ' [!]' : ''; }
 
-/* ================= diyalog ================= */
+/* ================= dialogue ================= */
 let dialog = null;
 export function closeDialog() { dialog = null; $('dialog').hidden = true; }
 export function interact(npc) {
   if (dialog && dialog.npc === npc) {
     const q = dialog.q;
-    if (q) { if (q.st === 0) { q.st = 1; toast('Görev alındı: ' + q.title); checkQuests(); } else if (q.st === 2) turnIn(q); }
+    if (q) { if (q.st === 0) { q.st = 1; toast('Quest accepted: ' + q.title); checkQuests(); } else if (q.st === 2) turnIn(q); }
     closeDialog(); return;
   }
   const qs = questsFor(npc), q = qs.find(x => x.st === 2) || qs[0]; let text;
   if (!q) text = npc.idle[Math.floor(Math.random() * npc.idle.length)];
-  else if (q.st === 0) text = q.offer + '\n<i>[E] Kabul et</i>';
+  else if (q.st === 0) text = q.offer + '\n<i>[E] Accept</i>';
   else if (q.st === 1) text = q.hint + ' (' + progress(q) + '/' + q.n + ')';
-  else text = q.done + '\n<i>[E] Ödülü al</i>';
+  else text = q.done + '\n<i>[E] Claim reward</i>';
   dialog = { npc, q }; const d = $('dialog'); d.innerHTML = '<b>' + npc.name + '</b>' + (q ? ' — ' + q.title : '') + '<br>' + text.replace(/\n/g, '<br>'); d.hidden = false;
 }
 
-/* ================= kayıt ================= */
-// Hesapla girildiyse ilerleme sunucuda (her cihazdan devam), misafirde tarayıcıda saklanır
+/* ================= saving ================= */
+// Signed-in players save on the server (continue from any device); guests save in the browser
 export function save() {
   S.x = P.x; S.z = P.z; S.dayT = ENV.dayT; S.q = {}; Q.forEach(q => S.q[q.id] = q.st);
   if (NET.account) { NET.accountSave = JSON.parse(JSON.stringify(S)); sendNet({ t: 'save', data: NET.accountSave }); return; }
@@ -145,7 +145,7 @@ export function load() {
 }
 export function applyState() { resetPlayer(); P.y = heightAt(P.x, P.z); }
 
-/* ================= arayüz ================= */
+/* ================= HUD ================= */
 export function toast(t) { const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; $('toasts').appendChild(d); setTimeout(() => d.remove(), 4000); }
 const _v = new THREE.Vector3();
 export function floatText(text, x, y, z, cls) {
@@ -173,7 +173,7 @@ export function label(text, x, y, z, cls, frac) {
   L.el.style.transform = 'translate(' + ((_v.x * .5 + .5) * innerWidth).toFixed(0) + 'px,' + ((-_v.y * .5 + .5) * innerHeight).toFixed(0) + 'px) translate(-50%,-100%)';
 }
 
-const SLOTS = [{ k: '1', n: 'Kılıç', i: '/', cd: 'slash' }, { k: '2', n: 'Ateş Topu', i: '*', cd: 'fire' }, { k: '3', n: 'Kasırga', i: '@', cd: 'whirl' }, { k: '4', n: 'İksir', i: '!', pot: true }];
+const SLOTS = [{ k: '1', n: 'Sword', i: '/', cd: 'slash' }, { k: '2', n: 'Fireball', i: '*', cd: 'fire' }, { k: '3', n: 'Whirlwind', i: '@', cd: 'whirl' }, { k: '4', n: 'Potion', i: '!', pot: true }];
 let slotEls = [];
 export function buildHotbar() {
   const box = $('slots'); box.innerHTML = ''; slotEls = [];
@@ -192,26 +192,26 @@ export function showRegion(name) {
 }
 export function updateHUD(dt) {
   const near = NPCS.find(n => Math.hypot(n.x - P.x, n.z - P.z) < 4);
-  $('prompt').textContent = (near && !dialog && !P.dead) ? '[E] ' + near.name + ' ile konuş' : '';
+  $('prompt').textContent = (near && !dialog && !P.dead) ? '[E] Talk to ' + near.name : '';
   if (dialog && Math.hypot(dialog.npc.x - P.x, dialog.npc.z - P.z) > 6) closeDialog();
   miniT -= dt; if (miniT <= 0 && !$('mini').hidden) { miniT = .25; updateMini(); }
   hudT -= dt; if (hudT > 0) return; hudT = .1;
   const hr = ENV.dayT * 24, hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60);
-  $('info').textContent = 'Senje · Sv.' + S.lvl + '   Altın ' + S.gold + '   Kristal ' + S.shards + '   ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  $('info').textContent = 'Senje · Lv.' + S.lvl + '   Gold ' + S.gold + '   Shards ' + S.shards + '   ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   let qt = ''; Q.forEach(q => {
     if (q.st !== 1 && q.st !== 2) return;
-    qt += '> ' + q.title + (q.st === 2 ? '  (teslim et)' : '  ' + progress(q) + '/' + q.n);
-    if (q.id === 'circle' && q.st === 1) { const dx = CIRCLE.x - P.x, dz = CIRCLE.z - P.z, ang = Math.atan2(dx, -dz), dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB']; qt += ' [' + Math.round(Math.hypot(dx, dz)) + 'm ' + dirs[(Math.round(ang / (Math.PI / 4)) + 8) % 8] + ']'; }
+    qt += '> ' + q.title + (q.st === 2 ? '  (turn in)' : '  ' + progress(q) + '/' + q.n);
+    if (q.id === 'circle' && q.st === 1) { const dx = CIRCLE.x - P.x, dz = CIRCLE.z - P.z, ang = Math.atan2(dx, -dz), dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']; qt += ' [' + Math.round(Math.hypot(dx, dz)) + 'm ' + dirs[(Math.round(ang / (Math.PI / 4)) + 8) % 8] + ']'; }
     qt += '\n';
   });
-  $('quests').textContent = qt || 'Köydekilerle konuş (E)';
+  $('quests').textContent = qt || 'Talk to the villagers (E)';
   $('stfill').style.width = (P.st / P.stMax * 100) + '%';
   $('hpfill').style.width = (P.hp / P.maxhp * 100) + '%'; $('hptxt').textContent = Math.ceil(P.hp) + ' / ' + P.maxhp + ' HP';
   $('xpfill').style.width = (S.xp / need(S.lvl) * 100) + '%'; $('xptxt').textContent = 'LV ' + S.lvl + ' · ' + S.xp + ' / ' + need(S.lvl) + ' XP';
   SLOTS.forEach((s, i) => {
     const el = slotEls[i]; if (!el) return; const u = el.querySelector('u');
     if (s.cd) u.style.height = (CD[s.cd] / CDMAX[s.cd] * 100) + '%';
-    if (s.pot) el.querySelector('small').textContent = 'İksir x' + (S.inv.pot || 0);
+    if (s.pot) el.querySelector('small').textContent = 'Potion x' + (S.inv.pot || 0);
   });
   const boss = enemies.find(e => e.k.boss && !e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 45);
   const t = boss || (TGT.e && !TGT.e.dead && Math.hypot(TGT.e.x - P.x, TGT.e.z - P.z) < 30 ? TGT.e : null);

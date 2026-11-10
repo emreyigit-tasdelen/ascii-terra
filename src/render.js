@@ -1,6 +1,6 @@
-// Renderer, kamera, gün döngüsü, yağmur ve ASCII son-işleme geçişi.
-// Ekrandaki HER piksel bir glifin parçasıdır: sahne önce render hedefine çizilir,
-// sonra malzeme kimliğine (alfa kanalı) göre uygun glif setiyle karakterlere çevrilir.
+// Renderer, camera, day cycle, rain and the ASCII post-process pass.
+// EVERY pixel on screen is part of a glyph: the scene is drawn to a render target first,
+// then turned into characters with the glyph set chosen by its material ID (alpha channel).
 import { THREE, $, clamp, lerp, smooth, MID, tag } from './core.js';
 
 export const canvas = $('c');
@@ -14,7 +14,7 @@ export const VIEW = { cellW: 5, cellH: 9, dpr: 1 };
 
 const rt = new THREE.WebGLRenderTarget(16, 16, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, depthBuffer: true });
 
-/* ---------------- glif setleri ---------------- */
+/* ---------------- glyph sets ---------------- */
 const SETS = {
   GEN: " .':;-~ilrcvxzjtJCZqpdbhaowmQ&8#@",
   STONE: " .:+oaeswqpdbmOQ0&%$#@MW",
@@ -28,7 +28,7 @@ const SETS = {
   FLOWER: "o*+o.",
   GLOW: "+x*#@",
   RAIN: "/'/",
-  GRASS: "-~_/'/|!l\\`\\",   // 4 yön kovası x 3 varyant: yatay, /, dikey, \
+  GRASS: "-~_/'/|!l\\`\\",   // 4 direction buckets x 3 variants: horizontal, /, vertical, \
   EDGE: "-/|\\"
 };
 let GLYPHS = '', defs = '';
@@ -63,8 +63,8 @@ const asciiMat = new THREE.ShaderMaterial({
   float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
   bool isD(float a,float v){return abs(a-v)<.02;}
   bool isGrass(float a){return a<.3;}
-  bool isFig(float a){return isD(a,.65)||isD(a,.7);}            // karakter / yaratık: ince ızgara
-  bool isThin(float a){return isD(a,.5)||isD(a,.55)||isD(a,.6);} // çiçek, yağmur, parlak
+  bool isFig(float a){return isD(a,.65)||isD(a,.7);}            // character / creature: fine grid
+  bool isThin(float a){return isD(a,.5)||isD(a,.55)||isD(a,.6);} // flower, rain, glow
   vec4 S(vec2 p){return texture2D(tScene,p/res);}
   float pick(float o,float n,float l,float h,float j){return o+clamp(floor(pow(l,.6)*(n-1.)+(h-.5)*j+.5),l>.02?1.:0.,n-1.);}
   float glyphN(float s,vec2 lp){
@@ -81,7 +81,7 @@ const asciiMat = new THREE.ShaderMaterial({
     vec2 fc=gl_FragCoord.xy;
     vec4 own=S(fc);float a=own.a;vec3 o;
     if(isFig(a)){
-      // karakterler ve yaratıklar: küçük hücreli ince ızgara
+      // characters and creatures: fine grid with small cells
       bool cre=isD(a,.7);
       vec2 cp=fpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
       vec3 acc=vec3(0.);float n=0.;float L[9];
@@ -94,7 +94,7 @@ const asciiMat = new THREE.ShaderMaterial({
       float l=clamp(lum(c),0.,1.),hc=h21(cell+vec2(37.,11.));
       float gx=(L[2]+2.*L[5]+L[8])-(L[0]+2.*L[3]+L[6]),gy=(L[6]+2.*L[7]+L[8])-(L[0]+2.*L[1]+L[2]);
       float mag=length(vec2(gx,gy))/4.,sl;
-      if(mag>.16+.2*l&&n>2.){float an=atan(-gx,gy);if(an<0.)an+=3.14159265;sl=EDGE_O+mod(floor(an/.785398+.5),4.);}  // plaka/kemik kenarları
+      if(mag>.16+.2*l&&n>2.){float an=atan(-gx,gy);if(an<0.)an+=3.14159265;sl=EDGE_O+mod(floor(an/.785398+.5),4.);}  // plate/bone edges
       else sl=cre?pick(FINE,l*1.25,hc,2.):pick(ACTOR,l*1.2,hc,1.5);
       o=c*glyphF(sl,lp)*2.05+c*.08;
     }else{
@@ -164,8 +164,8 @@ export function renderFrame(t, hurt) {
   renderer.setRenderTarget(null); renderer.render(quadScene, quadCam);
 }
 
-/* ---------------- ışık + gün döngüsü ---------------- */
-// Ana ışık (gündüz güneş, gece ay) gölge haritası üretir; zayıf ters dolgu ışığı kenarları ayırır.
+/* ---------------- light + day cycle ---------------- */
+// The key light (sun by day, moon by night) casts the shadow map; a weak back fill light separates edges.
 export const key = new THREE.DirectionalLight(0xfff0d0, .9); scene.add(key); scene.add(key.target);
 key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
 { const c = key.shadow.camera; c.left = -44; c.right = 44; c.top = 44; c.bottom = -44; c.near = 1; c.far = 320; }
@@ -180,7 +180,7 @@ export function updateDay(dt, len) {
   ENV.night = N;
   const day = e > -.02;
   _ld.set(Math.cos(a) * .75, e, .5); if (!day) _ld.multiplyScalar(-1); _ld.y = Math.max(_ld.y, .28); _ld.normalize();
-  const tx = Math.round(ENV.focus.x / 2) * 2, tz = Math.round(ENV.focus.z / 2) * 2;   // gölge titremesin diye ızgaraya oturt
+  const tx = Math.round(ENV.focus.x / 2) * 2, tz = Math.round(ENV.focus.z / 2) * 2;   // snap to a grid so shadows do not shimmer
   key.target.position.set(tx, ENV.focus.y, tz); key.position.set(tx + _ld.x * 150, ENV.focus.y + _ld.y * 150, tz + _ld.z * 150);
   if (day) { key.intensity = .95 * D * (1 - .45 * rain); key.color.setRGB(1, lerp(.6, .95, smooth(0, .4, e)), lerp(.4, .85, smooth(0, .4, e))); }
   else { key.intensity = .5 * (1 - .4 * rain); key.color.setRGB(.55, .62, 1); }
@@ -194,7 +194,7 @@ export function updateDay(dt, len) {
   ENV.light.set(lerp(.2, sun.color.r * .95, D), lerp(.24, sun.color.g * .95, D), lerp(.4, sun.color.b * .95, D)).multiplyScalar(1 - .3 * rain);
 }
 
-/* ---------------- yağmur ---------------- */
+/* ---------------- rain ---------------- */
 const RN = 1800, rainPos = new Float32Array(RN * 6), rainGeo = new THREE.BufferGeometry(), rainD = [];
 rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
 const rain = new THREE.LineSegments(rainGeo, tag(new THREE.LineBasicMaterial({ color: 0x8f9aaa }), MID.RAIN));

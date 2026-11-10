@@ -64,7 +64,7 @@ node server/server.js
 ```
 
 Open <http://localhost:8765>. Friends on the same network open `http://<your-local-ip>:8765` (the server prints the address).
-On Windows you can simply double-click `baslat.bat`. Change the port with `PORT=9000 node server/server.js`.
+On Windows you can simply double-click `start.bat`. Change the port with `PORT=9000 node server/server.js`.
 
 ### Single player only
 
@@ -83,8 +83,8 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
   or play as a guest (progress stays in that browser). Passwords are stored only as salted scrypt hashes, login tokens only as
   SHA-256 digests, login attempts are rate-limited (5/min per IP), and all of it lives in `server/data/` which is git-ignored.
 - **Database:** Node's built-in SQLite (`node:sqlite`, Node 22.5+, nothing to install) in `server/data/terra.db`, WAL mode,
-  batched save writes, daily backups in `server/data/yedek/` (last 7 kept). An old `users.json` is imported automatically.
-- **Forgot password:** on sign-up you get a one-time **recovery code**; "Şifremi unuttum" + name + code sets a new password
+  batched save writes, daily backups in `server/data/backups/` (last 7 kept). An old `users.json` is imported automatically.
+- **Forgot password:** on sign-up you get a one-time **recovery code**; "Forgot password" + name + code sets a new password
   (no e-mail is stored). Admin CLI: `node server/admin.js list | reset <name> | ban <name> | unban <name> | delete <name> --yes | backup`.
 - The server is a single dependency-free file (`server/server.js`): static files + a minimal WebSocket implementation,
   path-traversal and dotfile protection, message size and rate limits, sanitised names and chat.
@@ -118,7 +118,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
    3×3 times and picks a glyph from the set that belongs to that material, coloured by the scene.
 4. Thin objects (rain, webs, flowers) claim a cell if any sample hits them, so 1-pixel lines never vanish.
 
-Details: [docs/STIL-REHBERI.md](docs/STIL-REHBERI.md) (style guide, Turkish with an English summary).
+Details: [docs/STYLE-GUIDE.md](docs/STYLE-GUIDE.md) (style guide).
 
 ## Project structure
 

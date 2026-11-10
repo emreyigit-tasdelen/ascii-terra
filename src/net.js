@@ -1,5 +1,5 @@
-// Çok oyunculu istemci: bağlantı, uzak oyuncular, sohbet, host-yetkili düşman senkronu.
-// Sunucu yoksa (ör. python http.server ile açıldıysa) oyun sessizce tek oyunculu kalır.
+// Multiplayer client: connection, remote players, chat, host-authoritative enemy sync.
+// Without the server (e.g. served by python http.server) the game silently stays single player.
 import { THREE, $, clamp, lerp, angDiff, heightAt } from './core.js';
 import { scene } from './render.js';
 import { makeKnight, animBiped } from './models.js';
@@ -15,7 +15,7 @@ export const isHost = () => NET.role === 'host';
 
 const TOK = 'asciiTerraTok';
 const raw = o => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); };
-/* Sayfa açılınca sunucuya bağlanır (giriş ekranı için); oyuna katılma joinWorld ile olur */
+/* Connects to the server on page load (for the start screen); joining the world happens in joinWorld */
 export function initNet() {
   const fail = () => { NET.tried = true; NET.available = false; NET.onReady && NET.onReady(); };
   if (!('WebSocket' in window) || location.protocol === 'file:') return fail();
@@ -28,7 +28,7 @@ export function initNet() {
   };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = () => {
-    if (NET.online) toast('Sunucu bağlantısı koptu — tek oyunculu devam ediyorsun');
+    if (NET.online) toast('Lost connection to the server — continuing in single player');
     const wasAvail = NET.available; NET.online = false; NET.available = false; NET.role = 'solo';
     for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); status();
     if (!NET.tried || wasAvail) { NET.tried = true; NET.onReady && NET.onReady(); }
@@ -56,12 +56,12 @@ function onMsg(m) {
       } else if (!m.silent) NET.account = null;
       if (m.out || (m.silent && !m.ok)) { try { localStorage.removeItem(TOK); sessionStorage.removeItem(TOK); } catch (e) { } }
       NET.onAuth && NET.onAuth(m); break;
-    case 'kick': toast(m.why || 'Bağlantı kesildi'); break;
+    case 'kick': toast(m.why || 'Disconnected'); break;
     case 'welcome': NET.myId = m.id; NET.hostId = m.host; NET.online = true; if (m.name) NET.name = m.name; setRole(); m.players.forEach(p => addRemote(p.id, p.name, p.st));
-      toast('Sunucuya bağlandın — ' + (m.players.length ? m.players.length + ' oyuncu daha çevrimiçi' : 'şu an yalnızsın') + (isHost() ? ' (dünya sende)' : '')); break;
-    case 'join': addRemote(m.id, m.name); toast(m.name + ' dünyaya katıldı'); chatLine('', m.name + ' katıldı', 'sys'); status(); break;
-    case 'leave': { const r = NET.remotes.get(m.id); if (r) { toast(r.name + ' ayrıldı'); chatLine('', r.name + ' ayrıldı', 'sys'); removeRemote(r); NET.remotes.delete(m.id); status(); } break; }
-    case 'host': NET.hostId = m.id; const was = NET.role; setRole(); if (was !== 'host' && isHost()) toast('Dünya simülasyonu artık sende (host)'); break;
+      toast('Connected — ' + (m.players.length ? m.players.length + ' other player(s) online' : 'you are alone for now') + (isHost() ? ' (you host the world)' : '')); break;
+    case 'join': addRemote(m.id, m.name); toast(m.name + ' joined the world'); chatLine('', m.name + ' joined', 'sys'); status(); break;
+    case 'leave': { const r = NET.remotes.get(m.id); if (r) { toast(r.name + ' left'); chatLine('', r.name + ' left', 'sys'); removeRemote(r); NET.remotes.delete(m.id); status(); } break; }
+    case 'host': NET.hostId = m.id; const was = NET.role; setRole(); if (was !== 'host' && isHost()) toast('You now host the world simulation'); break;
     case 'st': { const r = NET.remotes.get(m.from); if (r) applyState(r, m); break; }
     case 'ch': chatLine(m.name, m.text, m.from === NET.myId ? 'me' : ''); break;
     case 'hit': { const e = enemies[m.e]; if (isHost() && e) hitEnemy(e, m.d, m.x, m.z, { remote: true, crit: m.c, by: m.from }); break; }
@@ -74,7 +74,7 @@ function onMsg(m) {
   }
 }
 
-/* ---------------- uzak oyuncular ---------------- */
+/* ---------------- remote players ---------------- */
 function addRemote(id, name, st) {
   if (NET.remotes.has(id)) return;
   const cloth = TABARDS[id % TABARDS.length], r = makeKnight({ cloth, capeColor: new THREE.Color(cloth).multiplyScalar(.45).getHex(), emblem: 0xd8cfb4 });
@@ -101,20 +101,20 @@ export function updateNet(dt) {
     animBiped(R.rig, { ph: R.ph, amt, run, atk: R.atk, atkType: R.atkType || 0, dodge: R.a[4] ?? -1, air: R.a[5] || 0, hit: R.a[6] || 0, block: R.a[7] || 0, t: T, dt, style: 'knight' });
     R.rig.g.position.set(R.x, R.y, R.z); R.rig.g.rotation.y = R.f; R.rig.g.visible = R.got;
     R.rig.g.rotation.x = R.hp <= 0 ? -1.45 : 0;
-    if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + ' · sv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
+    if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + ' · lv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
   }
   if (!NET.online) return;
   sendT -= dt;
-  if (sendT <= 0) {   // yerel oyuncu durumu ~15 Hz
+  if (sendT <= 0) {   // local player state ~15 Hz
     sendT = .066;
     sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl });
   }
   if (isHost()) { snapT -= dt; if (snapT <= 0) { snapT = .1; const d = snapshotRows(); if (d.length) sendNet({ t: 'en', d }); } }
 }
-/* Düşman yapay zekâsı için hedef adayları (host) */
+/* Target candidates for enemy AI (host) */
 export function remoteTargets() { const a = []; for (const R of NET.remotes.values()) if (R.got && R.hp > 0) a.push(R); return a; }
 
-/* ---------------- sohbet + durum ---------------- */
+/* ---------------- chat + status ---------------- */
 function chatLine(name, text, cls) {
   const log = $('chatlog'), d = document.createElement('div'); d.className = 'cl ' + (cls || '');
   if (name) { const b = document.createElement('b'); b.textContent = name + ': '; d.appendChild(b); }
@@ -133,10 +133,10 @@ export function chatToggle() {
 export function chatCancel() { const i = $('chatin'); i.value = ''; i.hidden = true; i.blur(); }
 function status() {
   const el = $('net'); if (!el) return;
-  el.textContent = NET.online ? '● Çevrimiçi · ' + (NET.remotes.size + 1) + ' oyuncu' + (isHost() ? ' · host' : '') : '○ Tek oyunculu';
+  el.textContent = NET.online ? '● Online · ' + (NET.remotes.size + 1) + ' player(s)' + (isHost() ? ' · host' : '') : '○ Single player';
   el.className = NET.online ? 'on' : '';
 }
 export function netStatusTick() { status(); }
 
-// Sekme gizlenince sunucuya bildir: host rolü görünür bir oyuncuya devredilir
+// Tell the server when the tab is hidden: the host role moves to a visible player
 document.addEventListener('visibilitychange', () => sendNet({ t: 'vis', h: document.hidden ? 1 : 0 }));

@@ -1,10 +1,10 @@
-/* ASCII-Terra veritabanı — Node'un yerleşik SQLite modülü (node:sqlite, Node 22.5+), ek paket yok.
-   Dosya: server/data/terra.db (git'e girmez). server.js ve admin.js ortak kullanır. */
+/* ASCII-Terra database — Node's built-in SQLite module (node:sqlite, Node 22.5+), no extra packages.
+   File: server/data/terra.db (git-ignored). Shared by server.js and admin.js. */
 'use strict';
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const { DatabaseSync } = require('node:sqlite');
 
-const DATA = path.join(__dirname, 'data'), FILE = path.join(DATA, 'terra.db'), BAK = path.join(DATA, 'yedek');
+const DATA = path.join(__dirname, 'data'), FILE = path.join(DATA, 'terra.db'), BAK = path.join(DATA, 'backups');
 fs.mkdirSync(DATA, { recursive: true });
 const db = new DatabaseSync(FILE);
 db.exec(`
@@ -22,11 +22,11 @@ const sha = s => crypto.createHash('sha256').update(String(s)).digest('hex');
 const ukey = n => String(n).toLocaleLowerCase('tr');
 const scrypt = (pass, salt) => new Promise((res, rej) => crypto.scrypt(pass, salt, 64, { N: 16384, r: 8, p: 1 }, (e, k) => e ? rej(e) : res(k)));
 async function hashPass(pass) { const salt = crypto.randomBytes(16).toString('hex'); return { salt, hash: (await scrypt(pass, salt)).toString('hex') }; }
-async function checkPass(u, pass) {   // hesap yoksa da aynı süre harcanır
+async function checkPass(u, pass) {   // spends the same time even when the account does not exist
   const h = await scrypt(pass, u ? u.salt : '0'.repeat(32));
   return !!u && crypto.timingSafeEqual(h, Buffer.from(u.hash, 'hex'));
 }
-// kurtarma kodu: 12 karakter, karışmayan harf/rakam, XXXX-XXXX-XXXX
+// recovery code: 12 unambiguous letters/digits, XXXX-XXXX-XXXX
 const RC = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function newRecovery() { const b = crypto.randomBytes(12); let s = ''; for (let i = 0; i < 12; i++) s += RC[b[i] % RC.length]; return s.replace(/(.{4})(?=.)/g, '$1-'); }
 const recHash = code => sha(String(code).toUpperCase().replace(/[^A-Z0-9]/g, ''));
@@ -49,7 +49,7 @@ const q = {
 };
 function tx(fn) { db.exec('BEGIN'); try { const r = fn(); db.exec('COMMIT'); return r; } catch (e) { db.exec('ROLLBACK'); throw e; } }
 
-// eski users.json varsa bir kez içe aktar, .bak olarak bırak
+// import an old users.json once, then keep it as .bak
 const OLD = path.join(DATA, 'users.json');
 if (fs.existsSync(OLD)) {
   try {
@@ -63,16 +63,16 @@ if (fs.existsSync(OLD)) {
       for (const [h, r] of Object.entries(J.tokens || {})) if (r && r.exp > Date.now() && q.get.get(r.u) && !q.tokGet.get(h)) q.tokAdd.run(h, r.u, r.exp);
     });
     fs.renameSync(OLD, OLD + '.bak');
-    console.log(`[db] users.json içe aktarıldı (${n} hesap), eskisi users.json.bak`);
-  } catch (e) { console.log('[db] users.json içe aktarılamadı: ' + e.message); }
+    console.log(`[db] imported users.json (${n} accounts), old file kept as users.json.bak`);
+  } catch (e) { console.log('[db] could not import users.json: ' + e.message); }
 }
 q.tokPurge.run(Date.now());
 
-// oyun kayıtları 1,5 sn biriktirilip tek işlemde yazılır
+// game saves are batched for 1.5 s and written in one transaction
 const pending = new Map(); let flushT = null;
 function flush() { flushT = null; if (!pending.size) return; const now = Date.now(); tx(() => { for (const [k, d] of pending) q.save.run(k, d, now); }); pending.clear(); }
 
-// günlük yedek (son 7 tutulur)
+// daily backup (last 7 kept)
 function backup() {
   flush(); fs.mkdirSync(BAK, { recursive: true });
   const f = path.join(BAK, 'terra-' + new Date().toISOString().slice(0, 10) + '.db');

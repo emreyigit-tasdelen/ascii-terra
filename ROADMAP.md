@@ -1,127 +1,127 @@
-# ASCII-Terra — Yol Haritası
+# ASCII-Terra — Roadmap
 
-Hedef: karanlık, atmosferik bir ASCII MMORPG görünüşünde, karakterlerden örülü bir **şövalye dünyası**;
-önce tek oyunculu sağlam bir ARPG, sonra çok oyunculu (MMO). Görsel kurallar: [docs/STIL-REHBERI.md](docs/STIL-REHBERI.md).
+Goal: a **knight world** woven from characters, with the look of a dark, atmospheric ASCII MMORPG;
+first a solid single-player ARPG, then multiplayer (MMO). Visual rules: [docs/STYLE-GUIDE.md](docs/STYLE-GUIDE.md).
 
-Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
-
----
-
-## Faz 0 — Temel (v0.2, şu an)
-- [x] Modüler kod: `src/core.js`, `render.js`, `world.js`, `models.js`, `actors.js`, `game.js`, `main.js`
-- [x] ASCII render v2: malzeme kimliği (alfa kanalı) → malzemeye özel glif seti; ekrandaki her şey glif (çimen yön glifleri, karakterler ince ızgara)
-- [x] Piksel-hizalı glif atlası (hücre boyutunda üretilir, keskin)
-- [x] Yukarıdan sabit kamera, imleçle nişan, sağ tık sürükleyerek döndürme
-- [x] Şövalye Senje (zırh, tabard, kılıç, kalkan), yürüme/saldırı animasyonu, yuvarlanma (dodge roll)
-- [x] Köy, kale harabesi (surlar, kuleler, kemerli kapı, meşaleler), kıyı menhirleri, köpüklü deniz
-- [x] Düşmanlar: iskelet savaşçı, kurt, boss Alacakaranlık Dulu (turuncu AoE uyarı daireleri)
-- [x] Beceriler: kılıç, ateş topu, kasırga, iksir; hotbar + bekleme süreleri
-- [x] 5 görevlik başlangıç zinciri, envanter/ekipman, kayıt (localStorage)
-- [x] Public GitHub deposu, README (EN + TR), sponsor bağlantıları
-- [ ] Vite ile geliştirme sunucusu ve build (CDN bağımlılığını kaldırmak için three.js yerel paket)
-
-## Faz 1 — Görsel sadakat (videolara bire bir)
-- [x] Gerçek gölge haritası (karakter, sur, ağaç gölgeleri); çimen de gölge alıyor
-- [ ] Kıyıda sis/pus partikülleri, deniz üzerinde köpük kıvrımları, dalga animasyonu
-- [x] Ateş/kor/kan/kemik/kıvılcım parçacıkları, ateş topu izi, kan izleri, vuruş durması ve kamera sarsıntısı
-- [x] Detaylı modeller: plaka zırhlı şövalye, kara şövalye, anatomik iskelet, dev kurt, kıllı dev örümcek, kanatlı ejderha
-- [x] Animasyon v2: yaylı eklemler, kombo, takla, zıplama, darbe tepkisi, pelerin fiziği, yaratık yürüyüşleri, eklemli ejderha
-- [ ] Bloom benzeri parlama, iskeletli (skinned) mesh animasyonu, ayak IK (eğimde ayak yerleşimi)
-- [ ] Yıldırım/buz/mor büyü efektleri (video: New skills)
-- [ ] Malzemeye özel ızgara: zincir zırh `o8o8` deseni, ejderha pulları, örümcek tüyü (custom grid + symbol)
-- [ ] Dinamik hava: yağmur sıçraması, ıslak zemin parlaması, sis, kar; hava döngüsü
-- [ ] Gece/gündüz ince ayarı, meşale ışık yarıçapları, ay ışığı
-- [ ] Ağaç ve kaya modellerini zenginleştirme, rüzgârda sallanan yapraklar
-- [ ] Kalite ayarları menüsü (hücre boyutu, çimen yoğunluğu, çözünürlük ölçeği)
-
-## Faz 2 — Oynanış çekirdeği
-- [x] Dövüş hissi: hitstop, kamera sarsıntısı, 3'lü kombo, kalkanla blok + savuşturma + dayanıklılık
-- [ ] Yönlü vuruş, düşmanların da bloklaması
-- [ ] Beceri sistemi + destek taşları (support gems) ile build oluşturma (video: skills & support gems)
-- [ ] Mana / dayanıklılık, beceri ağacı, sınıf yok — eşyaya bağlı build
-- [ ] Ekipman slotları: Silah, Miğfer, Omuzluk, Göğüs, Eldiven, Bacak, Çizme (video: craft ekranı)
-- [ ] Zanaat (craft): metal seçimi (Demir, Çelik, Bronz, Gümüş, Altın, Ay Çeliği, Gece Camı, Kan Demiri, Kemiktaş, Kor Taşı) + rün yuvaları + büyüler
-- [ ] Craft ekranında 3B ASCII eşya önizlemesi (döndürülebilir)
-- [ ] Loot tabloları, nadirlik renkleri, yerde eşya etiketleri ("Rusty Stiletto" gibi)
-- [ ] Fare ile envanter ızgarası, sürükle-bırak
-- [ ] Düşman yapay zekâsı: gruplar, okçular, büyücüler, kaçma/çevreleme; boss fazları
-- [ ] Karakter yaratma ekranı (görünüm, isim)
-
-## Faz 3 — Dünya
-- [ ] Harita taslağından prosedürel üretim (video: map sketch pipeline): biyomlar, nehirler, yollar
-- [ ] Başlangıç öğretici alanı + ilk köy (video: tutorial area)
-- [x] Sisli Bataklık bölgesi (şapel, mezarlık, kamp, sis) + bölge başlıkları
-- [ ] Yeni bölgeler: karlı dağ, çöl harabeleri, zindanlar (iç mekan)
-- [ ] NPC rutinleri (gündüz/gece), tüccar, demirci, han
-- [ ] Ses ve müzik: adım, kılıç, ateş, yağmur, ortam (video: Added sound)
-- [ ] Büyük dünya için akış (chunk yükleme), uzak mesafe LOD
-
-## Faz 4 — İçerik
-- [ ] Ana hikâye ve görev zinciri, diyalog ağacı sistemi
-- [x] Hortlak, bataklık cadısı (menzilli), bataklık trolü (elit), kara şövalye, ejderha
-- [ ] Bestiyer: iskelet okçu, dev örümcek türleri, at/binek
-- [~] Bosslar: Alacakaranlık Dulu, Kül Ejderhası (ateş nefesi + kuyruk darbesi) eklendi; fazlar ve Kale Lordu yapılacak
-- [ ] Başarımlar, unvanlar
-
-## Faz 5 — Çok oyunculu (MMO)
-- [x] Bağımlılıksız Node.js sunucusu (statik + WebSocket), oyuncu varlığı, sohbet, host seçimi ve devri
-- [x] Host yetkili ortak oyun: düşman anlık görüntüleri, vuruş/öldürme yönlendirme, paylaşılan boss uyarıları ve cadı büyüleri
-- [ ] Tam sunucu yetkili simülasyon (düşman yapay zekâsı sunucuda, sabit tick), hile koruması
-- [~] Oyuncu senkronu (15 Hz + yumuşatma) yapıldı; tahmin + uzlaştırma, ilgi alanı (AOI) filtresi yapılacak
-- [x] Sohbet
-- [ ] PVP düello daveti ("X seni düelloya davet ediyor", video), parti, ortak görev ilerlemesi
-- [x] Hesap sistemi (kayıt/giriş, scrypt, belirteç, beni hatırla), sunucu tarafı kayıt (JSON dosyası)
-- [x] SQLite veritabanı (node:sqlite), kurtarma koduyla şifre sıfırlama, admin.js, günlük yedek
-- [ ] Hile koruması
-- [ ] Ölçekleme: bölge sunucuları
-
-### Faz 5 ayrıntılı plan — Düello, parti, ortak görev
-
-**Ortak altyapı (önce):** sunucuya `party` ve `duel` durumları (bellekte, oyuncu kimliğine bağlı); istemci `net.js`'e
-mesaj tipleri: `invite`, `invite_reply`, `party_*`, `duel_*`. Davetler 20 sn sonra düşer, aynı anda tek bekleyen davet.
-
-**1. Parti (v0.8)**
-- Oyuncuya yakın dur + `G` veya sohbette `/davet <ad>` → karşıya "X seni partiye davet ediyor [Y/N]".
-- En fazla 4 kişi, lider ayrılınca liderlik sıradakine geçer, `/ayril` ile çıkış.
-- HUD: sol tarafta parti üyelerinin adı + can çubuğu; haritada üye noktaları.
-- Parti üyeleri birbirine vuramaz; aynı bölgedeki üyeler öldürme XP'sini paylaşır (eşit bölüşüm, +%10 parti bonusu).
-
-**2. Ortak görev ilerlemesi (v0.9)**
-- Görev ilerlemesi parti düzeyinde: lider görevi kabul edince tüm üyelere eklenir.
-- "N düşman öldür" sayaçları parti içinde ortak; host öldürmeyi bildirirken `partyId` de gönderir.
-- Teslimde her üye kendi ödülünü alır; partiden çıkan oyuncu o anki ilerlemeyi kendi kaydına kopyalar.
-- Sunucu kaydı (DB) görevi kişi başı saklar, parti yalnızca çalışma anında yaşar.
-
-**3. PVP düello (v0.10)**
-- `/duello <ad>` veya oyuncuya bakıp `V` → "X seni düelloya davet ediyor [Y/N]".
-- Kabulde 3-2-1 geri sayım, yerde ASCII halka (yarıçap ~12 m); halkadan çıkan kaybeder.
-- Yalnız iki düellocu birbirine hasar verebilir; can 1'in altına düşmez, 1'e inen kaybeder (ölüm/eşya kaybı yok).
-- Sonuç sohbete duyurulur; DB'de galibiyet/mağlubiyet sayacı.
-- Hile koruması: düello hasarı sunucuda menzil + bekleme süresi kontrolünden geçer.
-
-**Test:** iki tarayıcı sekmesiyle (biri gizli pencere) davet/kabul/ret, parti XP paylaşımı, düello halkası ve sonuç.
-
-### Faz 5 ayrıntılı plan — Veritabanı ve şifre sıfırlama (v0.8'de yapıldı)
-- **Depolama:** Node'un yerleşik `node:sqlite` modülü (Node 22.5+; bağımlılık yok), dosya `server/data/terra.db`, WAL modu.
-  Tablolar: `users(id, name, name_lc UNIQUE, salt, hash, created, last_login, banned)`, `saves(user_id, data JSON, updated)`,
-  `tokens(hash, user_id, expires)` (belirtecin kendisi değil SHA-256 özeti saklanır), `stats(user_id, duel_w, duel_l)`.
-  Mevcut `users.json` ilk açılışta otomatik içe aktarılır ve `users.json.bak` olarak bırakılır.
-- **Verim:** hazır sorgular (prepared statement), kayıtlar 1,5 sn birleştirilerek tek işlemde yazılır.
-- **Güvenlik:** scrypt kalır; girişte IP başına hız sınırı (5 deneme/dk); belirteçler 30 gün; günlük `terra.db` yedeği (son 7).
-- **Şifre sıfırlama (e-posta yok, kişisel veri tutulmaz):** kayıtta bir kez gösterilen 12 karakterlik **kurtarma kodu**
-  (özeti saklanır). "Şifremi unuttum" → ad + kurtarma kodu + yeni şifre; kullanınca yeni kod verilir.
-- **Yönetim:** `node server/admin.js` komut satırı aracı: `list`, `reset <ad>` (geçici şifre üretir), `ban/unban <ad>`,
-  `delete <ad>`, `backup`. Web yönetim paneli yok (saldırı yüzeyi açmamak için).
-
-## Faz 6 — Yayın
-- [ ] Masaüstü paketi (Tauri/Electron), Steam sayfası
-- [ ] Ayarlar menüsü, tuş atama, gamepad
-- [ ] Lokalizasyon (TR / EN)
-- [ ] Performans profili, düşük donanım modu
+Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 
 ---
 
-## Sıradaki sprint (önerilen)
-1. Vite ile geliştirme sunucusu ve build
-2. Gölge haritası + kıyı sisi + ateş partikülleri (Faz 1'in en görünür 3 maddesi)
-3. Ekipman slotları ve craft ekranının ilk sürümü
+## Phase 0 — Foundation (v0.2)
+- [x] Modular code: `src/core.js`, `render.js`, `world.js`, `models.js`, `actors.js`, `game.js`, `main.js`
+- [x] ASCII renderer v2: material ID (alpha channel) → per-material glyph set; everything on screen is a glyph (directional grass glyphs, characters on a fine grid)
+- [x] Pixel-aligned glyph atlas (generated at cell size, crisp)
+- [x] Fixed top-down camera, mouse aiming, drag to rotate
+- [x] Knight Senje (armor, tabard, sword, shield), walk/attack animation, dodge roll
+- [x] Village, castle ruins (walls, towers, arched gate, torches), coastal menhirs, foamy sea
+- [x] Enemies: skeleton warrior, wolf, boss Dusk Widow (orange AoE warning circles)
+- [x] Skills: sword, fireball, whirlwind, potion; hotbar + cooldowns
+- [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
+- [x] Public GitHub repository, README (EN + TR), sponsor links
+- [ ] Vite dev server and build (bundle three.js locally to drop the CDN dependency)
+
+## Phase 1 — Visual fidelity (match the reference videos)
+- [x] Real shadow map (character, wall, tree shadows); grass receives shadows too
+- [ ] Coastal mist/haze particles, foam curls on the sea, wave animation
+- [x] Fire/ember/blood/bone/spark particles, fireball trail, blood decals, hit-stop and camera shake
+- [x] Detailed models: plate-armored knight, dark knight, anatomical skeleton, giant wolf, hairy giant spider, winged dragon
+- [x] Animation v2: spring joints, combo, roll, jump, hit reaction, cape physics, creature gaits, jointed dragon
+- [ ] Bloom-like glow, skinned mesh animation, foot IK (foot placement on slopes)
+- [ ] Lightning/ice/purple magic effects (video: New skills)
+- [ ] Per-material grids: chainmail `o8o8` pattern, dragon scales, spider hair (custom grid + symbol)
+- [ ] Dynamic weather: rain splashes, wet ground sheen, fog, snow; weather cycle
+- [ ] Day/night tuning, torch light radii, moonlight
+- [ ] Richer tree and rock models, leaves swaying in the wind
+- [ ] Quality settings menu (cell size, grass density, resolution scale)
+
+## Phase 2 — Core gameplay
+- [x] Combat feel: hit-stop, camera shake, 3-hit combo, shield block + parry + stamina
+- [ ] Directional strikes, enemies that block too
+- [ ] Skill system + support gems for builds (video: skills & support gems)
+- [ ] Mana / stamina, skill tree, classless — item-driven builds
+- [ ] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
+- [ ] Crafting: metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments
+- [ ] 3D ASCII item preview on the craft screen (rotatable)
+- [ ] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")
+- [ ] Mouse-driven inventory grid, drag and drop
+- [ ] Enemy AI: groups, archers, casters, fleeing/flanking; boss phases
+- [ ] Character creation screen (appearance, name)
+
+## Phase 3 — World
+- [ ] Procedural generation from a map sketch (video: map sketch pipeline): biomes, rivers, roads
+- [ ] Starting tutorial area + first village (video: tutorial area)
+- [x] Misty Swamp region (chapel, graveyard, camp, fog) + region titles
+- [ ] New regions: snowy mountains, desert ruins, dungeons (interiors)
+- [ ] NPC routines (day/night), merchant, blacksmith, inn
+- [ ] Sound and music: footsteps, sword, fire, rain, ambience (video: Added sound)
+- [ ] Streaming for a large world (chunk loading), far-distance LOD
+
+## Phase 4 — Content
+- [ ] Main story and quest chain, dialogue tree system
+- [x] Ghoul, swamp witch (ranged), swamp troll (elite), dark knight, dragon
+- [ ] Bestiary: skeleton archer, giant spider variants, horses/mounts
+- [~] Bosses: Dusk Widow and Ash Dragon (fire breath + tail swipe) added; phases and the Castle Lord to do
+- [ ] Achievements, titles
+
+## Phase 5 — Multiplayer (MMO)
+- [x] Dependency-free Node.js server (static + WebSocket), player presence, chat, host election and handover
+- [x] Host-authoritative co-op: enemy snapshots, hit/kill routing, shared boss telegraphs and witch hexes
+- [ ] Fully server-authoritative simulation (enemy AI on the server, fixed tick), anti-cheat
+- [~] Player sync (15 Hz + smoothing) done; prediction + reconciliation, area-of-interest (AOI) filter to do
+- [x] Chat
+- [ ] PvP duel invites ("X challenges you to a duel", video), parties, shared quest progress
+- [x] Account system (sign up/log in, scrypt, tokens, remember me), server-side saves
+- [x] SQLite database (node:sqlite), password reset with a recovery code, admin.js, daily backups
+- [ ] Anti-cheat
+- [ ] Scaling: region servers
+
+### Phase 5 detailed plan — Duels, parties, shared quests
+
+**Shared groundwork (first):** `party` and `duel` state on the server (in memory, keyed by player ID); new message types in
+the `net.js` client: `invite`, `invite_reply`, `party_*`, `duel_*`. Invites expire after 20 s, one pending invite at a time.
+
+**1. Parties (v0.9)**
+- Stand near a player + `G`, or `/invite <name>` in chat → they see "X invites you to a party [Y/N]".
+- Up to 4 members; when the leader leaves, leadership passes to the next member; `/leave` to quit.
+- HUD: party member names + health bars on the left; member dots on the map.
+- Party members cannot hit each other; members in the same area share kill XP (split evenly, +10% party bonus).
+
+**2. Shared quest progress (v0.10)**
+- Quest progress is party-wide: when the leader accepts a quest it is added for every member.
+- "Kill N enemies" counters are shared within the party; the host sends `partyId` with each kill report.
+- On turn-in each member gets their own reward; a player leaving the party copies the current progress into their own save.
+- The database stores quests per player; the party only exists at runtime.
+
+**3. PvP duels (v0.11)**
+- `/duel <name>`, or look at a player and press the duel key → "X challenges you to a duel [Y/N]".
+- On accept: 3-2-1 countdown, an ASCII ring on the ground (radius ~12 m); leaving the ring loses.
+- Only the two duelists can damage each other; health never drops below 1, whoever reaches 1 loses (no death or item loss).
+- The result is announced in chat; win/loss counters in the database.
+- Anti-cheat: duel damage passes server-side range + cooldown checks.
+
+**Test:** two browser tabs (one private window): invite/accept/decline, party XP sharing, duel ring and result.
+
+### Phase 5 detailed plan — Database and password reset (done in v0.8)
+- **Storage:** Node's built-in `node:sqlite` module (Node 22.5+; no dependencies), file `server/data/terra.db`, WAL mode.
+  Tables: `users(key, name, salt, hash, rec, created, last, banned)`, `saves(user, data JSON, updated)`,
+  `tokens(hash, user, exp)` (only the SHA-256 digest of a token is stored), `stats(user, duel_w, duel_l)`.
+  An existing `users.json` is imported automatically on first start and kept as `users.json.bak`.
+- **Efficiency:** prepared statements; saves are batched for 1.5 s and written in one transaction.
+- **Security:** scrypt; per-IP login rate limit (5 attempts/min); tokens last 30 days; daily `terra.db` backup (last 7).
+- **Password reset (no e-mail, no personal data):** a 12-character **recovery code** shown once at sign-up
+  (only its digest is stored). "Forgot password" → name + recovery code + new password; a new code is issued after use.
+- **Administration:** `node server/admin.js` command-line tool: `list`, `reset <name>` (temporary password), `ban/unban <name>`,
+  `delete <name> --yes`, `backup`. No web admin panel (to avoid opening attack surface).
+
+## Phase 6 — Release
+- [ ] Desktop package (Tauri/Electron), Steam page
+- [ ] Settings menu, key rebinding, gamepad
+- [ ] Localization (EN / TR)
+- [ ] Performance profiling, low-end hardware mode
+
+---
+
+## Next sprint (suggested)
+1. Parties (v0.9)
+2. Vite dev server and build
+3. Equipment slots and a first version of the craft screen

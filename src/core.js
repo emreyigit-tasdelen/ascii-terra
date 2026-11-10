@@ -1,4 +1,4 @@
-// Ortak yardımcılar, dünya yükseklik fonksiyonu, çarpışma ve malzeme kimlikleri
+// Shared helpers, world height function, collision and material IDs
 import * as THREE from 'three';
 export { THREE };
 
@@ -16,34 +16,34 @@ export function vnoise(x, y) {
 export function fbm(x, y, o) { let s = 0, a = .5, f = 1; for (let i = 0; i < o; i++) { s += a * vnoise(x * f, y * f); f *= 2.03; a *= .5; } return s; }
 export const angDiff = (a, b) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
 
-// Girdi durumu (main.js yazar, actors.js okur)
+// Input state (written by main.js, read by actors.js)
 export const keys = {};
 export const MOUSE = { x: innerWidth / 2, y: innerHeight / 2, lmb: false, rmb: false };
 
-/* ---------------- dünya ---------------- */
+/* ---------------- world ---------------- */
 export const WATER = -4.2, HALF = 200;
-export const CASTLE = { x: 0, z: -56, half: 18 };          // kale harabesi merkezi (kuzey)
-export const roadX = z => 3.5 * Math.sin(z * .05);           // köy ↔ kale ↔ kıyı taş yolu
-export const roadZ = x => 2 + (x - 10) * .12 + 3 * Math.sin(x * .07);   // köy ↔ bataklık kampı yolu (doğu)
+export const CASTLE = { x: 0, z: -56, half: 18 };          // castle ruins centre (north)
+export const roadX = z => 3.5 * Math.sin(z * .05);           // village ↔ castle ↔ coast stone road
+export const roadZ = x => 2 + (x - 10) * .12 + 3 * Math.sin(x * .07);   // village ↔ swamp camp road (east)
 export function pathDist(x, z) {
   const a = (z < CASTLE.z + CASTLE.half - 2 || z > 104) ? 99 : Math.abs(x - roadX(z));
   const b = (x < 10 || x > 96) ? 99 : Math.abs(z - roadZ(x));
   return Math.min(a, b);
 }
-export const SWAMP = { x: 135, z: 20, r: 58 };                 // Sisli Bataklık (doğu)
+export const SWAMP = { x: 135, z: 20, r: 58 };                 // Misty Swamp (east)
 export const CHAPEL = { x: 150, z: 34 }, CAMP = { x: 93, z: 13.5 };
 export const swampF = (x, z) => 1 - smooth(32, 58, Math.hypot(x - SWAMP.x, z - SWAMP.z));
 
 export function heightAt(x, z) {
   let h = (fbm(x * .0065 + 31.7, z * .0065 + 12.3, 5) - .5) * 52;
   if (h > 5) h += (h - 5) * .9;
-  h = lerp(2.2, h, smooth(20, 70, Math.hypot(x, z)));                       // köy düzlüğü
-  h = lerp(3, h, smooth(26, 44, Math.hypot(x - CASTLE.x, z - CASTLE.z)));   // kale düzlüğü
-  h -= smooth(70, 150, z) * 26;                                             // güneyde deniz
-  const sw = swampF(x, z); if (sw > 0) h = lerp(h, WATER + .45 + (fbm(x * .05 + 7, z * .05 - 3, 3) - .5) * 3.4, sw);   // sığ gölcüklü bataklık
-  const dc = Math.hypot(x - CHAPEL.x, z - CHAPEL.z); if (dc < 24) h = lerp(WATER + 1.5, h, smooth(13, 24, dc));          // şapel adacığı
-  const dk = Math.hypot(x - CAMP.x, z - CAMP.z); if (dk < 16) h = lerp(WATER + 1.8, h, smooth(7, 16, dk));               // rahip kampı
-  h += smooth(150, 198, Math.max(Math.abs(x), -z)) * 34;                    // batı/doğu/kuzey dağları
+  h = lerp(2.2, h, smooth(20, 70, Math.hypot(x, z)));                       // village plateau
+  h = lerp(3, h, smooth(26, 44, Math.hypot(x - CASTLE.x, z - CASTLE.z)));   // castle plateau
+  h -= smooth(70, 150, z) * 26;                                             // sea to the south
+  const sw = swampF(x, z); if (sw > 0) h = lerp(h, WATER + .45 + (fbm(x * .05 + 7, z * .05 - 3, 3) - .5) * 3.4, sw);   // swamp with shallow pools
+  const dc = Math.hypot(x - CHAPEL.x, z - CHAPEL.z); if (dc < 24) h = lerp(WATER + 1.5, h, smooth(13, 24, dc));          // chapel islet
+  const dk = Math.hypot(x - CAMP.x, z - CAMP.z); if (dk < 16) h = lerp(WATER + 1.8, h, smooth(7, 16, dk));               // priest camp
+  h += smooth(150, 198, Math.max(Math.abs(x), -z)) * 34;                    // west/east/north mountains
   return h;
 }
 export const isLand = (x, z, lo, hi) => { const h = heightAt(x, z); return h > (lo ?? WATER + 1.6) && h < (hi ?? 13); };
@@ -55,7 +55,7 @@ export function findLand(cx, cz) {
   return { x: cx, z: cz };
 }
 
-/* ---------------- çarpışma (dairesel, ızgara) ---------------- */
+/* ---------------- collision (circles, grid) ---------------- */
 const CG = 8;
 export const cgrid = new Map();
 const ck = (x, z) => Math.floor(x / CG) + ',' + Math.floor(z / CG);
@@ -76,17 +76,17 @@ export function collide(p, rad) {
 }
 export const cellHas = (x, z, type) => { const a = cgrid.get(ck(x, z)); return !!a && a.some(c => c.type === type); };
 
-/* ---------------- malzeme kimlikleri ----------------
-   Sahne render hedefinin alfa kanalına yazılır; ASCII geçişi her pikselin
-   hangi glif setiyle (veya doğrudan) çizileceğine buna bakarak karar verir. */
+/* ---------------- material IDs ----------------
+   Written into the scene render target's alpha channel; the ASCII pass uses it to
+   decide which glyph set (or direct colour) each pixel is drawn with. */
 export const MID = {
-  GRASS: .2,     // çimen sapları: alfa .02-.28 aralığı sapın ekrandaki açısını taşır → - / | \ glifleri
-  FIRE: .4,      // turuncu ateş glifleri, titrer
-  FLOWER: .5,    // çimendeki beyaz o * noktaları
-  RAIN: .55,     // yağmur çizgileri → / '
-  GLOW: .6,      // parlak ince nesneler (kristal, pencere, ağ) → + x * # @
-  ACTOR: .65,    // ince ızgara, zırh glifleri (şövalye, NPC, iskelet)
-  CREATURE: .7,  // ince ızgara, tüy glifleri (kurt, örümcek)
+  GRASS: .2,     // grass blades: alpha .02-.28 carries the on-screen blade angle → - / | \ glyphs
+  FIRE: .4,      // orange fire glyphs, flicker
+  FLOWER: .5,    // white o * dots in the grass
+  RAIN: .55,     // rain streaks → / '
+  GLOW: .6,      // bright thin objects (shard, window, web) → + x * # @
+  ACTOR: .65,    // fine grid, armor glyphs (knight, NPC, skeleton)
+  CREATURE: .7,  // fine grid, fur glyphs (wolf, spider)
   WATER: .75, LEAF: .8, WOOD: .85, STONE: .9, GROUND: .95
 };
 export function tag(m, id) { m.opacity = id; m.transparent = false; return m; }

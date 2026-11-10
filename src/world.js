@@ -1,4 +1,4 @@
-// Statik dünya: arazi, su, çimen, ağaçlar, köy, kale harabesi, kıyı menhirleri, kristaller, örümcek yuvası
+// Static world: terrain, water, grass, trees, village, castle ruins, coastal menhirs, shards, spider lair
 import {
   THREE, clamp, lerp, smooth, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
   heightAt, isLand, findLand, pathDist, addCollider, addWall, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
@@ -8,13 +8,13 @@ import { makeDeadTree, PB } from './models.js';
 
 const insideCastle = (x, z, pad = 0) => Math.abs(x - CASTLE.x) < CASTLE.half - pad && Math.abs(z - CASTLE.z) < CASTLE.half - pad;
 const rocky = (x, z) => vnoise(x * .06 + 40, z * .06 - 13) > .74;
-export const DRAGON_LAIR = findLand(-70, -128);   // ejderha yuvası: yanık, ağaçsız açıklık
-export const LAIR = findLand(-118, -38);          // örümcek yuvası
+export const DRAGON_LAIR = findLand(-70, -128);   // dragon lair: burnt, treeless clearing
+export const LAIR = findLand(-118, -38);          // spider lair
 const scorched = (x, z) => 1 - smooth(14, 24, Math.hypot(x - DRAGON_LAIR.x, z - DRAGON_LAIR.z));
 const clearing = (x, z) => Math.hypot(x - DRAGON_LAIR.x, z - DRAGON_LAIR.z) < 26 || Math.hypot(x - LAIR.x, z - LAIR.z) < 9;
 const Q =new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector3(), SV = new THREE.Vector3(), AX = new THREE.Vector3(0, 1, 0), CC = new THREE.Color();
 
-/* ================= arazi ================= */
+/* ================= terrain ================= */
 {
   const g = new THREE.PlaneGeometry(400, 400, 220, 220); g.rotateX(-Math.PI / 2);
   const p = g.attributes.position;
@@ -41,7 +41,7 @@ const Q =new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector
   t.receiveShadow = true; scene.add(t);
 }
 
-/* ================= su (köpüklü kıyı) ================= */
+/* ================= water (foamy shore) ================= */
 const DT = 256, dd = new Uint8Array(DT * DT * 4);
 for (let j = 0; j < DT; j++) for (let i = 0; i < DT; i++) {
   const x = -200 + (i + .5) * 400 / DT, z = -200 + (j + .5) * 400 / DT, v = clamp((WATER - heightAt(x, z)) / 8, 0, 1), o = (j * DT + i) * 4;
@@ -71,7 +71,7 @@ export const waterMat = new THREE.ShaderMaterial({
 });
 { const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; scene.add(w); }
 
-/* ================= çimen: Lambert tabanlı (gerçek gölge + ışık alır), sap açısını alfa kanalına yazar ================= */
+/* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {
   const w = .06, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(v, 3));
@@ -142,7 +142,7 @@ export function updateGrass(px, pz, limit) {
   for (const [k, c] of gchunks) if (Math.abs(c.cx - pcx) > GR + 1 || Math.abs(c.cz - pcz) > GR + 1) { scene.remove(c.mesh); c.mesh.geometry.dispose(); gchunks.delete(k); }
 }
 
-/* ================= ağaçlar + kayalar ================= */
+/* ================= trees + rocks ================= */
 {
   const rng = mulberry32(1234), T = [];
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
@@ -191,7 +191,7 @@ export function updateGrass(px, pz, limit) {
   scene.add(rocks);
 }
 
-/* ================= ateş / meşale yardımcıları ================= */
+/* ================= fire / torch helpers ================= */
 export const flames = [];
 const woodM = lam(0x4a3422, MID.WOOD), fireM = basic(0xff8a2a, MID.FIRE);
 function torch(x, z, y0, hgt = 2.2) {
@@ -202,7 +202,7 @@ function torch(x, z, y0, hgt = 2.2) {
 const stoneM = [lam(0x7d889e, MID.STONE), lam(0x6c768b, MID.STONE), lam(0x8a95a9, MID.STONE)];
 const box = (w, h, d, mat, x, y, z, ry = 0) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); m.rotation.y = ry; scene.add(m); return m; };
 
-/* ================= köy ================= */
+/* ================= village ================= */
 export const FIRE = { x: 0, z: 0 };
 export const fireLight = new THREE.PointLight(0xff8833, 2.2, 34);
 export const lampLights = [];
@@ -236,7 +236,7 @@ export const lampLights = [];
   });
 }
 
-/* ================= kale harabesi ================= */
+/* ================= castle ruins ================= */
 export const gateLight = new THREE.PointLight(0xff9944, 1.6, 26);
 {
   const C = CASTLE, hy = heightAt(C.x, C.z), th = 1.8, H0 = C.half, rng = mulberry32(77);
@@ -244,22 +244,22 @@ export const gateLight = new THREE.PointLight(0xff9944, 1.6, 26);
     const dx = x2 - x1, dz = z2 - z1, L = Math.hypot(dx, dz), ry = -Math.atan2(dz, dx), mx = (x1 + x2) / 2, mz = (z1 + z2) / 2;
     box(L, hgt, th, stoneM[Math.floor(rng() * 3)], C.x + mx, hy + hgt / 2, C.z + mz, ry);
     for (let s = 1; s < L - .5; s += 2.1) {
-      if (rng() < .18) continue;   // kırık mazgallar
+      if (rng() < .18) continue;   // broken crenellations
       const t = s / L; box(1, 1.1, th + .1, stoneM[Math.floor(rng() * 3)], C.x + x1 + dx * t, hy + hgt + .55, C.z + z1 + dz * t, ry);
     }
     addWall(C.x + x1, C.z + z1, C.x + x2, C.z + z2, th * .7, 'wall');
   }
   wall(-H0, -H0, H0, -H0, 7);
   wall(-H0, -H0, -H0, H0, 6.5);
-  wall(H0, -H0, H0, -4, 6.8); wall(H0, 6, H0, H0, 5.2);       // doğu duvarında yıkık gedik
-  wall(-H0, H0, -3.6, H0, 6.6); wall(3.6, H0, H0, H0, 6.6);   // güney: kapı arası boş
+  wall(H0, -H0, H0, -4, 6.8); wall(H0, 6, H0, H0, 5.2);       // collapsed breach in the east wall
+  wall(-H0, H0, -3.6, H0, 6.6); wall(3.6, H0, H0, H0, 6.6);   // south: gap for the gate
   [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz], i) => {
     const x = C.x + sx * H0, z = C.z + sz * H0, hgt = i === 1 ? 7 : 10.5;
     const t = new THREE.Mesh(new THREE.CylinderGeometry(3.1, 3.4, hgt, 14), stoneM[i % 3]); t.position.set(x, hy + hgt / 2, z); scene.add(t);
     for (let k = 0; k < 10; k++) { if (i === 1 && k % 3 === 0) continue; const a = k / 10 * 6.283; box(.9, 1.1, .9, stoneM[(k + i) % 3], x + Math.cos(a) * 2.8, hy + hgt + .55, z + Math.sin(a) * 2.8, -a); }
     addCollider(x, z, 3.6, 'tower');
   });
-  // kapı: iki sütun + kemer + üst blok + meşaleler
+  // gate: two pillars + arch + top block + torches
   const gz = C.z + H0;
   box(1.8, 8, 2.4, stoneM[2], C.x - 3.5, hy + 4, gz); box(1.8, 8, 2.4, stoneM[2], C.x + 3.5, hy + 4, gz);
   const arch = new THREE.Mesh(new THREE.TorusGeometry(2.6, .55, 6, 16, Math.PI), stoneM[0]); arch.position.set(C.x, hy + 5.2, gz); scene.add(arch);
@@ -269,22 +269,22 @@ export const gateLight = new THREE.PointLight(0xff9944, 1.6, 26);
   [-1, 1].forEach(s => { const f = new THREE.Mesh(new THREE.ConeGeometry(.26, .65, 6), fireM); f.position.set(C.x + s * 4.6, hy + 4.4, gz + 1.4); scene.add(f); flames.push({ m: f, s: 1, ph: s * 3 });
     box(.18, .5, .18, woodM, C.x + s * 4.6, hy + 3.9, gz + 1.35); });
   gateLight.position.set(C.x, hy + 4.5, gz + 2.5); scene.add(gateLight);
-  // iç kale (yıkık)
+  // keep (ruined)
   box(12, 9, 10, stoneM[0], C.x, hy + 4.5, C.z - 6);
   box(5, 4, 5, stoneM[1], C.x - 3.5, hy + 11, C.z - 8);
   for (let s = -5; s <= 5; s += 2.2) { box(1, 1.1, 1, stoneM[2], C.x + s, hy + 9.55, C.z - 1.1); }
   [-3.5, 0, 3.5].forEach(x => addCollider(C.x + x, C.z - 6, 4.3, 'keep'));
-  // moloz
+  // rubble
   for (let i = 0; i < 16; i++) {
     const x = C.x + (rng() * 2 - 1) * (H0 - 3), z = C.z + (rng() * 2 - 1) * (H0 - 3); if (Math.abs(x - C.x) < 7 && z < C.z + 1) continue;
     const s = .4 + rng() * .9, r = new THREE.Mesh(new THREE.DodecahedronGeometry(s, 0), stoneM[i % 3]); r.position.set(x, hy + s * .4, z); r.rotation.set(rng() * 3, rng() * 3, 0); scene.add(r);
   }
 }
 
-/* ================= kıyı menhirleri ve taş levhalar ================= */
+/* ================= coastal menhirs and stone slabs ================= */
 {
   const rng = mulberry32(4242); let men = 0, slab = 0;
-  const near = [[9, 34], [-11, 44], [15, 58], [-6, 70]];   // başlangıç yolu boyunca
+  const near = [[9, 34], [-11, 44], [15, 58], [-6, 70]];   // along the starting road
   const place = (x, z, isSlab) => {
     const h = heightAt(x, z), ry = rng() * 6.28;
     if (isSlab) { const s = box(2.4 + rng() * 1.8, .45, 1.6 + rng(), stoneM[slab % 3], x, h + .15, z, ry); s.rotation.z = (rng() - .5) * .15; addCollider(x, z, 1.3, 'stone'); slab++; }
@@ -298,7 +298,7 @@ export const gateLight = new THREE.PointLight(0xff9944, 1.6, 26);
   }
 }
 
-/* ================= kristaller, taş çember, örümcek yuvası ================= */
+/* ================= shards, stone circle, spider lair ================= */
 export const crystals = [];
 {
   const rng = mulberry32(555), gm = basic(0x88ddff, MID.GLOW);
@@ -340,7 +340,7 @@ export const CIRCLE = findLand(118, -96);
   for (let i = 0; i < 9; i++) { const a = rng() * 6.28, d = 4 + rng() * 9; web(LAIR.x + Math.cos(a) * d, LAIR.z + Math.sin(a) * d, 2.5 + rng() * 2.5, rng() * 3, i % 3 === 0); }
 }
 
-/* ================= animasyon ================= */
+/* ================= animation ================= */
 export function updateWorld(t) {
   waterMat.uniforms.uTime.value = t; GU.uTime.value = t;
   const fl = 1 + Math.sin(t * 17) * .12 + Math.sin(t * 29) * .08;
@@ -350,7 +350,7 @@ export function updateWorld(t) {
   for (const c of crystals) if (!c.taken) { c.gem.rotation.y = t * 1.5; c.gem.position.y = 1.5 + Math.sin(t * 2 + c.id) * .25; }
   CIRCLE.orb.rotation.y = t; CIRCLE.orb.position.y = 2 + Math.sin(t * 1.5) * .3;
 }
-/* Ejderha yuvası: kuzeybatı dağ eteğinde yanık toprak ve kemikler */
+/* Dragon lair: burnt earth and bones at the foot of the northwest mountains */
 
 {
   const rng = mulberry32(666), bm = lam(0xbdb39a, MID.STONE), ash = lam(0x1a1614, MID.STONE);
@@ -361,19 +361,19 @@ export function updateWorld(t) {
   }
   for (let i = 0; i < 10; i++) { const a = rng() * 6.28, d = rng() * 12; box(1.4 + rng() * 2, .5 + rng(), 1.2 + rng(), ash, DRAGON_LAIR.x + Math.cos(a) * d, heightAt(DRAGON_LAIR.x + Math.cos(a) * d, DRAGON_LAIR.z + Math.sin(a) * d) + .1, DRAGON_LAIR.z + Math.sin(a) * d, rng() * 3); }
 }
-/* ================= Sisli Bataklık: kuru ağaçlar, yıkık şapel, mezarlık, rahip kampı ================= */
+/* ================= Misty Swamp: dead trees, ruined chapel, graveyard, priest camp ================= */
 export const campLight = new THREE.PointLight(0xff8833, 1.8, 26);
 export const GRAVES = [];
 {
   const rng = mulberry32(9001);
-  // kuru ağaçlar
+  // dead trees
   let n = 0;
   for (let i = 0; i < 3000 && n < 55; i++) {
     const a = rng() * 6.28, d = rng() * 56, x = SWAMP.x + Math.cos(a) * d, z = SWAMP.z + Math.sin(a) * d, h = heightAt(x, z);
     if (h < WATER - .2 || Math.hypot(x - CHAPEL.x, z - CHAPEL.z) < 15 || Math.hypot(x - CAMP.x, z - CAMP.z) < 9 || pathDist(x, z) < 3 || Math.abs(x) > HALF - 6) continue;
     const t = makeDeadTree(n + 1); t.position.set(x, h - .1, z); t.rotation.y = rng() * 6.28; t.scale.setScalar(.8 + rng() * .6); scene.add(t); addCollider(x, z, .4, 'tree'); n++;
   }
-  // çürük tahta yürüme yolları
+  // rotten boardwalks
   const plank = lam(0x3a2c1e, MID.WOOD);
   for (let x = 97; x < 140; x += 1.1) {
     const z = 15 + Math.sin(x * .12) * 3 + (x - 97) * .4, h = Math.max(heightAt(x, z), WATER + .15);
@@ -381,20 +381,20 @@ export const GRAVES = [];
     const p = box(.9, .12, 2.2, plank, x, h + .1, z, (rng() - .5) * .2); p.rotation.z = (rng() - .5) * .15;
     if (Math.floor(x) % 4 === 0) { box(.15, 1.2, .15, plank, x, h - .3, z - 1.1); box(.15, 1.2, .15, plank, x, h - .3, z + 1.1); }
   }
-  // yıkık şapel
+  // ruined chapel
   const C = CHAPEL, hy = heightAt(C.x, C.z), cs = [lam(0x737c8e, MID.STONE), lam(0x646c7c, MID.STONE), lam(0x80889a, MID.STONE)];
   const ry = .35, cr = Math.cos(ry), sr = Math.sin(ry);
   const W = (lx, lz) => [C.x + lx * cr + lz * sr, C.z - lx * sr + lz * cr];
   const wseg = (lx, lz, w, h, d, k) => { const [x, z] = W(lx, lz); box(w, h, d, cs[k % 3], x, hy + h / 2, z, ry); addCollider(x, z, Math.max(w, d) * .5, 'wall'); };
   [-1, 1].forEach(s => { [-7, -3.2, .6, 4.4].forEach((lz, k) => wseg(s * 4.5, lz, .9, 3.2 + rng() * 3.2, 2.6, k)); [-5.1, -1.3, 2.5, 6.3].forEach((lz, k) => { const [x, z] = W(s * 4.5, lz); box(1.2, 6.5 - k * .6 - rng() * 2, 1.2, cs[(k + 1) % 3], x, hy + 3, z, ry); }); });
-  wseg(-2.8, 8.2, 2.6, 7, .9, 0); wseg(2.8, 8.2, 2.6, 5.2, .9, 1);     // arka duvar
-  wseg(-3, -8.6, 2.2, 4.5, .9, 2); wseg(3, -8.6, 2.2, 2.6, .9, 0);     // ön (giriş açık)
-  { const [x, z] = W(-3.6, -9.6); box(3.6, 11, 3.6, cs[1], x, hy + 5.5, z, ry); addCollider(x, z, 2.4, 'wall'); const [x2, z2] = W(-3.0, -9.4); box(2.2, 2.4, 2.2, cs[2], x2, hy + 12.4, z2, ry + .3); }   // çan kulesi
+  wseg(-2.8, 8.2, 2.6, 7, .9, 0); wseg(2.8, 8.2, 2.6, 5.2, .9, 1);     // back wall
+  wseg(-3, -8.6, 2.2, 4.5, .9, 2); wseg(3, -8.6, 2.2, 2.6, .9, 0);     // front (open entrance)
+  { const [x, z] = W(-3.6, -9.6); box(3.6, 11, 3.6, cs[1], x, hy + 5.5, z, ry); addCollider(x, z, 2.4, 'wall'); const [x2, z2] = W(-3.0, -9.4); box(2.2, 2.4, 2.2, cs[2], x2, hy + 12.4, z2, ry + .3); }   // bell tower
   { const [x, z] = W(0, 6.5); box(2.6, 1.1, 1.2, cs[0], x, hy + .55, z, ry); addCollider(x, z, 1.4, 'altar');
     const [cx, cz] = W(0, 7.4); box(.3, 2.6, .3, cs[2], cx, hy + 1.3, cz, ry); box(1.3, .3, .3, cs[2], cx, hy + 2, cz, ry);
     for (let i = 0; i < 5; i++) { const [x2, z2] = W(-1 + i * .5, 6.3); const cd = box(.08, .3 + rng() * .2, .08, lam(0xd8d0b0, MID.STONE), x2, hy + 1.25, z2); const f = new THREE.Mesh(new THREE.ConeGeometry(.06, .16, 5), fireM); f.position.set(x2, hy + 1.5 + cd.geometry.parameters.height / 2, z2); scene.add(f); flames.push({ m: f, s: .35, ph: i }); } }
   for (let i = 0; i < 6; i++) { const [x, z] = W((rng() - .5) * 8, (rng() - .5) * 14); const b = box(.3, .3, 9, plank, x, hy + 4 + rng() * 2.5, z, ry); b.rotation.x = (rng() - .5) * .9; b.rotation.z = (rng() - .5) * .6; }
-  // mezarlık
+  // graveyard
   const gm = [lam(0x5e6676, MID.STONE), lam(0x6e7686, MID.STONE)];
   for (let i = 0; i < 4000 && GRAVES.length < 26; i++) {
     const x = C.x - 22 + rng() * 18, z = C.z - 2 + rng() * 26, h = heightAt(x, z);
@@ -405,7 +405,7 @@ export const GRAVES = [];
     else { box(1, .12, 2, lam(0x0a0a08, MID.GROUND), x, h + .02, z, yaw); box(.9, .5, .3, gm[1], x, h + .1, z + 1.2, yaw); }
     addCollider(x, z, .45, 'grave'); GRAVES.push({ x, z });
   }
-  // rahip kampı: çadır, ateş, sandıklar
+  // priest camp: tent, fire, crates
   const K = CAMP, hk = heightAt(K.x, K.z);
   const tent = new THREE.Mesh(new THREE.ConeGeometry(2.2, 2.8, 6, 1, true), tag(new THREE.MeshPhongMaterial({ color: 0x4a3e2c, side: THREE.DoubleSide, shininess: 2 }), MID.WOOD)); tent.position.set(K.x + 3, hk + 1.4, K.z - 2.5); scene.add(tent); addCollider(K.x + 3, K.z - 2.5, 2, 'tent');
   for (let i = 0; i < 4; i++) { const l = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, 1.2, 5), woodM); l.position.set(K.x, hk + .2, K.z); l.rotation.z = 1.25; l.rotation.y = i * 1.57; scene.add(l); }
@@ -415,11 +415,11 @@ export const GRAVES = [];
   torch(K.x - 4, K.z - 3, hk, 2.4);
 }
 export const REGIONS = [
-  { name: 'Köy', x: 0, z: 0, r: 24 }, { name: 'Kale Harabesi', x: CASTLE.x, z: CASTLE.z, r: 30 },
-  { name: 'Sisli Bataklık', x: SWAMP.x, z: SWAMP.z, r: 50 }, { name: 'Kül Diyarı', x: DRAGON_LAIR.x, z: DRAGON_LAIR.z, r: 28 },
-  { name: 'Örümcek Ormanı', x: LAIR.x, z: LAIR.z, r: 22 }, { name: 'Taş Çember', x: CIRCLE.x, z: CIRCLE.z, r: 16 }
+  { name: 'Village', x: 0, z: 0, r: 24 }, { name: 'Castle Ruins', x: CASTLE.x, z: CASTLE.z, r: 30 },
+  { name: 'Misty Swamp', x: SWAMP.x, z: SWAMP.z, r: 50 }, { name: 'Ashlands', x: DRAGON_LAIR.x, z: DRAGON_LAIR.z, r: 28 },
+  { name: 'Spider Woods', x: LAIR.x, z: LAIR.z, r: 22 }, { name: 'Stone Circle', x: CIRCLE.x, z: CIRCLE.z, r: 16 }
 ];
-export function regionAt(x, z) { for (const R of REGIONS) if (Math.hypot(x - R.x, z - R.z) < R.r) return R.name; return z > 75 ? 'Fırtına Kıyısı' : 'Vahşi Topraklar'; }
+export function regionAt(x, z) { for (const R of REGIONS) if (Math.hypot(x - R.x, z - R.z) < R.r) return R.name; return z > 75 ? 'Storm Coast' : 'The Wilds'; }
 
-/* Tüm statik dünya nesneleri gölge atar ve alır */
+/* All static world objects cast and receive shadows */
 scene.traverse(o => { if (o.isMesh && !o.userData.noShadow) { o.castShadow = true; o.receiveShadow = true; } });

@@ -23,6 +23,8 @@
 
 ---
 
+> Not: oyunun arayüzü ve kodu İngilizcedir; bu dosya README.md'nin Türkçe çevirisidir.
+
 ## Nedir?
 
 ASCII-Terra, klasik zindan oyunlarının ruhunu taşıyan ama tamamen metinle çizilen bir açık dünya ARPG'si.
@@ -64,7 +66,7 @@ node server/server.js
 ```
 
 <http://localhost:8765> adresini aç. Aynı ağdaki arkadaşların `http://<yerel-ip-adresin>:8765` adresine girer (sunucu adresi ekrana yazar).
-Windows'ta `baslat.bat`'a çift tıklaman yeterli. Portu `PORT=9000 node server/server.js` ile değiştirebilirsin.
+Windows'ta `start.bat`'a çift tıklaman yeterli. Portu `PORT=9000 node server/server.js` ile değiştirebilirsin.
 
 ### Yalnız tek oyunculu
 
@@ -83,8 +85,8 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
   ya da misafir oynarsın (ilerleme o tarayıcıda kalır). Şifreler yalnız tuzlanmış scrypt karması, oturum belirteçleri yalnız SHA-256
   özeti olarak tutulur; giriş denemeleri sınırlıdır (IP başına dakikada 5) ve hepsi git'e girmeyen `server/data/` klasöründedir.
 - **Veritabanı:** Node'un yerleşik SQLite'ı (`node:sqlite`, Node 22.5+, kurulum gerekmez), dosya `server/data/terra.db`, WAL modu,
-  kayıtlar toplu yazılır, her gün `server/data/yedek/` altına yedek alınır (son 7). Eski `users.json` otomatik içe aktarılır.
-- **Şifremi unuttum:** kayıtta bir kez **kurtarma kodu** gösterilir; ad + kod ile yeni şifre belirlenir (e-posta tutulmaz).
+  kayıtlar toplu yazılır, her gün `server/data/backups/` altına yedek alınır (son 7). Eski `users.json` otomatik içe aktarılır.
+- **Şifremi unuttum ("Forgot password"):** kayıtta bir kez **kurtarma kodu** gösterilir; ad + kod ile yeni şifre belirlenir (e-posta tutulmaz).
   Yönetim: `node server/admin.js list | reset <ad> | ban <ad> | unban <ad> | delete <ad> --yes | backup`.
 - Sunucu tek, bağımlılıksız bir dosyadır (`server/server.js`): statik dosyalar + küçük bir WebSocket uygulaması,
   yol gezinmesi ve gizli dosya koruması, mesaj boyutu ve hız sınırları, temizlenmiş isim ve sohbet.
@@ -116,7 +118,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 3. Tam ekran bir geçiş (`src/render.js`) ekranı glif hücrelerine böler, her hücreyi 3×3 örnekler ve o malzemenin glif setinden, sahne rengiyle boyanmış bir karakter seçer.
 4. İnce nesneler (yağmur, ağ, çiçek) tek bir örneğe bile değse hücreyi alır; 1 piksellik çizgiler kaybolmaz.
 
-Ayrıntılar: [docs/STIL-REHBERI.md](docs/STIL-REHBERI.md).
+Ayrıntılar: [docs/STYLE-GUIDE.md](docs/STYLE-GUIDE.md) (İngilizce).
 
 ## Proje yapısı
 

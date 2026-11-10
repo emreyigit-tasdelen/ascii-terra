@@ -1,5 +1,5 @@
-// Parçacıklar (kan, kıvılcım, kemik, kor, ateş, büyü), yer lekeleri, vuruş durması ve kamera sarsıntısı.
-// Hepsi sahnede küçük parlak nesneler olarak çizilir; ASCII geçişi onları + x * # @ glifleri olarak gösterir.
+// Particles (blood, sparks, bone, embers, fire, magic), ground decals, hit-stop and camera shake.
+// All drawn as small bright objects; the ASCII pass shows them as + x * # @ glyphs.
 import { THREE, heightAt, MID, tag } from './core.js';
 import { scene } from './render.js';
 
@@ -56,11 +56,11 @@ export function updateFX(dt) {
     M4.compose(V.set(p.x, p.y, p.z), Q, S.setScalar(p.size * k)); inst.setMatrixAt(n, M4); inst.setColorAt(n, C.setHex(p.col)); n++;
   }
   inst.count = n; inst.instanceMatrix.needsUpdate = true; if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
-  // lekeler
+  // decals
   for (const d of decals) { if (!d.m.visible) continue; d.t += dt; if (d.t > 18) { const s = Math.max(0, 1 - (d.t - 18) / 4); d.m.scale.setScalar(d.r * s); if (s <= 0) d.m.visible = false; } }
 }
 
-/* ---------------- yerde kan lekeleri ---------------- */
+/* ---------------- blood decals on the ground ---------------- */
 const decals = [], decalMat = tag(new THREE.MeshBasicMaterial({ color: 0x3a0303 }), MID.GROUND);
 decalMat.polygonOffset = true; decalMat.polygonOffsetFactor = -2;
 const decalGeo = (() => { const g = new THREE.CircleGeometry(1, 14), p = g.attributes.position; for (let i = 1; i < p.count; i++) { const f = .6 + Math.random() * .6; p.setXY(i, p.getX(i) * f, p.getY(i) * f); } g.rotateX(-Math.PI / 2); return g; })();
@@ -68,5 +68,5 @@ for (let i = 0; i < 40; i++) { const m = new THREE.Mesh(decalGeo, decalMat); m.v
 let dn = 0;
 export function decal(x, z, r) { const d = decals[dn++ % decals.length]; d.m.position.set(x, heightAt(x, z) + .03, z); d.m.rotation.y = Math.random() * 6; d.r = r; d.t = 0; d.m.scale.setScalar(r); d.m.visible = true; }
 
-/* ---------------- vuruş hissi ---------------- */
+/* ---------------- hit feel ---------------- */
 export function hitFeel(stop = .05, shake = .15) { FXS.stop = Math.max(FXS.stop, stop); FXS.shake = Math.max(FXS.shake, shake); }

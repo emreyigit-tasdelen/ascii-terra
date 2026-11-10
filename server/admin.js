@@ -1,36 +1,36 @@
-// ASCII-Terra yönetim aracı (komut satırı). Sunucu açıkken de çalışır (SQLite WAL).
-//   node server/admin.js list               hesapları listele
-//   node server/admin.js reset <ad>         geçici şifre üret (oturumlar kapanır)
-//   node server/admin.js ban <ad> | unban <ad>
-//   node server/admin.js delete <ad> --yes  hesabı ve kaydını kalıcı sil
-//   node server/admin.js backup             server/data/yedek altına anlık yedek
+// ASCII-Terra admin tool (command line). Works while the server is running (SQLite WAL).
+//   node server/admin.js list                 list accounts
+//   node server/admin.js reset <name>         generate a temporary password (logs out sessions)
+//   node server/admin.js ban <name> | unban <name>
+//   node server/admin.js delete <name> --yes  permanently delete the account and its save
+//   node server/admin.js backup               instant backup into server/data/backups
 'use strict';
 const crypto = require('crypto');
 const DB = require('./db');
 const [cmd, name, flag] = process.argv.slice(2);
 const d = t => t ? new Date(t).toISOString().slice(0, 16).replace('T', ' ') : '-';
-const need = () => { const u = name && DB.user(DB.ukey(name)); if (!u) { console.error('Hesap bulunamadı: ' + (name || '(ad yok)')); process.exit(1); } return u; };
+const need = () => { const u = name && DB.user(DB.ukey(name)); if (!u) { console.error('Account not found: ' + (name || '(no name)')); process.exit(1); } return u; };
 
 (async () => {
   switch (cmd) {
     case 'list': {
       const rows = DB.list();
-      console.log('AD'.padEnd(18) + 'OLUŞTURMA'.padEnd(18) + 'SON GİRİŞ'.padEnd(18) + 'KAYIT'.padEnd(18) + 'DURUM');
-      for (const r of rows) console.log(r.name.padEnd(18) + d(r.created).padEnd(18) + d(r.last).padEnd(18) + d(r.updated).padEnd(18) + (r.banned ? 'YASAKLI' : ''));
-      console.log(rows.length + ' hesap'); break;
+      console.log('NAME'.padEnd(18) + 'CREATED'.padEnd(18) + 'LAST LOGIN'.padEnd(18) + 'SAVED'.padEnd(18) + 'STATUS');
+      for (const r of rows) console.log(r.name.padEnd(18) + d(r.created).padEnd(18) + d(r.last).padEnd(18) + d(r.updated).padEnd(18) + (r.banned ? 'BANNED' : ''));
+      console.log(rows.length + ' account(s)'); break;
     }
     case 'reset': {
       const u = need(), pass = crypto.randomBytes(6).toString('base64url');
       await DB.setPass(u.key, pass, false);
-      console.log(`${u.name} için geçici şifre: ${pass}\nOyuncuya ilet; girişten sonra değiştirmesi önerilir.`); break;
+      console.log(`Temporary password for ${u.name}: ${pass}\nPass it to the player; they should change it after logging in.`); break;
     }
-    case 'ban': case 'unban': { const u = need(); DB.ban(u.key, cmd === 'ban'); console.log(u.name + (cmd === 'ban' ? ' yasaklandı.' : ' yasağı kaldırıldı.')); break; }
+    case 'ban': case 'unban': { const u = need(); DB.ban(u.key, cmd === 'ban'); console.log(u.name + (cmd === 'ban' ? ' banned.' : ' unbanned.')); break; }
     case 'delete': {
       const u = need();
-      if (flag !== '--yes') { console.log(`${u.name} ve kaydı KALICI silinecek. Onaylamak için: node server/admin.js delete ${u.name} --yes`); break; }
-      DB.remove(u.key); console.log(u.name + ' silindi.'); break;
+      if (flag !== '--yes') { console.log(`${u.name} and their save will be PERMANENTLY deleted. To confirm: node server/admin.js delete ${u.name} --yes`); break; }
+      DB.remove(u.key); console.log(u.name + ' deleted.'); break;
     }
-    case 'backup': console.log('Yedek: ' + DB.backup()); break;
+    case 'backup': console.log('Backup: ' + DB.backup()); break;
     default: console.log(require('fs').readFileSync(__filename, 'utf8').split('\n').slice(0, 6).join('\n').replace(/^\/\/ ?/gm, ''));
   }
   DB.close();

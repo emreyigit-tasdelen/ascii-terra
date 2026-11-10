@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>ASCII-Terra</title>
@@ -18,7 +18,7 @@
   <div id="toasts"></div>
   <div id="region"></div>
   <div id="net"></div>
-  <div id="chat"><div id="chatlog"></div><input id="chatin" maxlength="140" autocomplete="off" placeholder="Mesaj yaz, Enter ile gönder" hidden></div>
+  <div id="chat"><div id="chatlog"></div><input id="chatin" maxlength="140" autocomplete="off" placeholder="Type a message, Enter to send" hidden></div>
   <div id="prompt"></div>
   <div id="inv" class="panel" hidden></div>
   <div id="dialog" class="panel" hidden></div>
@@ -28,15 +28,15 @@
     <div class="bar xp"><i id="xpfill"></i><span id="xptxt"></span></div>
     <div id="slots"></div>
   </div>
-  <div id="help" class="panel">WASD yürü · Shift koş · Boşluk zıpla · C yuvarlan
-Sol tık / 1 kılıç · Alt kalkan (tam zamanında: savuşturma) · 2 ateş topu · 3 kasırga · 4 / Q iksir
-E konuş · I envanter · M harita · R yağmur · Enter sohbet · Esc / P duraklat
-Sağ/orta tuş sürükle / oklar: kamera (ufka kadar indir) · Tekerlek: yakınlaş
-[ ] harf boyutu · H bu yardımı gizle</div>
+  <div id="help" class="panel">WASD walk · Shift run · Space jump · C roll
+Left click / 1 sword · Alt shield (timed right: parry) · 2 fireball · 3 whirlwind · 4 / Q potion
+E talk · I inventory · M map · R rain · Enter chat · Esc / P pause
+Right/middle drag / arrows: camera (down to the horizon) · Wheel: zoom
+[ ] glyph size · H hide this help</div>
 </div>
-<div id="pause" hidden><div class="box"><h2>— DURAKLATILDI —</h2><p id="pnote"></p>
-  <button id="presume">Devam et</button><button id="phelp">Kontroller</button><button id="pmenu">Kaydet ve ana menü</button>
-  <p class="keys">Esc / P: devam</p></div></div>
+<div id="pause" hidden><div class="box"><h2>— PAUSED —</h2><p id="pnote"></p>
+  <button id="presume">Resume</button><button id="phelp">Controls</button><button id="pmenu">Save and main menu</button>
+  <p class="keys">Esc / P: resume</p></div></div>
 <div id="cross">+</div>
 <div id="overlay"><div class="box">
 <pre class="logo">
@@ -45,26 +45,26 @@ Sağ/orta tuş sürükle / oklar: kamera (ufka kadar indir) · Tekerlek: yakınl
 / _ \\__ \ (__ | | | |___| | | | _||   /   / / _ \
 /_/ \_\___/\___|___|___|    |_| |___|_|_\_|_\/_/ \_\
 </pre>
-  <p>Karakterlerden örülü bir şövalye dünyası. Sen <b>Senje</b>'sin: kaledeki iskeletleri temizle, kurtları avla,
-  Alacakaranlık Dulu'nu yen, Taş Çember'in yeminini al.</p>
-  <p class="keys">WASD yürü · Boşluk zıpla · C yuvarlan · Sol tık saldır · Alt kalkan · 2 ateş topu · 3 kasırga · E konuş · I envanter</p>
+  <p>A knight's world woven from characters. You are <b>Senje</b>: clear the skeletons from the castle, hunt the wolves,
+  defeat the Dusk Widow, and take the oath of the Stone Circle.</p>
+  <p class="keys">WASD walk · Space jump · C roll · Left click attack · Alt shield · 2 fireball · 3 whirlwind · E talk · I inventory</p>
   <div id="acct">
-    <div class="tabs"><button data-m="login" class="on">Giriş yap</button><button data-m="reg">Kayıt ol</button><button data-m="guest">Misafir</button></div>
+    <div class="tabs"><button data-m="login" class="on">Log in</button><button data-m="reg">Sign up</button><button data-m="guest">Guest</button></div>
     <form id="aform" autocomplete="on">
-      <input id="pname" maxlength="16" autocomplete="username" spellcheck="false" placeholder="Şövalye adı">
-      <input id="pcode" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Kurtarma kodu (XXXX-XXXX-XXXX)" hidden>
-      <input id="ppass" type="password" maxlength="64" autocomplete="current-password" placeholder="Şifre">
-      <input id="ppass2" type="password" maxlength="64" autocomplete="new-password" placeholder="Şifre (tekrar)" hidden>
-      <label id="remrow"><input type="checkbox" id="prem" checked> Beni hatırla</label>
-      <button id="auth" type="submit">Giriş yap</button>
+      <input id="pname" maxlength="16" autocomplete="username" spellcheck="false" placeholder="Knight name">
+      <input id="pcode" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Recovery code (XXXX-XXXX-XXXX)" hidden>
+      <input id="ppass" type="password" maxlength="64" autocomplete="current-password" placeholder="Password">
+      <input id="ppass2" type="password" maxlength="64" autocomplete="new-password" placeholder="Password (again)" hidden>
+      <label id="remrow"><input type="checkbox" id="prem" checked> Remember me</label>
+      <button id="auth" type="submit">Log in</button>
     </form>
-    <p id="amsg">Sunucuya bağlanılıyor…</p>
-    <p class="forgot"><a href="#" id="forgot">Şifremi unuttum</a></p>
+    <p id="amsg">Connecting to server…</p>
+    <p class="forgot"><a href="#" id="forgot">Forgot password</a></p>
   </div>
-  <div id="who" hidden>Hoş geldin, <b id="whoname"></b> · <a href="#" id="logout">çıkış yap</a></div>
-  <div id="recbox" hidden><p>Kurtarma kodun (bir kez gösterilir, bir yere yaz):</p><pre id="reccode"></pre><p>Şifreni unutursan adın ve bu kodla yeni şifre belirlersin.</p><button id="recok">Kaydettim</button></div>
-  <button id="go" hidden>Başla</button><button id="new" hidden>Yeni oyun</button>
-  <p class="support">Projeyi destekle:
+  <div id="who" hidden>Welcome, <b id="whoname"></b> · <a href="#" id="logout">log out</a></div>
+  <div id="recbox" hidden><p>Your recovery code (shown once, write it down):</p><pre id="reccode"></pre><p>If you forget your password, use your name and this code to set a new one.</p><button id="recok">I saved it</button></div>
+  <button id="go" hidden>Start</button><button id="new" hidden>New game</button>
+  <p class="support">Support the project:
     <a href="https://github.com/sponsors/emreyigit-tasdelen" target="_blank" rel="noopener">[ GitHub Sponsors ]</a>
     <a href="https://buymeacoffee.com/emreyigit.tasdelen" target="_blank" rel="noopener">[ Buy Me a Coffee ]</a>
   </p>
