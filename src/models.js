@@ -435,7 +435,7 @@ export function makeSpider() {
 
 /* ================= dragon (jointed neck and tail chain) ================= */
 export function makeDragon() {
-  const id = MID.CREATURE, g = new THREE.Group(), body = new THREE.Group(); g.add(body);
+  const id = MID.SCALE, g = new THREE.Group(), body = new THREE.Group(); g.add(body);
   const SC = 0x4e2c1f, BL = 0x8f6c48, HN = 0x24140e, BN = 0x9a8a6c;
   const scales = { color2: BL, mix: (x, y, z, nx, ny) => clamp(-ny * 1.6 - .1, 0, 1), vary: .4, freq: 7 };
   const bumps = (x, y, z) => Math.max(0, Math.sin(x * 9 + Math.sin(z * 9) * 1.5) * Math.sin(z * 9)) * .05;

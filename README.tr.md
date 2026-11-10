@@ -106,7 +106,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `E` | NPC ile konuş |
 | `F` | atı çağır / bin / in (daha hızlı; binerken yuvarlanma ve zıplama yok) |
 | — | yeni oyun karakter yaratmayla (tabard, pelerin, arma) ve eğitim kuklalı kısa bir öğreticiyle başlar |
-| `K` | üretim: kılıç metali ve en fazla 3 rün seç (bonuslar her kılıç vuruşuna uygulanır) |
+| `K` | üretim: kılıç (metal + 3 rün) ve altı zırh parçası (her biri metal + 2 rün: savunma, can, yenilenme, hız, diken) |
 | `Enter` | sohbet (çok oyunculu) |
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |

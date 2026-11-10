@@ -7,7 +7,7 @@ import { scene, camera, ENV } from './render.js';
 import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
 import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeHorse, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
-import { craftMods } from './craft.js';
+import { craftMods, armorMods } from './craft.js';
 import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
@@ -264,7 +264,9 @@ export function hurtPlayer(d, src) {
       else { d *= .15; floatText('BLOCK', P.x, P.y + 2.8, P.z, 'info'); if (d < 1) return; }
     }
   }
-  d = Math.max(1, Math.round(d - defBonus())); P.hp -= d; P.hurtT = .35; P.hitT = .3; P.lastHit = 0;
+  const AM = armorMods();
+  if (AM.thorns > 0 && src && src.e && !src.e.dead && Math.hypot(src.x - P.x, src.z - P.z) < 6) hitEnemy(src.e, Math.max(1, d * AM.thorns), P.x, P.z, { crit: false });   // thorns
+  d = Math.max(1, Math.round(d - defBonus() - AM.def)); P.hp -= d; P.hurtT = .35; P.hitT = .3; P.lastHit = 0;
   burst('blood', P.x, P.y + 1.3, P.z, 7); hitFeel(.03, .22);
   floatText('-' + d, P.x, P.y + 2.8, P.z, 'hurt');
   if (P.hp <= 0) { P.hp = 0; P.dead = true; P.deadT = 3.2; closeDialog(); toast('You were defeated... you will wake in the village.'); burst('blood', P.x, P.y + .6, P.z, 20); }
@@ -423,6 +425,7 @@ export function applySnapshot(rows) {
 
 /* ================= player update ================= */
 export function updatePlayer(dt) {
+  { const AM = armorMods(); P.maxhp = 100 + 20 * (S.lvl - 1) + AM.hp; if (!P.dead && P.hp > 0) P.hp = Math.min(P.maxhp, P.hp + AM.regen * dt); P.armorSpeed = AM.speed; }   // crafted armour
   for (const k in CD) CD[k] = Math.max(0, CD[k] - dt);
   P.dodgeCd -= dt; P.lastHit += dt; P.hurtT -= dt; P.hitT -= dt; P.aimLock -= dt; P.comboT -= dt;
   const r = P.rig;
@@ -440,7 +443,7 @@ export function updatePlayer(dt) {
   const pvx = P.vx, pvz = P.vz;
   if (P.dodgeT > 0) { P.dodgeT -= dt; P.vx = P.ddx * 13; P.vz = P.ddz * 13; }
   else {
-    const run = keys.shift && !P.block ? 1 : 0, sp = (HORSE.on ? (run ? 17 : 10) : (run ? 9.5 : 5.8)) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
+    const run = keys.shift && !P.block ? 1 : 0, sp = (HORSE.on ? (run ? 17 : 10) : (run ? 9.5 : 5.8)) * (1 + (P.armorSpeed || 0)) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
     P.vx += (mx * sp - P.vx) * a; P.vz += (mz * sp - P.vz) * a;
   }
   let nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;

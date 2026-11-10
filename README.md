@@ -104,7 +104,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `E` | talk to NPCs |
 | `F` | call / mount / dismount your horse (faster; no roll or jump while riding) |
 | — | new games start with character creation (tabard, cape, emblem) and a short tutorial with a training dummy |
-| `K` | craft: pick a blade metal and up to 3 runes (bonuses apply to every sword hit) |
+| `K` | craft: blade (metal + 3 runes) and six armour pieces (metal + 2 runes each: DEF, max HP, regeneration, speed, thorns) |
 | `Enter` | chat (multiplayer) |
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` | inventory / map |

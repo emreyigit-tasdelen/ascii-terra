@@ -163,7 +163,7 @@ function onMsg(c, txt) {
   const isHost = c.id === hostId;
   switch (m.t) {
     case 'st': {   // player state: only numeric fields are relayed
-      const s = { t: 'st', from: c.id, x: num(m.x), y: num(m.y), z: num(m.z), f: num(m.f), a: Array.isArray(m.a) ? m.a.slice(0, 8).map(num) : [], hp: num(m.hp), mh: num(m.mh), lv: int(m.lv) };
+      const s = { t: 'st', from: c.id, x: num(m.x), y: num(m.y), z: num(m.z), f: num(m.f), a: Array.isArray(m.a) ? m.a.slice(0, 8).map(num) : [], hp: num(m.hp), mh: num(m.mh), lv: int(m.lv), lk: Math.max(0, Math.min(999, int(m.lk))), mt: m.mt ? 1 : 0 };
       c.st = s; bcast(s, c); break;
     }
     case 'vis': c.hidden = !!m.h; elect(); break;

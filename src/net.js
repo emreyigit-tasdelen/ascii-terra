@@ -2,8 +2,8 @@
 // Without the server (e.g. served by python http.server) the game silently stays single player.
 import { THREE, $, clamp, lerp, angDiff, heightAt } from './core.js';
 import { scene } from './render.js';
-import { makeKnight, animBiped } from './models.js';
-import { P, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, applySnapshot, snapshotRows } from './actors.js';
+import { makeKnight, makeHorse, animBiped, animWolf } from './models.js';
+import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, applySnapshot, snapshotRows } from './actors.js';
 import { S, label, toast } from './game.js';
 
 export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Senje', remotes: new Map() };
@@ -82,9 +82,16 @@ function addRemote(id, name, st) {
   const R = { id, name, rig: r, x: 0, y: -50, z: 0, f: 0, tx: 0, ty: -50, tz: 0, tf: 0, a: [0, 0, -1, 0, -1, 0, 0], ph: 0, atk: -1, hp: 100, mh: 100, lv: 1, got: false };
   NET.remotes.set(id, R); if (st) applyState(R, st);
 }
-function removeRemote(R) { scene.remove(R.rig.g); }
+function removeRemote(R) { scene.remove(R.rig.g); if (R.horse) scene.remove(R.horse.g); }
+// look as one number: tabard*100 + cape*10 + emblem (+1 so 0 means "not sent")
+const lookCode = () => { const L = S.look || {}; return 1 + (L.tabard || 0) * 100 + (L.cape || 0) * 10 + (L.emblem || 0); };
+function applyLook(R, code) {
+  if (!code || code === R.lk) return; R.lk = code; const c = code - 1, t = Math.floor(c / 100) % LOOKS.tabard.length, cp = Math.floor(c / 10) % 10 % LOOKS.cape.length, em = c % 10 % LOOKS.emblem.length;
+  const r = makeKnight({ cloth: LOOKS.tabard[t], capeColor: LOOKS.cape[cp], emblem: LOOKS.emblem[em] ?? undefined });
+  scene.remove(R.rig.g); scene.add(r.g); R.rig = r;
+}
 function applyState(R, m) {
-  R.tx = m.x; R.ty = m.y; R.tz = m.z; R.tf = m.f; R.hp = m.hp; R.mh = m.mh || 100; R.lv = m.lv || 1;
+  R.tx = m.x; R.ty = m.y; R.tz = m.z; R.tf = m.f; R.hp = m.hp; R.mh = m.mh || 100; R.lv = m.lv || 1; R.mt = !!m.mt; applyLook(R, m.lk);
   const a = m.a || []; R.a = a;
   if (a[2] >= 0 && (R.atk < 0 || Math.abs(R.atk - a[2]) > .3)) { R.atk = a[2]; R.atkType = a[3]; }
   if (!R.got) { R.x = R.tx; R.y = R.ty; R.z = R.tz; R.f = R.tf; R.got = true; }
@@ -99,7 +106,16 @@ export function updateNet(dt) {
     const amt = (R.a[0] || 0) / 100, run = (R.a[1] || 0) / 100;
     R.ph += dt * Math.max(1.5, amt * 5.8 * 1.75 + run * 6);
     animBiped(R.rig, { ph: R.ph, amt, run, atk: R.atk, atkType: R.atkType || 0, dodge: R.a[4] ?? -1, air: R.a[5] || 0, hit: R.a[6] || 0, block: R.a[7] || 0, t: T, dt, style: 'knight' });
-    R.rig.g.position.set(R.x, R.y, R.z); R.rig.g.rotation.y = R.f; R.rig.g.visible = R.got;
+    if (R.mt) {   // riding: horse under the knight, sitting pose
+      if (!R.horse) { R.horse = makeHorse(); scene.add(R.horse.g); R.hph = 0; }
+      const hs = R.px == null ? 0 : Math.hypot(R.x - R.px, R.z - R.pz) / Math.max(dt, .001); R.hph += dt * Math.max(1.2, hs * 1.05);
+      animWolf(R.horse, { amt: Math.min(1, hs / 6), run: clamp((hs - 11) / 4, 0, 1), ph: R.hph, t: T, dt, atk: -1 });
+      R.horse.g.visible = R.got; R.horse.g.position.set(R.x, R.y, R.z); R.horse.g.rotation.y = R.f;
+      const r = R.rig; r.legL.p.rotation.x = r.legR.p.rotation.x = -1.35; r.legL.kn.rotation.x = r.legR.kn.rotation.x = 1.45; r.legL.p.rotation.z = .42; r.legR.p.rotation.z = -.42;
+      R.rig.g.position.set(R.x, R.y + R.horse.body.position.y * 1.55 - .25, R.z);
+    } else { if (R.horse) R.horse.g.visible = false; R.rig.g.position.set(R.x, R.y, R.z); }
+    R.rig.g.rotation.y = R.f; R.rig.g.visible = R.got;
+    R.px = R.x; R.pz = R.z;
     R.rig.g.rotation.x = R.hp <= 0 ? -1.45 : 0;
     if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + ' · lv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
   }
@@ -107,7 +123,7 @@ export function updateNet(dt) {
   sendT -= dt;
   if (sendT <= 0) {   // local player state ~15 Hz
     sendT = .066;
-    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl });
+    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl, lk: lookCode(), mt: HORSE.on ? 1 : 0 });
   }
   if (isHost()) { snapT -= dt; if (snapT <= 0) { snapT = .1; const d = snapshotRows(); if (d.length) sendNet({ t: 'en', d }); } }
 }
