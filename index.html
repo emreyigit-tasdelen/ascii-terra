@@ -52,14 +52,17 @@ Sağ/orta tuş sürükle / oklar: kamera (ufka kadar indir) · Tekerlek: yakınl
     <div class="tabs"><button data-m="login" class="on">Giriş yap</button><button data-m="reg">Kayıt ol</button><button data-m="guest">Misafir</button></div>
     <form id="aform" autocomplete="on">
       <input id="pname" maxlength="16" autocomplete="username" spellcheck="false" placeholder="Şövalye adı">
+      <input id="pcode" maxlength="20" autocomplete="off" spellcheck="false" placeholder="Kurtarma kodu (XXXX-XXXX-XXXX)" hidden>
       <input id="ppass" type="password" maxlength="64" autocomplete="current-password" placeholder="Şifre">
       <input id="ppass2" type="password" maxlength="64" autocomplete="new-password" placeholder="Şifre (tekrar)" hidden>
       <label id="remrow"><input type="checkbox" id="prem" checked> Beni hatırla</label>
       <button id="auth" type="submit">Giriş yap</button>
     </form>
     <p id="amsg">Sunucuya bağlanılıyor…</p>
+    <p class="forgot"><a href="#" id="forgot">Şifremi unuttum</a></p>
   </div>
   <div id="who" hidden>Hoş geldin, <b id="whoname"></b> · <a href="#" id="logout">çıkış yap</a></div>
+  <div id="recbox" hidden><p>Kurtarma kodun (bir kez gösterilir, bir yere yaz):</p><pre id="reccode"></pre><p>Şifreni unutursan adın ve bu kodla yeni şifre belirlersin.</p><button id="recok">Kaydettim</button></div>
   <button id="go" hidden>Başla</button><button id="new" hidden>Yeni oyun</button>
   <p class="support">Projeyi destekle:
     <a href="https://github.com/sponsors/emreyigit-tasdelen" target="_blank" rel="noopener">[ GitHub Sponsors ]</a>

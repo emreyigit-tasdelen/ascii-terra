@@ -86,12 +86,14 @@ const amsg = (t, err) => { $('amsg').textContent = t || ''; $('amsg').className 
 function setMode(m) {
   mode = m; document.querySelectorAll('#acct .tabs button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
   const guest = m === 'guest';
-  $('ppass').hidden = guest; $('ppass2').hidden = m !== 'reg'; $('remrow').hidden = guest; $('auth').hidden = guest;
-  $('auth').textContent = m === 'reg' ? 'Kayıt ol' : 'Giriş yap';
-  $('ppass').autocomplete = m === 'reg' ? 'new-password' : 'current-password';
+  const fresh = m === 'reg' || m === 'reset';
+  $('ppass').hidden = guest; $('ppass2').hidden = !fresh; $('pcode').hidden = m !== 'reset'; $('remrow').hidden = guest; $('auth').hidden = guest;
+  $('auth').textContent = m === 'reg' ? 'Kayıt ol' : m === 'reset' ? 'Şifreyi sıfırla' : 'Giriş yap';
+  $('ppass').placeholder = m === 'reset' ? 'Yeni şifre' : 'Şifre';
+  $('ppass').autocomplete = fresh ? 'new-password' : 'current-password'; $('forgot').hidden = m !== 'login';
   refreshButtons();
   if (guest) amsg(NET.available ? 'Misafir: ilerlemen yalnız bu tarayıcıda saklanır.' : 'Sunucuya ulaşılamadı: çevrimdışı misafir olarak oynayabilirsin.');
-  else amsg(m === 'reg' ? 'Hesapla ilerlemen sunucuda saklanır, her cihazdan devam edersin.' : '');
+  else amsg(m === 'reg' ? 'Hesapla ilerlemen sunucuda saklanır, her cihazdan devam edersin.' : m === 'reset' ? 'Adını, kayıtta verilen kurtarma kodunu ve yeni şifreni gir.' : '');
 }
 function refreshButtons() {
   const authed = !!NET.account, guest = mode === 'guest';
@@ -108,13 +110,15 @@ $('aform').onsubmit = e => {
   if (!NET.available) return amsg('Sunucuya ulaşılamadı.', true);
   if (n.length < 3) return amsg('Ad en az 3 karakter olmalı.', true);
   if (p.length < 6) return amsg('Şifre en az 6 karakter olmalı.', true);
-  if (mode === 'reg' && p !== $('ppass2').value) return amsg('Şifreler aynı değil.', true);
-  amsg(mode === 'reg' ? 'Hesap oluşturuluyor…' : 'Giriş yapılıyor…'); $('auth').disabled = true;
-  authRequest(mode, n, p, $('prem').checked);
+  if ((mode === 'reg' || mode === 'reset') && p !== $('ppass2').value) return amsg('Şifreler aynı değil.', true);
+  if (mode === 'reset' && $('pcode').value.replace(/[^A-Za-z0-9]/g, '').length !== 12) return amsg('Kurtarma kodu 12 karakter olmalı.', true);
+  amsg(mode === 'reg' ? 'Hesap oluşturuluyor…' : mode === 'reset' ? 'Şifre sıfırlanıyor…' : 'Giriş yapılıyor…'); $('auth').disabled = true;
+  authRequest(mode, n, p, $('prem').checked, mode === 'reset' ? $('pcode').value : undefined);
 };
 NET.onAuth = m => {
   $('auth').disabled = false; $('ppass').value = ''; $('ppass2').value = '';
-  if (m.ok) { amsg(''); toastLater = 'Hoş geldin, ' + m.name; }
+  if (m.ok) { amsg(''); toastLater = 'Hoş geldin, ' + m.name; $('pcode').value = ''; if (mode === 'reset') setMode('login'); }
+  if (m.ok && m.recovery) { $('reccode').textContent = m.recovery; $('recbox').hidden = false; $('go').disabled = true; }
   else if (!m.silent) amsg(m.err || 'Giriş başarısız', true);
   refreshButtons();
 };
@@ -122,6 +126,8 @@ NET.onReady = () => {
   if (!NET.available) { setMode('guest'); document.querySelectorAll('#acct .tabs button').forEach(b => { if (b.dataset.m !== 'guest') b.disabled = true; }); }
   else if (!NET.account) amsg('');
 };
+$('forgot').onclick = e => { e.preventDefault(); if (NET.available) setMode('reset'); };
+$('recok').onclick = () => { $('recbox').hidden = true; $('reccode').textContent = ''; $('go').disabled = false; };
 $('logout').onclick = e => { e.preventDefault(); logout(); setMode('login'); amsg('Çıkış yapıldı.'); };
 $('go').onclick = () => begin(false);
 $('new').onclick = () => { if (!newArmed) { newArmed = true; $('new').textContent = 'Emin misin? İlerleme silinir'; return; } begin(true); };

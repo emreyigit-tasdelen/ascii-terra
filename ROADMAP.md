@@ -71,7 +71,8 @@ Durum işaretleri: `[x]` bitti · `[~]` kısmen · `[ ]` yapılacak
 - [x] Sohbet
 - [ ] PVP düello daveti ("X seni düelloya davet ediyor", video), parti, ortak görev ilerlemesi
 - [x] Hesap sistemi (kayıt/giriş, scrypt, belirteç, beni hatırla), sunucu tarafı kayıt (JSON dosyası)
-- [ ] Gerçek veritabanı (SQLite/Postgres), şifre sıfırlama, hile koruması
+- [x] SQLite veritabanı (node:sqlite), kurtarma koduyla şifre sıfırlama, admin.js, günlük yedek
+- [ ] Hile koruması
 - [ ] Ölçekleme: bölge sunucuları
 
 ### Faz 5 ayrıntılı plan — Düello, parti, ortak görev
@@ -100,7 +101,7 @@ mesaj tipleri: `invite`, `invite_reply`, `party_*`, `duel_*`. Davetler 20 sn son
 
 **Test:** iki tarayıcı sekmesiyle (biri gizli pencere) davet/kabul/ret, parti XP paylaşımı, düello halkası ve sonuç.
 
-### Faz 5 ayrıntılı plan — Veritabanı ve şifre sıfırlama (öneri, onay bekliyor)
+### Faz 5 ayrıntılı plan — Veritabanı ve şifre sıfırlama (v0.8'de yapıldı)
 - **Depolama:** Node'un yerleşik `node:sqlite` modülü (Node 22.5+; bağımlılık yok), dosya `server/data/terra.db`, WAL modu.
   Tablolar: `users(id, name, name_lc UNIQUE, salt, hash, created, last_login, banned)`, `saves(user_id, data JSON, updated)`,
   `tokens(hash, user_id, expires)` (belirtecin kendisi değil SHA-256 özeti saklanır), `stats(user_id, duel_w, duel_l)`.

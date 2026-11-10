@@ -81,7 +81,11 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 - Chat: press `Enter`, type, `Enter` to send.
 - **Accounts:** register or log in on the start screen to keep your progress on the server and continue from any device,
   or play as a guest (progress stays in that browser). Passwords are stored only as salted scrypt hashes, login tokens only as
-  SHA-256 digests, login attempts are rate-limited, and all of it lives in `server/data/` which is git-ignored.
+  SHA-256 digests, login attempts are rate-limited (5/min per IP), and all of it lives in `server/data/` which is git-ignored.
+- **Database:** Node's built-in SQLite (`node:sqlite`, Node 22.5+, nothing to install) in `server/data/terra.db`, WAL mode,
+  batched save writes, daily backups in `server/data/yedek/` (last 7 kept). An old `users.json` is imported automatically.
+- **Forgot password:** on sign-up you get a one-time **recovery code**; "Şifremi unuttum" + name + code sets a new password
+  (no e-mail is stored). Admin CLI: `node server/admin.js list | reset <name> | ban <name> | unban <name> | delete <name> --yes | backup`.
 - The server is a single dependency-free file (`server/server.js`): static files + a minimal WebSocket implementation,
   path-traversal and dotfile protection, message size and rate limits, sanitised names and chat.
 - To play over the internet, run the server on a VPS or any Node host and put it behind HTTPS; the client switches to `wss://` automatically.

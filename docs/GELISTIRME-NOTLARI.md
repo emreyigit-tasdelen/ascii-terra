@@ -10,9 +10,10 @@
 - Test: `PORT=8766 node server/server.js` (arka planda), tarayıcı panelinde `http://localhost:8766`. Bitince süreci kapat, `server/data` test verisini sil.
 
 ## Mimari (kısa)
-`src/core.js` (yükseklik, çarpışma, MID) · `render.js` (ASCII geçişi, ışık, gölge) · `world.js` (arazi, köy, kale, bataklık) · `models.js` (modeller + `animBiped`) · `actors.js` (oyuncu, düşman AI, beceriler, kalkan) · `fx.js` (parçacık) · `game.js` (görev, envanter, HUD, kayıt) · `net.js` (çok oyunculu istemci) · `main.js` (girdi, döngü, giriş ekranı, duraklatma) · `server/server.js` (bağımlılıksız Node: statik + WebSocket + hesaplar).
+`src/core.js` (yükseklik, çarpışma, MID) · `render.js` (ASCII geçişi, ışık, gölge) · `world.js` (arazi, köy, kale, bataklık) · `models.js` (modeller + `animBiped`) · `actors.js` (oyuncu, düşman AI, beceriler, kalkan) · `fx.js` (parçacık) · `game.js` (görev, envanter, HUD, kayıt) · `net.js` (çok oyunculu istemci) · `main.js` (girdi, döngü, giriş ekranı, duraklatma) · `server/server.js` (bağımlılıksız Node: statik + WebSocket + hesaplar) · `server/db.js` (SQLite) · `server/admin.js` (yönetim CLI).
 
 ## Yapılanlar (en yeni üstte)
+- v0.8 SQLite (`server/db.js`, node:sqlite, `server/data/terra.db`), users.json otomatik aktarım, kurtarma kodu + "Şifremi unuttum", `server/admin.js` (list/reset/ban/unban/delete --yes/backup), günlük yedek (son 7), giriş sınırı 5/dk, `/SERVER` büyük harf yol açığı kapatıldı. VS Code: qwtel.sqlite-viewer kuruldu.
 - Kalkan Alt tuşunda (Ctrl, Ctrl+W yüzünden bırakıldı). Blokta koldaki kalkan (`r.shield`) gizlenir, göğüs önündeki kopya (`r.shieldFront`, spine'a bağlı) görünür. Kamera sağ veya orta tuşla sürüklenir.
 - MIT lisansı, README'ye ekran görüntüsü (docs/screenshot.jpg). Düello/parti/ortak görev ve DB/şifre sıfırlama planı ROADMAP Faz 5'e yazıldı.
 - v0.7 Esc/P duraklatma menüsü (tek oyunculuda dünya donar, çevrimiçide oyuncu dokunulmaz).
@@ -23,7 +24,6 @@
 - v0.2 Her şey ASCII, modüler kod, public repo, README EN/TR, sponsor linkleri.
 
 ## Açık işler / sıradaki
-- DB önerisi (node:sqlite + kurtarma kodu + admin.js CLI) kullanıcı onayı bekliyor → onaylanınca uygula.
-- Sonra: parti (v0.8) → ortak görev (v0.9) → düello (v0.10), ayrıntı ROADMAP Faz 5.
+- Sıradaki: parti (v0.9) → ortak görev (v0.10) → düello (v0.11), ayrıntı ROADMAP Faz 5.
 - Kullanıcı "çok oyunculuya girilemiyor" dedi: Node sunucusuyla kayıt/giriş/oyun test edildi, çalışıyor. Python yedek sunucusu veya index.html doğrudan açılırsa çevrimiçi olmaz. Kullanıcının nasıl başlattığı netleşmedi.
 - Kılıç/kasırga vuruşu çok oyunculu elle test edilmeli (iki sekme).

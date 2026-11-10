@@ -35,7 +35,7 @@ export function initNet() {
   };
   ws.onerror = () => { };
 }
-export function authRequest(mode, name, pass, remember) { NET.remember = remember; raw({ t: mode, name, pass }); }
+export function authRequest(mode, name, pass, remember, code) { NET.remember = remember; raw({ t: mode, name, pass, code }); }
 export function logout() {
   let t = null; try { t = localStorage.getItem(TOK) || sessionStorage.getItem(TOK); localStorage.removeItem(TOK); sessionStorage.removeItem(TOK); } catch (e) { }
   raw({ t: 'logout', token: t }); NET.account = null; NET.accountSave = null;
