@@ -100,3 +100,8 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 #craft .cmain{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #222;border-bottom:1px solid #222;margin:6px 0;padding:6px 0}
 #craftArt{margin:0;font-size:15px;line-height:15px;min-width:300px;flex:1;text-shadow:0 0 6px currentColor}
 #craft .cside{width:220px;line-height:1.6}#craftSlots button{width:30px;height:30px;font-size:16px}
+#tut{position:absolute;left:50%;top:64px;transform:translateX(-50%);padding:6px 14px;border:1px solid #c9a22780;background:#07090dd0;color:#ffd88a;font-size:13px;letter-spacing:.5px;z-index:20;white-space:nowrap}
+#create{position:absolute;right:24px;top:50%;transform:translateY(-50%);width:260px;background:#07090df2;padding:12px 14px;font-size:12px;z-index:30}
+#create b{color:#fff;letter-spacing:1px}#create .clabel{color:#888;margin:10px 0 4px;font-size:11px}#create .crow{display:flex;flex-wrap:wrap;gap:5px}
+#create .crow button{width:30px;height:24px;border:1px solid #333;cursor:pointer;color:#888;font:inherit;font-size:10px}#create .crow button.on{border:2px solid #ffd88a}
+#createGo{margin-top:14px;width:100%;background:#0d0f14;border:1px solid #c9a227;color:#ffd88a;font:inherit;padding:6px;cursor:pointer}

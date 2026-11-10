@@ -30,7 +30,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Animation v2: spring joints, combo, roll, jump, hit reaction, cape physics, creature gaits, jointed dragon
 - [ ] Bloom-like glow, skinned mesh animation, foot IK (foot placement on slopes)
 - [ ] Lightning/ice/purple magic effects (video: New skills)
-- [ ] Per-material grids: chainmail `o8o8` pattern, dragon scales, spider hair (custom grid + symbol)
+- [~] Per-material grids: chainmail rings and creature fur done; dragon scales to do
 - [ ] Dynamic weather: rain splashes, wet ground sheen, fog, snow; weather cycle
 - [ ] Day/night tuning, torch light radii, moonlight
 - [ ] Richer tree and rock models, leaves swaying in the wind
@@ -42,15 +42,15 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Skill system + support gems for builds (video: skills & support gems)
 - [ ] Mana / stamina, skill tree, classless — item-driven builds
 - [ ] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
-- [ ] Crafting: metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments
+- [~] Crafting: blade metal + runes done (K); armour pieces to do. Full list: metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments
 - [ ] 3D ASCII item preview on the craft screen (rotatable)
 - [ ] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")
 - [ ] Mouse-driven inventory grid, drag and drop
 - [ ] Enemy AI: groups, archers, casters, fleeing/flanking; boss phases
-- [ ] Character creation screen (appearance, name)
+- [x] Character creation screen (tabard, cape, emblem) + starting tutorial
 
 ## Phase 3 — World
-- [ ] Procedural generation from a map sketch (video: map sketch pipeline): biomes, rivers, roads
+- [~] Terrain from a map sketch (mountains, hills, forests, meadows, lakes); rivers and roads to do
 - [ ] Starting tutorial area + first village (video: tutorial area)
 - [x] Misty Swamp region (chapel, graveyard, camp, fog) + region titles
 - [ ] New regions: snowy mountains, desert ruins, dungeons (interiors)

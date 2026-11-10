@@ -8,6 +8,7 @@ import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
 import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeHorse, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
 import { craftMods } from './craft.js';
+import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
 
@@ -18,12 +19,22 @@ export const P = { x: 0, z: 14, y: 0, vx: 0, vz: 0, vy: 0, air: false, face: Mat
   dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, block: false, blockT: 0, st: 100, stMax: 100, stCd: 0, stunT: 0, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
 export const CD = { slash: 0, fire: 0, whirl: 0 }, CDMAX = { slash: .42, fire: 2.5, whirl: 7 };
 export const TGT = { e: null };
-{
-  const r = makeKnight({ emblem: 0xd8cfb4 }); P.rig = r; P.g = r.g; scene.add(r.g);
-  P.lamp = new THREE.PointLight(0xffb070, 1.1, 18); P.lamp.position.set(-.3, 1.3, .4); r.g.add(P.lamp);
-  const arc = new THREE.Mesh(new THREE.TorusGeometry(1.9, .04, 3, 24, Math.PI * .9), basic(0xe8eef8, MID.GLOW));
-  arc.rotation.x = Math.PI / 2; arc.position.set(0, 1.15, .3); arc.visible = false; r.g.add(arc); P.arc = arc;
+// character look (chosen on the creation screen, saved in S.look)
+export const LOOKS = {
+  tabard: [0x7a1414, 0x1b2c5e, 0x1f4a2a, 0x4a2a5e, 0x5e4a1a, 0x222428],
+  cape: [0x1c0505, 0x0c1426, 0x0d1a10, 0x1a1a1a],
+  emblem: [0xd8cfb4, 0xc9a227, 0xe8e8f0, null]
+};
+P.lamp = new THREE.PointLight(0xffb070, 1.1, 18); P.lamp.position.set(-.3, 1.3, .4);
+P.arc = new THREE.Mesh(new THREE.TorusGeometry(1.9, .04, 3, 24, Math.PI * .9), basic(0xe8eef8, MID.GLOW));
+P.arc.rotation.x = Math.PI / 2; P.arc.position.set(0, 1.15, .3); P.arc.visible = false;
+export function setLook(look = {}) {
+  const L = { tabard: 0, cape: 0, emblem: 0, ...look }, old = P.g;
+  const r = makeKnight({ cloth: LOOKS.tabard[L.tabard], capeColor: LOOKS.cape[L.cape], emblem: LOOKS.emblem[L.emblem] ?? undefined });
+  if (old) { scene.remove(old); r.g.position.copy(old.position); r.g.rotation.copy(old.rotation); }
+  P.rig = r; P.g = r.g; scene.add(r.g); r.g.add(P.lamp); r.g.add(P.arc);
 }
+setLook();
 
 /* ================= horse (mount): F to call / mount / dismount ================= */
 export const HORSE = { rig: null, on: false, ph: 0, x: 0, z: 0, face: 0 };
@@ -179,6 +190,7 @@ export function doSlash() {
     if (d > 3.4 + reachOf(e)) continue; if (d > 1 && (dx * fx + dz * fz) / d < (P.atkType === 1 ? -.1 : .2)) continue;
     hitEnemy(e, baseDmg() * mult * (.9 + Math.random() * .3), P.x, P.z);
   }
+  hitDummy(fx, fz);
 }
 export function doFireball() {
   if (P.dead || CD.fire > 0) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1;

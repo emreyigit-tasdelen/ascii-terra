@@ -103,6 +103,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
 | `F` | call / mount / dismount your horse (faster; no roll or jump while riding) |
+| — | new games start with character creation (tabard, cape, emblem) and a short tutorial with a training dummy |
 | `K` | craft: pick a blade metal and up to 3 runes (bonuses apply to every sword hit) |
 | `Enter` | chat (multiplayer) |
 | `Esc` / `P` | pause menu (closes open windows first) |

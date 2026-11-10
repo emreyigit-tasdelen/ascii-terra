@@ -3,7 +3,8 @@ import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
-import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC, toggleMount } from './actors.js';
+import { openCreate, initCreate, updateIntro } from './intro.js';
+import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC, toggleMount, setLook } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion } from './game.js';
@@ -76,8 +77,9 @@ function begin(fresh) {
   const nm = NET.account || ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Senje';
   if (!NET.account) try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
   NET.name = nm;
-  if (fresh) resetSave(); else load();
-  applyState(); buildHotbar(); initCraft();
+  const had = !fresh && load(); if (!had) resetSave();
+  applyState(); buildHotbar(); initCraft(); initCreate(); setLook(S.look || {});
+  if (!had) { S.tut = 0; openCreate(() => { }); }
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
   started = true; $('overlay').hidden = true; $('hud').hidden = false;
@@ -178,7 +180,7 @@ function frame(now, draw) {
   beginLabels();
   if (run) {
     if (MOUSE.lmb) doSlash();
-    updatePlayer(dt); updateEnemies(dt); updateEffects(dt); updateNet(rdt);
+    updatePlayer(dt); updateEnemies(dt); updateEffects(dt); updateNet(rdt); updateIntro(dt, T);
     saveT += rdt; if (saveT > 8) { saveT = 0; save(); }
   }
   updateNPCs(rdt); updateFX(dt);
