@@ -73,7 +73,7 @@ export const waterMat = new THREE.ShaderMaterial({
 
 /* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {
-  const w = .06, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
+  const w = .045, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(v, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
   return g;
@@ -89,7 +89,7 @@ float hgt=position.y;
 float tone=fract(sin(dot(offset.xz,vec2(12.9898,78.233)))*43758.5453);
 float fl=step(.955,tone);
 float gsw=1.-smoothstep(32.,58.,distance(offset.xz,vec2(135.,20.)));
-float s=par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.)*(1.+gsw*.65);
+float s=.72*par.y*(1.-smoothstep(34.,48.,distance(offset.xz,uPlayer.xz)))*(fl>.5?.55:1.)*(1.+gsw*.65);
 vec3 gp=position;gp.y*=s;gp.xz*=(fl>.5?3.5:1.);
 float gc=cos(par.x),gsn=sin(par.x);
 vec3 transformed=vec3(gp.x*gc-gp.z*gsn,gp.y,gp.x*gsn+gp.z*gc);
@@ -100,7 +100,7 @@ vec2 gdp=offset.xz-uPlayer.xz;float gpd=length(gdp);
 transformed.xz+=gdp/(gpd+.001)*(1.-smoothstep(0.,1.5,gpd))*.9*hgt*s;
 transformed+=offset;
 vH=hgt;vFl=fl;
-vGCol=(fl>.5&&hgt>.45&&gsw<.5)?vec3(.85,.88,.82):mix(vec3(.015,.04,.03),mix(mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),vec3(.26,.24,.11),gsw),hgt)*(.75+.5*fract(tone*7.3));
+vGCol=(fl>.5&&hgt>.45&&gsw<.5)?vec3(.85,.88,.82):mix(vec3(.05,.09,.07),mix(mix(vec3(.12,.31,.17),vec3(.2,.28,.27),fract(tone*3.7)),vec3(.26,.24,.11),gsw),hgt)*(.75+.5*fract(tone*7.3));
 if(gsw>.5)fl=0.;vFl=fl;
 vec3 gtip=offset+vec3((par.z+gw)*s,s,(par.z*.5+gw*.6)*s);
 vec4 GA=projectionMatrix*viewMatrix*vec4(offset,1.),GB=projectionMatrix*viewMatrix*vec4(gtip,1.);
@@ -114,7 +114,7 @@ gl_FragColor.a=(vFl>.5&&vH>.45)?.5:.02+fract(vAng)*.26;`);
 };
 const CH = 22, GR = 2, gchunks = new Map();
 function makeGrassChunk(cx, cz) {
-  const rng = mulberry32((cx * 73856093) ^ (cz * 19349663)), N = 6500, off = new Float32Array(N * 3), par = new Float32Array(N * 3); let n = 0;
+  const rng = mulberry32((cx * 73856093) ^ (cz * 19349663)), N = 14000, off = new Float32Array(N * 3), par = new Float32Array(N * 3); let n = 0;
   for (let i = 0; i < N; i++) {
     const x = (cx + rng()) * CH, z = (cz + rng()) * CH, r1 = rng(), r2 = rng(), r3 = rng(), r4 = rng();
     const h = heightAt(x, z);
@@ -127,7 +127,7 @@ function makeGrassChunk(cx, cz) {
     off[n * 3] = x; off[n * 3 + 1] = h - .05; off[n * 3 + 2] = z;
     par[n * 3] = r2 * 6.283; par[n * 3 + 1] = .45 + r3 * .55; par[n * 3 + 2] = (r4 - .5) * .7; n++;
   }
-  const g = new THREE.InstancedBufferGeometry(); g.setAttribute('position', grassBase.attributes.position);
+  const g = new THREE.InstancedBufferGeometry(); g.setAttribute('position', grassBase.attributes.position); g.setAttribute('normal', grassBase.attributes.normal);
   g.setAttribute('offset', new THREE.InstancedBufferAttribute(off.slice(0, n * 3), 3));
   g.setAttribute('par', new THREE.InstancedBufferAttribute(par.slice(0, n * 3), 3));
   g.instanceCount = n; g.boundingSphere = new THREE.Sphere(new THREE.Vector3((cx + .5) * CH, 0, (cz + .5) * CH), CH + 30);

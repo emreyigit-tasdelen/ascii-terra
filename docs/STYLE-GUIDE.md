@@ -16,7 +16,7 @@ Each material writes its ID into the render target's alpha channel (`src/core.js
 
 | Material | Grid | Glyphs / colour |
 |---|---|---|
-| Grass | normal | by on-screen blade direction `- ~ _` · `/ '` · `\| ! l` · `\ ``` green-grey |
+| Grass | fine | one thin stroke per cell along the on-screen blade direction (`- / \| \`), dense, muted grey-green |
 | Flower | normal | white `o * + .` |
 | Ground | normal | sparse ` . , : ; '`; stone set on bluish ground |
 | Stone (walls, menhirs, rocks, houses) | **world-anchored** | letters carved into the surface in world space (triplanar): big near the camera, small far away; brightness picks a denser letter |
