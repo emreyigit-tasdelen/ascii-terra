@@ -10,7 +10,7 @@ export const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05070d);
 scene.fog = new THREE.Fog(0x05070d, 30, 170);
 export const camera = new THREE.PerspectiveCamera(40, 1, .5, 900);
-export const VIEW = { cellW: 5, cellH: 9, dpr: 1 };
+export const VIEW = { cellW: 5, cellH: 9, dpr: 1, zoom: 1 };   // zoom: glyph cells grow as the camera moves in
 
 const rt = new THREE.WebGLRenderTarget(16, 16, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, format: THREE.RGBAFormat, depthBuffer: true });
 
@@ -19,7 +19,7 @@ const SETS = {
   GEN: " .':;-~ilrcvxzjtJCZqpdbhaowmQ&8#@",
   STONE: " .:+oaeswqpdbmOQ0&%$#@MW",
   LEAF: " .,;:*o%&8@#",
-  WATER: " .,-~=*",
+  WATER: " .,-~=*oO0@",
   FINE: " .':;!/|\\(){}ox%#8@",
   ACTOR: " .:;+=xoO0Q8%#@",
   WOOD: " .:-=|#H",
@@ -38,13 +38,13 @@ let GLYPHS = '', defs = '';
 const ROWS = Math.ceil(GLYPHS.length / 16);
 
 const atlases = {};
-function buildAtlas(key, cw, ch) {
+function buildAtlas(cw, ch) {   // cached per cell size: zooming steps through sizes
+  const key = cw + 'x' + ch; if (atlases[key]) return atlases[key];
   const c = document.createElement('canvas'); c.width = 16 * cw; c.height = ROWS * ch;
   const x = c.getContext('2d'); x.fillStyle = '#000'; x.fillRect(0, 0, c.width, c.height);
   x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle';
   x.font = (ch >= 14 ? 'bold ' : '') + Math.round(ch * 1.02) + 'px Consolas,"Courier New",monospace';
   GLYPHS.split('').forEach((g, i) => x.fillText(g, (i % 16) * cw + cw / 2, Math.floor(i / 16) * ch + ch * .55));
-  if (atlases[key]) atlases[key].dispose();
   const t = atlases[key] = new THREE.CanvasTexture(c); t.flipY = false; t.generateMipmaps = false;
   t.minFilter = t.magFilter = THREE.NearestFilter;
   return t;
@@ -54,13 +54,13 @@ const U = {
   tScene: { value: rt.texture }, tFont: { value: null }, tFine: { value: null }, res: { value: new THREE.Vector2(1, 1) },
   cpx: { value: new THREE.Vector2(5, 9) }, atlas: { value: new THREE.Vector2(80, 99) },
   fpx: { value: new THREE.Vector2(3, 6) }, fatlas: { value: new THREE.Vector2(48, 66) },
-  uTime: { value: 0 }, uHurt: { value: 0 }, uExp: { value: 1.15 }
+  uTime: { value: 0 }, uHurt: { value: 0 }, uExp: { value: 1.15 }, uOff: { value: new THREE.Vector2() }
 };
 const asciiMat = new THREE.ShaderMaterial({
   uniforms: U, depthTest: false, depthWrite: false,
   vertexShader: 'void main(){gl_Position=vec4(position.xy,0.,1.);}',
   fragmentShader: defs + `
-  uniform sampler2D tScene,tFont,tFine;uniform vec2 res,cpx,atlas,fpx,fatlas;uniform float uTime,uHurt,uExp;
+  uniform sampler2D tScene,tFont,tFine;uniform vec2 res,cpx,atlas,fpx,fatlas,uOff;uniform float uTime,uHurt,uExp;
   float h21(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
   float lum(vec3 c){return dot(c,vec3(.299,.587,.114));}
   bool isD(float a,float v){return abs(a-v)<.012;}
@@ -85,13 +85,13 @@ const asciiMat = new THREE.ShaderMaterial({
     if(isD(a,.925)){o=own.rgb*uExp;}   // world-anchored letters: already glyphs
     else if(isGrass(a)){
       // grass: every blade is rendered as a thin stroke in the scene; keep it, with stepped colour
-      vec3 c=own.rgb*uExp;c=floor(c*14.+.5)/14.;
-      o=c*1.7;
+      vec3 c=pow(own.rgb*uExp,vec3(.72));c=floor(c*14.+.5)/14.;   // lifted so the field stays green at night
+      o=c*1.25;
     }
     else if(isFig(a)){
       // characters and creatures: fine grid with small cells
       bool cre=isD(a,.7),scl=isD(a,.35),chn=isD(a,.45)||scl;
-      vec2 cp=chn?cpx:fpx,sf=fc;if(chn)sf.x+=mod(floor(fc.y/cp.y),2.)*cp.x*.5;   // chainmail: every other row shifted half a cell → rings
+      vec2 cp=chn?cpx:fpx,sf=fc+uOff;if(chn)sf.x+=mod(floor(sf.y/cp.y),2.)*cp.x*.5;   // chainmail: every other row shifted half a cell → rings
       vec2 cell=floor(sf/cp),base=cell*cp-(sf-fc),lp=mod(sf,cp);
       vec3 acc=vec3(0.);float n=0.;float L[9];
       for(int j=0;j<3;j++){for(int i=0;i<3;i++){
@@ -113,7 +113,7 @@ const asciiMat = new THREE.ShaderMaterial({
         o=c*smoothstep(.8,.2,d)*step(al,cp.y*.65)*2.3+c*.1;
       }
     }else{
-      vec2 cp=cpx,cell=floor(fc/cp),base=cell*cp,lp=mod(fc,cp);
+      vec2 cp=cpx,gc=fc+uOff,cell=floor(gc/cp),base=cell*cp-uOff,lp=mod(gc,cp);   // lattice follows the world (uOff)
       vec4 cen=S(base+cp*.5);
       vec3 acc=vec3(0.),gacc=vec3(0.),tcol=vec3(0.);float n=0.,gn=0.,gang=0.,gbest=-1.,mcat=1.,thin=0.;float L[9];
       for(int j=0;j<3;j++){for(int i=0;i<3;i++){
@@ -166,12 +166,28 @@ export function resize() {
   const W = innerWidth, H = innerHeight; VIEW.dpr = Math.min(devicePixelRatio || 1, 1.5);
   renderer.setPixelRatio(VIEW.dpr); renderer.setSize(W, H);
   renderer.getDrawingBufferSize(_bs); rt.setSize(_bs.x, _bs.y); REFL.rt.setSize(Math.ceil(_bs.x / 2), Math.ceil(_bs.y / 2));
-  const cw = Math.max(3, Math.round(VIEW.cellW * VIEW.dpr)), ch = Math.max(5, Math.round(VIEW.cellH * VIEW.dpr));
-  const fw = Math.max(3, Math.round(cw * .65)), fh = Math.max(5, Math.round(ch * .65));
-  U.res.value.copy(_bs);
-  U.cpx.value.set(cw, ch); U.atlas.value.set(cw * 16, ch * ROWS); U.tFont.value = buildAtlas('n', cw, ch);
-  U.fpx.value.set(fw, fh); U.fatlas.value.set(fw * 16, fh * ROWS); U.tFine.value = buildAtlas('f', fw, fh);
+  U.res.value.copy(_bs); cellW = 0; applyCells();
   camera.aspect = W / H; camera.updateProjectionMatrix();
+}
+/* Glyph cells have a fixed size in the world, not on screen: zooming in makes the letters bigger.
+   Sizes are whole pixels so glyphs stay crisp; characters use a finer lattice (half pitch). */
+let cellW = 0;
+function applyCells() {
+  const cw = clamp(Math.round(VIEW.cellW * VIEW.dpr * VIEW.zoom), 3, 32); if (cw === cellW) return; cellW = cw;
+  const ch = Math.round(cw * 1.8), fw = Math.max(3, Math.round(cw * .5)), fh = Math.round(fw * 1.8);
+  U.cpx.value.set(cw, ch); U.atlas.value.set(cw * 16, ch * ROWS); U.tFont.value = buildAtlas(cw, ch);
+  U.fpx.value.set(fw, fh); U.fatlas.value.set(fw * 16, fh * ROWS); U.tFine.value = buildAtlas(fw, fh);
+  U.uOff.value.set(0, 0);
+}
+export function setZoom(k) { VIEW.zoom = k; applyCells(); }
+/* Keep the lattice glued to the ground while the camera follows: shift it by the screen distance
+   the old focus point moved (exact at the focus depth; rotating the camera still re-flows the letters). */
+const _g0 = new THREE.Vector3(), _g1 = new THREE.Vector3();
+export function gridFollow(ox, oy, oz, nx, ny, nz) {
+  camera.updateMatrixWorld();
+  _g0.set(ox, oy, oz).project(camera); _g1.set(nx, ny, nz).project(camera);
+  const o = U.uOff.value; o.x -= (_g0.x - _g1.x) * U.res.value.x * .5; o.y -= (_g0.y - _g1.y) * U.res.value.y * .5;
+  if (Math.abs(o.x) > 65536 || Math.abs(o.y) > 65536) o.set(0, 0);
 }
 /* ---------------- planar water reflection ----------------
    The scene is drawn once more from a camera mirrored under the water plane (half resolution, no grass,

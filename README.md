@@ -109,6 +109,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` | inventory / map |
 | `R` | toggle rain |
+| `T` | advance the time of day by 3 hours |
 | Right- or middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |
 | `[` `]` | glyph size |
 

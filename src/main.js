@@ -1,6 +1,6 @@
 // Entry point: input, camera, main loop
 import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
-import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, ENV, VIEW } from './render.js';
+import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, setZoom, gridFollow, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
 import { openCreate, initCreate, updateIntro } from './intro.js';
@@ -42,6 +42,7 @@ addEventListener('keydown', e => {
   else if (k === 'f') toggleMount();
   else if (k === 'k') toggleCraft();
   else if (k === 'i') toggleInv(); else if (k === 'm') toggleMini(); else if (k === 'h') toggleHelp();
+  else if (k === 't') { ENV.dayT = (ENV.dayT + .125) % 1; toast('Time ' + String(Math.floor(ENV.dayT * 24)).padStart(2, '0') + ':00'); }
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
   else if (e.key === 'ArrowLeft') cam.yaw += .2; else if (e.key === 'ArrowRight') cam.yaw -= .2;
@@ -68,7 +69,7 @@ addEventListener('blur', () => { if (started && !paused && !NET.online) setPause
 canvas.addEventListener('mousedown', e => { if (!started || paused) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
 addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; if (e.button === 1) MOUSE.mmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { cam.dist = clamp(cam.dist + e.deltaY * .02, 8, 42); }, { passive: true });
+addEventListener('wheel', e => { cam.dist = clamp(cam.dist * Math.exp(e.deltaY * .0012), 5, 60); }, { passive: true });
 addEventListener('resize', resize);
 addEventListener('beforeunload', () => { if (started) save(); });
 
@@ -144,7 +145,7 @@ initNet();
 
 /* ---------------- camera (follow + shake) ---------------- */
 function updateCamera(dt, run) {
-  const k = 1 - Math.exp(-8 * dt);
+  const k = 1 - Math.exp(-8 * dt), ox = cam.tx, oy = cam.ty, oz = cam.tz;
   if (run) { cam.tx = lerp(cam.tx, P.x, k); cam.ty = lerp(cam.ty, P.y, k); cam.tz = lerp(cam.tz, P.z, k); }
   else { cam.yaw += dt * .05; cam.tx = 0; cam.tz = 8; cam.ty = heightAt(0, 8); }
   cam.hk = lerp(cam.hk || 0, run ? smooth(1.5, 6, P.high || 0) : 0, 1 - Math.exp(-2.5 * dt));   // high ground: zoom in
@@ -154,6 +155,7 @@ function updateCamera(dt, run) {
   cx += (Math.random() - .5) * sh * 1.2; cy += (Math.random() - .5) * sh * 1.2; cz += (Math.random() - .5) * sh * 1.2;
   const lowK = clamp(1 - cam.pitch / .6, 0, 1);   // look up when near the horizon
   camera.position.set(cx, cy, cz); camera.lookAt(cam.tx - Math.sin(cam.yaw) * lowK * 20, cam.ty + 1 + lowK * 2.5, cam.tz - Math.cos(cam.yaw) * lowK * 20);
+  setZoom(17 / D); gridFollow(ox, oy, oz, cam.tx, cam.ty, cam.tz);   // letters scale with zoom and stay on the ground
   FXS.shake = Math.max(0, FXS.shake - dt * 2.5);
   P.camYaw = cam.yaw; ENV.focus.set(cam.tx, cam.ty, cam.tz);
 }

@@ -111,6 +111,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` | envanter / harita |
 | `R` | yağmuru aç / kapat |
+| `T` | günün saatini 3 saat ileri al |
 | Sağ ya da orta tuşla sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |
 | `[` `]` | harf boyutu |
 

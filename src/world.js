@@ -60,14 +60,14 @@ export const waterMat = new THREE.ShaderMaterial({
     float wave=sin(d*55.-uTime*1.4+sin(vW.x*.08+vW.z*.05)*3.);
     float foam=shore*smoothstep(.72,.97,wave)+(1.-smoothstep(0.,.04,d))*.9;
     float nn=sin(vW.x*.13+uTime*.4)*sin(vW.z*.11-uTime*.3+sin(vW.x*.05)*2.);
-    foam+=smoothstep(.93,.99,nn)*.5*(1.-shore);
+    foam+=smoothstep(.97,.995,nn)*.25*(1.-shore);
     float mist=shore*.22*(.5+.5*sin(vW.x*.05+vW.z*.07+uTime*.2));
     foam*=1.-sw*.85; float algae=sw*smoothstep(.55,.8,sin(vW.x*1.7+sin(vW.z*1.3))*sin(vW.z*1.9+uTime*.1));
     vec3 col=mix(mix(vec3(.008,.014,.032),vec3(.02,.035,.02),sw),vec3(.72,.77,.84),clamp(foam+mist*(1.-sw),0.,1.));
     col=mix(col,vec3(.12,.16,.06),algae*.8);
     col*=uLight*.9+.15;
     vec4 rp=uRefl*vec4(vW,1.);vec2 ruv=rp.xy/rp.w*.5+.5+vec2(sin(vW.z*1.3+uTime*1.1),sin(vW.x*1.1-uTime*.9))*.004*(1.-shore);
-    vec3 rc=texture2D(tRefl,ruv).rgb;col+=rc*1.4*(1.-clamp(foam,0.,1.))*(1.-sw*.5);   // mirrored world
+    vec3 rc=texture2D(tRefl,ruv).rgb;col+=rc*2.2*(1.-clamp(foam,0.,1.))*(1.-sw*.5);   // still water mirrors the world, the moon and the clouds
     gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),.75);
   }`
 });
@@ -75,7 +75,7 @@ export const waterMat = new THREE.ShaderMaterial({
 
 /* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {
-  const w = .016, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
+  const w = .028, v = new Float32Array([-w, 0, 0, w, 0, 0, 0, 1, 0, 0, 0, -w, 0, 0, w, 0, 1, 0]), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(v, 3));
   g.setAttribute('normal', new THREE.BufferAttribute(new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]), 3));
   return g;
@@ -176,7 +176,9 @@ export const TOWER = { x: 18, z: -26, r: 3.6, h: 9 };   // watchtower (built fur
     Q.setFromAxisAngle(AX, t.ry);
     PV.set(t.x, t.h + 3.1 * t.s, t.z); SV.set(2.3 * t.s, 1.8 * t.s, 2.3 * t.s); M4.compose(PV, Q, SV); r1.setMatrixAt(i, M4);
     PV.set(t.x + Math.cos(t.ry) * .9 * t.s, t.h + 3.9 * t.s, t.z + Math.sin(t.ry) * .9 * t.s); SV.set(1.6 * t.s, 1.4 * t.s, 1.6 * t.s); M4.compose(PV, Q, SV); r2.setMatrixAt(i, M4);
-    CC.setRGB(.06 + t.c * .05, .16 + t.c * .08, .12 + t.c * .05); r1.setColorAt(i, CC); r2.setColorAt(i, CC.multiplyScalar(1.2));
+    if (hash2(i, 31) < .3) CC.setRGB(.3 + t.c * .12, .045 + t.c * .03, .05);   // crimson-leaved trees
+    else CC.setRGB(.06 + t.c * .05, .16 + t.c * .08, .12 + t.c * .05);
+    r1.setColorAt(i, CC); r2.setColorAt(i, CC.multiplyScalar(1.2));
   });
   scene.add(trunks, p1, p2, r1, r2);
 
@@ -353,7 +355,22 @@ export function updateWorld(t) {
   lampLights.forEach(l => l.intensity = ENV.night * 1.6);
   for (const c of crystals) if (!c.taken) { c.gem.rotation.y = t * 1.5; c.gem.position.y = 1.5 + Math.sin(t * 2 + c.id) * .25; }
   CIRCLE.orb.rotation.y = t; CIRCLE.orb.position.y = 2 + Math.sin(t * 1.5) * .3;
+  // sky follows the camera focus (no parallax); it is mostly seen mirrored in still water
+  const f = ENV.focus; moon.position.set(f.x + 18, f.y + 150, f.z - 100); moon.visible = ENV.night > .4;
+  for (const c of clouds) { const x = ((c.x + t * c.v) % 240 + 240) % 240 - 120; c.m.position.set(f.x + x, f.y + c.y, f.z + c.z); c.m.material.color.setScalar(.1 + .12 * (1 - ENV.night)); }
 }
+/* ================= sky: moon and drifting clouds ================= */
+const skyM = c => { const m = basic(c, MID.GLOW); m.fog = false; return m; };
+const moon = new THREE.Mesh(new THREE.IcosahedronGeometry(17, 3), skyM(0x6a6e7a)); moon.userData.noShadow = true; scene.add(moon);
+{ const p = moon.geometry.attributes.position, col = new Float32Array(p.count * 3);   // maria: darker patches
+  for (let i = 0; i < p.count; i++) { const v = .55 + .45 * smooth(.35, .6, fbm(p.getX(i) * .09 + 3, p.getY(i) * .09 + p.getZ(i) * .05, 3)); col[i * 3] = col[i * 3 + 1] = v; col[i * 3 + 2] = v * 1.06; }
+  moon.geometry.setAttribute('color', new THREE.BufferAttribute(col, 3)); moon.material.vertexColors = true; }
+const clouds = [];
+{ const rng = mulberry32(909);
+  for (let i = 0; i < 9; i++) {
+    const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 2), skyM(0x555555)); m.scale.set(26 + rng() * 26, 3, 9 + rng() * 9); m.userData.noShadow = true; scene.add(m);
+    clouds.push({ m, x: rng() * 240, y: 95 + rng() * 25, z: -150 + rng() * 120, v: 1.2 + rng() * 1.5 });
+  } }
 /* Dragon lair: burnt earth and bones at the foot of the northwest mountains */
 
 {
