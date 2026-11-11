@@ -6,7 +6,7 @@ import { makeKnight, makeHorse, animBiped, animWolf } from './models.js';
 import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, applySnapshot, snapshotRows } from './actors.js';
 import { S, label, toast } from './game.js';
 
-export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Senje', remotes: new Map() };
+export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Torvan', remotes: new Map() };
 const TABARDS = [0x1b2c5e, 0x1e5a2a, 0x5a1e5a, 0x6a4a10, 0x205060, 0x6a1a1a, 0x3a3a3a, 0x4a2a10];
 
 export function sendNet(o) { if (NET.online && NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); }

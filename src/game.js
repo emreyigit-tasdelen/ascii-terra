@@ -64,7 +64,7 @@ export function invPress(n) {
 /* ================= quests ================= */
 export const Q = [
   { id: 'skel', giver: 'mira', title: 'Castle Ruins', obj: 'slay', kind: 'skeleton', n: 6, xp: 80, gold: 40, item: ['chain'],
-    offer: 'The dead have risen again in the old castle to the north. Senje, send 6 skeleton warriors back to the earth.',
+    offer: 'The dead have risen again in the old castle to the north. Torvan, send 6 skeleton warriors back to the earth.',
     hint: 'Follow the stone road north from the village; torches burn at the castle gate.', done: 'Silence has returned to the castle. You have earned this mail.' },
   { id: 'wolves', giver: 'brant', title: 'The Wolf Pack', obj: 'slay', kind: 'wolf', n: 4, xp: 90, gold: 60, item: ['iron'],
     offer: 'A wolf pack roams the forest. Hunt 4 of them and the village will sleep soundly.',
@@ -72,14 +72,14 @@ export const Q = [
   { id: 'shards', giver: 'lyra', title: 'Moon Shards', obj: 'collect', n: 3, xp: 80, gold: 50, item: ['pot', 3],
     offer: 'Moon Shards fallen from the sky glow out in the wilds. Will you bring me 3 of them?',
     hint: 'Follow the thin blue lights reaching into the sky.', done: 'Wonderful! There is an old power in these shards. Here, the potions are yours.' },
-  { id: 'widow', giver: 'brant', title: 'The Dusk Widow', obj: 'slay', kind: 'widow', n: 1, xp: 400, gold: 150, item: ['steel'], req: ['wolves'],
-    offer: 'A giant spider has nested in the western forest. You will see its white webs. Kill it, Senje.',
+  { id: 'widow', giver: 'brant', title: 'The Gloomweaver', obj: 'slay', kind: 'widow', n: 1, xp: 400, gold: 150, item: ['steel'], req: ['wolves'],
+    offer: 'A giant spider has nested in the western forest. You will see its white webs. Kill it, Torvan.',
     hint: 'Look for white webs in the western forest. If an orange circle appears on the ground, get out of it at once!', done: 'The beast is dead? You will be a legend. Take this steel sword.' },
   { id: 'circle', giver: 'mira', title: 'The Stone Circle', obj: 'reach', n: 1, xp: 250, gold: 150, item: ['moonp'], req: ['skel', 'shards', 'widow'],
     offer: 'You are ready now. In the northeast lies the Stone Circle where knights of old swore their oaths. Go there.',
-    hint: 'Walk toward the golden pillar reaching into the sky.', done: 'You have seen the circle... The knight oath is yours now, Senje. May this armor protect you.' },
+    hint: 'Walk toward the golden pillar reaching into the sky.', done: 'You have seen the circle... The knight oath is yours now, Torvan. May this armor protect you.' },
   { id: 'dragon', giver: 'mira', title: 'The Ash Dragon', obj: 'slay', kind: 'dragon', n: 1, xp: 1200, gold: 500, item: ['moon'], req: ['circle'],
-    offer: 'An ancient dragon has woken at the foot of the northwest mountains. You swore the oath, Senje; only you can protect the village from it.',
+    offer: 'An ancient dragon has woken at the foot of the northwest mountains. You swore the oath, Torvan; only you can protect the village from it.',
     hint: 'Go to the burnt lands in the northwest. Before its fire breath, rows of orange circles appear on the ground; roll aside (C)!', done: 'The dragon has fallen... Bards will sing of this night for a hundred years. Here, the Moonsteel Sword is yours.' },
   { id: 'ghouls', giver: 'osric', title: 'Risen from the Graves', obj: 'slay', kind: 'ghoul', n: 8, xp: 220, gold: 90, item: ['silver'],
     offer: 'The chapel graveyard is restless, child. Ghouls have crawled from the earth and spread into the swamp. Send 8 of them to eternal sleep.',
@@ -197,7 +197,7 @@ export function updateHUD(dt) {
   miniT -= dt; if (miniT <= 0 && !$('mini').hidden) { miniT = .25; updateMini(); }
   hudT -= dt; if (hudT > 0) return; hudT = .1;
   const hr = ENV.dayT * 24, hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60);
-  $('info').textContent = 'Senje · Lv.' + S.lvl + '   Gold ' + S.gold + '   Shards ' + S.shards + '   ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
+  $('info').textContent = 'Torvan · Lv.' + S.lvl + '   Gold ' + S.gold + '   Shards ' + S.shards + '   ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   let qt = ''; Q.forEach(q => {
     if (q.st !== 1 && q.st !== 2) return;
     qt += '> ' + q.title + (q.st === 2 ? '  (turn in)' : '  ' + progress(q) + '/' + q.n);

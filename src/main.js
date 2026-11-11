@@ -75,7 +75,7 @@ addEventListener('beforeunload', () => { if (started) save(); });
 
 /* ---------------- start ---------------- */
 function begin(fresh) {
-  const nm = NET.account || ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Senje';
+  const nm = NET.account || ($('pname').value || '').replace(/[<>&"'`]/g, '').trim().slice(0, 16) || 'Torvan';
   if (!NET.account) try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
   NET.name = nm;
   const had = !fresh && load(); if (!had) resetSave();

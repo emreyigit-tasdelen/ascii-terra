@@ -33,9 +33,9 @@ Each material writes its ID into the render target's alpha channel (`src/core.js
 Thin objects (rain, webs, flowers) stamp their glyph on a cell if they touch even one of its 9 samples, so 1-pixel lines never vanish.
 
 ## Characters
-- **Senje (player):** silver plate armor + visored helmet, red tabard and shield, sword.
+- **Torvan (player):** silver plate armor + visored helmet, red tabard and shield, sword.
 - **Skeleton warrior:** bone white, rusty sword. **Wolf:** grey fur, red eyes.
-- **Boss — The Dusk Widow:** giant spider, white webs around it, orange AoE warning circles on the ground.
+- **Boss — The Gloomweaver:** giant spider, white webs around it, orange AoE warning circles on the ground.
 
 ## HUD
 - 10-slot hotbar at the bottom with HP (red) and XP (gold, segmented) bars above it; `LV n · x / y XP` in the middle.

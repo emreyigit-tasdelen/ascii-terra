@@ -12,9 +12,9 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] ASCII renderer v2: material ID (alpha channel) → per-material glyph set; everything on screen is a glyph (directional grass glyphs, characters on a fine grid)
 - [x] Pixel-aligned glyph atlas (generated at cell size, crisp)
 - [x] Fixed top-down camera, mouse aiming, drag to rotate
-- [x] Knight Senje (armor, tabard, sword, shield), walk/attack animation, dodge roll
+- [x] Knight Torvan (armor, tabard, sword, shield), walk/attack animation, dodge roll
 - [x] Village, castle ruins (walls, towers, arched gate, torches), coastal menhirs, foamy sea
-- [x] Enemies: skeleton warrior, wolf, boss Dusk Widow (orange AoE warning circles)
+- [x] Enemies: skeleton warrior, wolf, boss Gloomweaver (orange AoE warning circles)
 - [x] Skills: sword, fireball, whirlwind, potion; hotbar + cooldowns
 - [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
 - [x] Public GitHub repository, README (EN + TR), sponsor links
@@ -62,7 +62,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Main story and quest chain, dialogue tree system
 - [x] Ghoul, swamp witch (ranged), swamp troll (elite), dark knight, dragon
 - [ ] Bestiary: skeleton archer, giant spider variants, horses/mounts
-- [~] Bosses: Dusk Widow and Ash Dragon (fire breath + tail swipe) added; phases and the Castle Lord to do
+- [~] Bosses: Gloomweaver and Ash Dragon (fire breath + tail swipe) added; phases and the Castle Lord to do
 - [ ] Achievements, titles
 
 ## Phase 5 — Multiplayer (MMO)

@@ -32,8 +32,8 @@ ASCII-Terra, klasik zindan oyunlarının ruhunu taşıyan ama tamamen metinle ç
 çevirir: taş surlar yoğun harf dokusuna, çimen her sapın yönünü izleyen `/ | \` çizgilerine, deniz beyaz
 `~ =` köpüklü siyaha, ateş turuncu `# % &` titreşimine dönüşür.
 
-**Senje**'yi oynarsın: gümüş plaka zırhlı, kırmızı tabardlı bir şövalye. Kale harabesindeki ölüleri temizle,
-kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de yemini al.
+**Torvan**'yi oynarsın: gümüş plaka zırhlı, kırmızı tabardlı bir şövalye. Kale harabesindeki ölüleri temizle,
+kurtları avla, dev örümcek *Kasvet Dokuyan*'nu yen ve Taş Çember'de yemini al.
 
 > Durum: erken geliştirme (v0.2). Uzun vadeli hedef çevrim içi, çok oyunculu bir ASCII MMORPG.
 > Ayrıntılar: [yol haritası](ROADMAP.md).
@@ -45,7 +45,7 @@ kurtları avla, dev örümcek *Alacakaranlık Dulu*'nu yen ve Taş Çember'de ye
 - Gerçek zamanlı dövüş: kılıç kombosu, dayanıklılıklı kalkan bloğu ve savuşturma, ateş topu, kasırga, yuvarlanma, zıplama; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
 - Detaylı prosedürel modeller: plaka zırhlı şövalyeler (katmanlı omuzluk, vizörlü miğfer, zincir zırh, tabard, pelerin, uzun kılıç, armalı kalkan),
   gerçek kemik yapılı iskeletler, tüylü dev kurtlar, kıllı dev örümcek ve kanatlı, pullu bir ejderha
-- Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Alacakaranlık Dulu* ve dünya bossu *Kül Ejderhası*
+- Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Kasvet Dokuyan* ve dünya bossu *Kül Ejderhası*
 - Yeni bölge: doğuda **Sisli Bataklık** — sığ çamurlu gölcükler, sazlık, kuru ağaçlar, yıkık şapel ve mezarlık, yoğun sis;
   üstüne atılan hortlaklar, güdümlü lanet fırlatan bataklık cadıları ve sopalı bataklık trolü
 - Animasyon: yaylı eklemler, yürüme/koşma geçişi, kalça sallanması ve omuz karşı dönüşü, 3 vuruşluk kılıç kombosu,

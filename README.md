@@ -30,8 +30,8 @@ A 3D scene is drawn off-screen with Three.js, and a custom shader turns every pi
 per material: stone walls become dense letter textures, grass becomes `/ | \` strokes that follow each
 blade, water is black with white `~ =` foam, fire flickers as orange `# % &`.
 
-You play **Senje**, a knight in silver plate and a red tabard. Clear the undead from the castle ruins,
-hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone Circle.
+You play **Torvan**, a knight in silver plate and a red tabard. Clear the undead from the castle ruins,
+hunt wolves, defeat the giant spider *Gloomweaver* and take the oath at the Stone Circle.
 
 > Status: early development (v0.2). The long-term goal is an online, multiplayer ASCII MMORPG.
 > See the [roadmap](ROADMAP.md).
@@ -43,7 +43,7 @@ hunt wolves, defeat the giant spider *Dusk Widow* and take the oath at the Stone
 - Real-time combat: sword combos, shield block and parry with stamina, fireball, whirlwind, dodge roll, jump; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
 - Detailed procedural models: plate-armoured knights (layered pauldrons, visored helm, chainmail, tabard, cape, longsword, heraldic shield),
   anatomical skeletons, shaggy dire wolves, a hairy giant spider and a winged, scaled dragon
-- Enemies: skeleton warriors, dark knights, dire wolves, the *Dusk Widow* spider boss and the *Ash Dragon* world boss
+- Enemies: skeleton warriors, dark knights, dire wolves, the *Gloomweaver* spider boss and the *Ash Dragon* world boss
 - New region: the **Misty Swamp** in the east — shallow murky pools, reeds, dead trees, a ruined chapel and graveyard, thick fog
   with ghouls that leap at you, swamp witches casting homing hexes and a club-wielding swamp troll
 - Animation: spring-smoothed joints, walk/run blending, hip sway and counter-rotating shoulders, 3-hit sword combo,

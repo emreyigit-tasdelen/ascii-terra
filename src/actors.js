@@ -1,4 +1,4 @@
-// Player (Senje), NPCs, enemies and their AI, skills, projectiles, effects
+// Player (Torvan), NPCs, enemies and their AI, skills, projectiles, effects
 import {
   THREE, clamp, lerp, mulberry32, fbm, angDiff, WATER, HALF, CASTLE, SWAMP, CHAPEL, CAMP, keys, MOUSE,
   heightAt, standAt, collide, MID, basic
@@ -48,7 +48,7 @@ export function toggleMount() {
 
 /* ================= NPC'ler ================= */
 export const NPCS = [
-  { id: 'mira', name: 'Old Mira', x: 4, z: 3, mk: () => makeRobed({ robe: 0x3a2452, hood: 0x2a1a3e }), style: 'robe', idle: ['A hundred years since the castle fell, Senje. Rest by the fire and your wounds will close.', 'When night falls, the dead grow bolder.'] },
+  { id: 'mira', name: 'Old Mira', x: 4, z: 3, mk: () => makeRobed({ robe: 0x3a2452, hood: 0x2a1a3e }), style: 'robe', idle: ['A hundred years since the castle fell, Torvan. Rest by the fire and your wounds will close.', 'When night falls, the dead grow bolder.'] },
   { id: 'brant', name: 'Brant the Hunter', x: -5, z: 4, mk: () => makeRobed({ robe: 0x2a3a22, hood: 0x1c2a16, bow: true, beard: 0x3a2a1a }), style: 'robe', idle: ['The wolves are in the western forest. When you see an orange circle, roll with C!', 'Space makes you jump; that is how you climb low rocks.'] },
   { id: 'lyra', name: 'Lyra the Moon Scribe', x: 3, z: -6, mk: () => makeRobed({ robe: 0x23395a, hood: 0x182840, staff: 0x99ddff }), style: 'robe', idle: ['Moon Shards leave a blue trail in the sky.', 'The Stone Circle was where knights of old swore their oaths.'] },
   { id: 'guard1', name: 'Guard Aldric', x: -3.6, z: -12, face: 0, mk: () => makeKnight({ cloth: 0x1b2c5e, capeColor: 0x101a38, emblem: 0xc9b77a }), idle: ['Dark knights roam the castle road. Keep your shield close.', 'No one plunders this village without going through us.'] },
@@ -70,7 +70,7 @@ const KINDS = {
   ghoul: { id: 'ghoul', name: 'Ghoul', hp: 50, spd: 5.4, dmg: 10, xp: 30, gold: 6, aggro: 18, reach: 1.9, atkCd: 1.1, atkTime: .55, h: 2, make: s => makeGhoul(s), biped: 'hunch', fx: 'blood', lunge: true },
   witch: { id: 'witch', name: 'Swamp Witch', hp: 70, spd: 3.2, dmg: 16, xp: 45, gold: 14, aggro: 24, reach: 13, atkCd: 2.4, atkTime: .8, h: 2.4, make: makeWitch, biped: 'robe-hunch', fx: 'blood', ranged: true },
   troll: { id: 'troll', name: 'Swamp Troll', hp: 650, spd: 3.0, dmg: 28, xp: 320, gold: 90, aggro: 18, reach: 3.4, atkCd: 2.6, atkTime: 1.1, h: 4.4, make: makeTroll, biped: 'heavy', fx: 'blood', elite: true, respawn: 180 },
-  widow: { id: 'widow', name: 'The Dusk Widow', hp: 900, spd: 4.4, dmg: 22, xp: 450, gold: 150, aggro: 22, reach: 4.6, atkCd: 1.6, atkTime: .8, h: 5.4, make: makeSpider, scale: 2, boss: true, respawn: 300, fx: 'ichor', anim: 'spider' },
+  widow: { id: 'widow', name: 'The Gloomweaver', hp: 900, spd: 4.4, dmg: 22, xp: 450, gold: 150, aggro: 22, reach: 4.6, atkCd: 1.6, atkTime: .8, h: 5.4, make: makeSpider, scale: 2, boss: true, respawn: 300, fx: 'ichor', anim: 'spider' },
   dragon: { id: 'dragon', name: 'The Ash Dragon', hp: 3200, spd: 3.2, dmg: 34, xp: 1200, gold: 500, aggro: 30, reach: 7, atkCd: 2.2, atkTime: 1, h: 7.5, make: makeDragon, scale: 1.1, boss: true, respawn: 600, fx: 'blood', anim: 'dragon' }
 };
 export const enemies = [];
@@ -497,7 +497,7 @@ export function updateNPCs(dt) {
   for (const n of NPCS) { n.ph += dt; animBiped(n.rig, { ph: 0, amt: 0, atk: -1, t: n.ph, dt, style: 'knight' }); }
 }
 export function actorLabels() {
-  label(NET.name || 'Senje', P.x, P.y + 2.6, P.z, 'me');
+  label(NET.name || 'Torvan', P.x, P.y + 2.6, P.z, 'me');
   NPCS.forEach(n => { if (Math.hypot(n.x - P.x, n.z - P.z) < 30) label(n.name + npcMark(n), n.x, n.y + 2.5, n.z, 'npc'); });
 }
 export function resetPlayer() { P.maxhp = 100 + 20 * (S.lvl - 1); P.hp = P.maxhp; P.dead = false; P.g.rotation.x = 0; P.air = false; P.vy = 0; }
