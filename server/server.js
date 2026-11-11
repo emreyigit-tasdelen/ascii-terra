@@ -173,6 +173,7 @@ function onMsg(c, txt) {
     case 'hit': if (hostId && !isHost) send(clients.get(hostId), { t: 'hit', from: c.id, e: int(m.e), d: Math.min(2000, Math.max(0, num(m.d))), c: !!m.c, x: num(m.x), z: num(m.z) }); break;
     case 'en': if (isHost && Array.isArray(m.d)) bcast({ t: 'en', d: m.d.slice(0, 200).map(r => Array.isArray(r) ? r.slice(0, 10).map(int) : []) }, c); break;
     case 'tele': if (isHost) bcast({ t: 'tele', x: num(m.x), z: num(m.z), r: num(m.r), dl: num(m.dl), d: num(m.d), f: m.f ? 1 : 0 }, c); break;
+    case 'web': if (isHost) bcast({ t: 'web', x: num(m.x), z: num(m.z), r: Math.min(12, num(m.r)) }, c); break;
     case 'ep': if (isHost) bcast({ t: 'ep', x: num(m.x), y: num(m.y), z: num(m.z), vx: num(m.vx), vz: num(m.vz), d: num(m.d), tid: int(m.tid) }, c); break;
     case 'kill': if (isHost) send(clients.get(int(m.to)), { t: 'kill', e: int(m.e) }); break;
     case 'dmg': if (isHost) send(clients.get(int(m.to)), { t: 'dmg', d: Math.min(5000, Math.max(0, num(m.d))), x: num(m.x), z: num(m.z) }); break;

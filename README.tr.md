@@ -42,7 +42,7 @@ kurtları avla, dev örümcek *Kasvet Dokuyan*'nu yen ve Taş Çember'de yemini 
 
 - **%100 ASCII çizim** — malzemeye özel glif setleri, piksel hizalı glif atlası, karakter ve yaratıklar için ince ızgara
 - Şövalye dünyası: köy, kuleli ve meşaleli kapılı kale harabesi, köpüklü kıyıda menhirler, ormanlar
-- Gerçek zamanlı dövüş: kılıç kombosu, dayanıklılıklı kalkan bloğu ve savuşturma, ateş topu, kasırga, yuvarlanma, zıplama; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
+- Gerçek zamanlı dövüş: kılıç kombosu, dayanıklılıklı kalkan bloğu ve savuşturma, ateş topu, kasırga, boşluk küresi, ay mızrağı, yuvarlanma, zıplama; prosedürel ses; yere düşen ganimet; örümcek boss yavaşlatan ağlar örer; bosslar saldırıyı yerde turuncu dairelerle haber verir (ejderha ateş nefesi, örümcek darbesi)
 - Detaylı prosedürel modeller: plaka zırhlı şövalyeler (katmanlı omuzluk, vizörlü miğfer, zincir zırh, tabard, pelerin, uzun kılıç, armalı kalkan),
   gerçek kemik yapılı iskeletler, tüylü dev kurtlar, kıllı dev örümcek ve kanatlı, pullu bir ejderha
 - Düşmanlar: iskelet savaşçılar, kara şövalyeler, kara kurtlar, boss *Kasvet Dokuyan* ve dünya bossu *Kül Ejderhası*
@@ -102,6 +102,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | Sol tık / `1` | imlece doğru kılıç (3 vuruşluk kombo) |
 | `Alt` (basılı) | kalkanı kaldır — önden gelen darbeyi blokla; tam darbe anında basarsan **savuşturma**, düşman sendeler |
 | `2` / `3` | ateş topu / kasırga |
+| `5` / `6` | boşluk küresi (düşmanları içine çeker, sonra patlar) / ay mızrağı (bir hat boyunca ışın) |
 | `4` / `Q` | iksir iç |
 | `E` | NPC ile konuş |
 | `F` | atı çağır / bin / in (daha hızlı; binerken yuvarlanma ve zıplama yok) |
@@ -109,7 +110,9 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `K` | üretim: kılıç (metal + 3 rün) ve altı zırh parçası (her biri metal + 2 rün: savunma, can, yenilenme, hız, diken) |
 | `Enter` | sohbet (çok oyunculu) |
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
-| `I` / `M` | envanter / harita |
+| `I` / `M` / `N` | envanter / dünya haritası (tekerlek yakınlaştırır, sürükle kaydırır) / mini harita |
+| `O` | sesi aç / kapat |
+| — | öldürülen düşmanlar yere etiketli ganimet bırakır; üstünden geçince alınır |
 | `R` | yağmuru aç / kapat |
 | `T` | günün saatini 3 saat ileri al |
 | Sağ ya da orta tuşla sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |

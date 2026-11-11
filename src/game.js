@@ -1,6 +1,8 @@
 // Game state, items, quests, dialogue, saving and HUD
-import { THREE, $, clamp, heightAt } from './core.js';
-import { camera, ENV } from './render.js';
+import { THREE, $, clamp, heightAt, MID, basic } from './core.js';
+import { camera, scene, ENV } from './render.js';
+import { burst } from './fx.js';
+import { sfx } from './audio.js';
 import { crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies, CD, CDMAX, TGT, resetPlayer } from './actors.js';
 import { NET, sendNet } from './net.js';
@@ -25,17 +27,39 @@ export const ITEMS = {
 export const need = l => 50 * l, maxHpFor = l => 100 + 20 * (l - 1), dmgFor = l => 9 + 3 * l;
 export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = () => (ITEMS[S.eq.armor] || {}).def || 0;
 export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('Item: ' + ITEMS[id].n + (n > 1 ? ' x' + n : '')); renderInv(); }
-export function rollDrop(kind, lvl) {
-  if (kind === 'widow') { giveItem('plate'); giveItem('pot', 2); return; }
-  if (kind === 'dragon') { giveItem('pot', 5); return; }
-  if (kind === 'troll') { giveItem('pot', 3); if (Math.random() < .5) giveItem('plate'); return; }
-  if (kind === 'witch' && Math.random() < .3) { giveItem('pot'); return; }
-  if (kind === 'dknight' && Math.random() < .35) { giveItem(Math.random() < .5 ? 'chain' : 'steel'); return; }
+// Kills drop their items on the ground at (x, z): a glinting gem in a star of rays with a name label; walk over it to pick it up
+export function rollDrop(kind, lvl, x, z) {
+  const drop = (id, n = 1) => dropLoot(id, n, x, z);
+  if (kind === 'widow') { drop('plate'); drop('pot', 2); return; }
+  if (kind === 'dragon') { drop('pot', 5); return; }
+  if (kind === 'troll') { drop('pot', 3); if (Math.random() < .5) drop('plate'); return; }
+  if (kind === 'witch' && Math.random() < .3) { drop('pot'); return; }
+  if (kind === 'dknight' && Math.random() < .35) { drop(Math.random() < .5 ? 'chain' : 'steel'); return; }
   const r = Math.random();
-  if (r < .22) giveItem('pot');
+  if (r < .22) drop('pot');
   else if (r < (kind === 'wolf' ? .34 : .29)) {
     const pool = lvl < 3 ? ['gamb', 'iron'] : lvl < 6 ? ['iron', 'chain', 'steel'] : ['steel', 'chain', 'plate'];
-    giveItem(pool[Math.floor(Math.random() * pool.length)]);
+    drop(pool[Math.floor(Math.random() * pool.length)]);
+  }
+}
+const loot = [], lootMats = {}, gemG = new THREE.OctahedronGeometry(.2, 0), rayG = new THREE.BoxGeometry(1, .03, .035);
+export function dropLoot(id, n, x, z) {
+  const a = Math.random() * 6.283, d = .9 + Math.random() * 1.5; x += Math.cos(a) * d; z += Math.sin(a) * d;
+  const mat = lootMats[id] || (lootMats[id] = basic(new THREE.Color(ITEMS[id].c).getHex(), MID.GLOW)), g = new THREE.Group(), gem = new THREE.Mesh(gemG, mat);
+  gem.position.y = .45; g.add(gem);
+  for (let i = 0; i < 7; i++) { const r = new THREE.Mesh(rayG, mat), b = i / 7 * 6.283 + Math.random() * .5, l = .4 + Math.random() * .6; r.scale.x = l; r.position.set(Math.cos(b) * (.35 + l / 2), .05, Math.sin(b) * (.35 + l / 2)); r.rotation.y = -b; g.add(r); }
+  g.position.set(x, heightAt(x, z), z); scene.add(g);
+  loot.push({ id, n, x, z, g, gem, t: 0 }); burst('loot', x, g.position.y + .3, z, 14); sfx('drop');
+}
+function takeLoot(L, quiet) { scene.remove(L.g); loot.splice(loot.indexOf(L), 1); giveItem(L.id, L.n); if (!quiet) { burst('loot', L.x, L.g.position.y + .5, L.z, 10); sfx('pick'); } }
+export function collectLoot() { while (loot.length) takeLoot(loot[0], true); }   // before leaving: nothing is lost on the ground
+export function updateLoot(dt) {
+  for (let i = loot.length - 1; i >= 0; i--) {
+    const L = loot[i], it = ITEMS[L.id]; L.t += dt;
+    L.gem.rotation.y += dt * 2.5; L.gem.position.y = .45 + Math.sin(L.t * 3) * .08; L.g.rotation.y += dt * .4;
+    if (Math.random() < dt * 3) burst('loot', L.x, L.g.position.y + .2, L.z, 1);
+    label(it.n + (L.n > 1 ? ' x' + L.n : ''), L.x, L.g.position.y + 1.1, L.z, 'loot', null, it.c);
+    if (L.t > .5 && !P.dead && Math.hypot(P.x - L.x, P.z - L.z) < 1.7) takeLoot(L);
   }
 }
 export function usePotion() {
@@ -93,13 +117,13 @@ export const Q = [
 ];
 const qById = {}; Q.forEach(q => { q.st = 0; qById[q.id] = q; });
 export function progress(q) { return q.obj === 'slay' ? Math.min(q.n, S.kills[q.kind] || 0) : q.obj === 'collect' ? Math.min(q.n, S.shards) : (S.circle ? 1 : 0); }
-export function checkQuests() { Q.forEach(q => { if (q.st === 1 && progress(q) >= q.n) { q.st = 2; toast('Quest complete: ' + q.title + ' — return for your reward'); } }); }
+export function checkQuests() { Q.forEach(q => { if (q.st === 1 && progress(q) >= q.n) { q.st = 2; sfx('quest'); toast('Quest complete: ' + q.title + ' — return for your reward'); } }); }
 export function addXP(v) {
   S.xp += v;
-  while (S.xp >= need(S.lvl)) { S.xp -= need(S.lvl); S.lvl++; P.maxhp = maxHpFor(S.lvl); P.hp = P.maxhp; toast('LEVEL UP! Lv.' + S.lvl); }
+  while (S.xp >= need(S.lvl)) { S.xp -= need(S.lvl); S.lvl++; P.maxhp = maxHpFor(S.lvl); P.hp = P.maxhp; sfx('level'); toast('LEVEL UP! Lv.' + S.lvl); }
 }
 function turnIn(q) {
-  q.st = 3; if (q.item) giveItem(q.item[0], q.item[1] || 1); addXP(q.xp); S.gold += q.gold; toast('Reward: +' + q.xp + ' XP, +' + q.gold + ' gold');
+  q.st = 3; sfx('quest'); if (q.item) giveItem(q.item[0], q.item[1] || 1); addXP(q.xp); S.gold += q.gold; toast('Reward: +' + q.xp + ' XP, +' + q.gold + ' gold');
   if (q.id === 'circle') setTimeout(() => toast('Starting quests done! The world is open.'), 1800);
 }
 const questsFor = n => Q.filter(q => q.giver === n.id && q.st < 3 && (!q.req || q.req.every(id => qById[id].st === 3)));
@@ -157,7 +181,7 @@ export function floatText(text, x, y, z, cls) {
 const labelPool = []; let labelUsed = 0;
 export function beginLabels() { labelUsed = 0; }
 export function endLabels() { for (let i = labelUsed; i < labelPool.length; i++) labelPool[i].el.style.display = 'none'; }
-export function label(text, x, y, z, cls, frac) {
+export function label(text, x, y, z, cls, frac, col) {
   let L = labelPool[labelUsed];
   if (!L) {
     const el = document.createElement('div'), t = document.createElement('span'), b = document.createElement('div'), f = document.createElement('i');
@@ -169,11 +193,12 @@ export function label(text, x, y, z, cls, frac) {
   L.el.style.display = 'block';
   if (L._t !== text) { L.t.textContent = text; L._t = text; }
   if (L._c !== cls) { L.el.className = 'lbl ' + cls; L._c = cls; }
+  if (L._col !== col) { L.t.style.color = col || ''; L._col = col; }
   if (frac == null) L.b.style.display = 'none'; else { L.b.style.display = 'block'; L.f.style.width = (clamp(frac, 0, 1) * 100).toFixed(0) + '%'; }
   L.el.style.transform = 'translate(' + ((_v.x * .5 + .5) * innerWidth).toFixed(0) + 'px,' + ((-_v.y * .5 + .5) * innerHeight).toFixed(0) + 'px) translate(-50%,-100%)';
 }
 
-const SLOTS = [{ k: '1', n: 'Sword', i: '/', cd: 'slash' }, { k: '2', n: 'Fireball', i: '*', cd: 'fire' }, { k: '3', n: 'Whirlwind', i: '@', cd: 'whirl' }, { k: '4', n: 'Potion', i: '!', pot: true }];
+const SLOTS = [{ k: '1', n: 'Sword', i: '/', cd: 'slash' }, { k: '2', n: 'Fireball', i: '*', cd: 'fire' }, { k: '3', n: 'Whirlwind', i: '@', cd: 'whirl' }, { k: '4', n: 'Potion', i: '!', pot: true }, { k: '5', n: 'Void Orb', i: 'O', cd: 'orb' }, { k: '6', n: 'Moon Lance', i: '|', cd: 'beam' }];
 let slotEls = [];
 export function buildHotbar() {
   const box = $('slots'); box.innerHTML = ''; slotEls = [];

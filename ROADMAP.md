@@ -15,7 +15,8 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Knight Torvan (armor, tabard, sword, shield), walk/attack animation, dodge roll
 - [x] Village, castle ruins (walls, towers, arched gate, torches), coastal menhirs, foamy sea
 - [x] Enemies: skeleton warrior, wolf, boss Gloomweaver (orange AoE warning circles)
-- [x] Skills: sword, fireball, whirlwind, potion; hotbar + cooldowns
+- [x] Skills: sword, fireball, whirlwind, potion, void orb, moon lance; hotbar + cooldowns
+- [x] Procedural sound, ground loot with labels, world map screen, spider webs
 - [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
 - [x] Public GitHub repository, README (EN + TR), sponsor links
 - [ ] Vite dev server and build (bundle three.js locally to drop the CDN dependency)

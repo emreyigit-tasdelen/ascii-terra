@@ -40,7 +40,7 @@ hunt wolves, defeat the giant spider *Gloomweaver* and take the oath at the Ston
 
 - **100% ASCII rendering** — per-material glyph sets, pixel-aligned glyph atlas, finer grid for characters and creatures
 - Knight world: village, ruined castle with towers and a torch-lit gate, menhirs on a foamy coast, forests
-- Real-time combat: sword combos, shield block and parry with stamina, fireball, whirlwind, dodge roll, jump; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
+- Real-time combat: sword combos, shield block and parry with stamina, fireball, whirlwind, void orb, moon lance, dodge roll, jump; procedural sound; loot drops on the ground; the spider boss spins slowing webs; bosses telegraph attacks with orange ground circles (dragon fire breath, spider slam)
 - Detailed procedural models: plate-armoured knights (layered pauldrons, visored helm, chainmail, tabard, cape, longsword, heraldic shield),
   anatomical skeletons, shaggy dire wolves, a hairy giant spider and a winged, scaled dragon
 - Enemies: skeleton warriors, dark knights, dire wolves, the *Gloomweaver* spider boss and the *Ash Dragon* world boss
@@ -100,6 +100,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | Left click / `1` | sword attack toward the cursor (3-hit combo) |
 | `Alt` (hold) | raise shield — block frontal hits; block right on impact to **parry** and stagger the enemy |
 | `2` / `3` | fireball / whirlwind |
+| `5` / `6` | void orb (drags enemies in, then implodes) / moon lance (beam through a whole line) |
 | `4` / `Q` | drink a potion |
 | `E` | talk to NPCs |
 | `F` | call / mount / dismount your horse (faster; no roll or jump while riding) |
@@ -107,7 +108,9 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `K` | craft: blade (metal + 3 runes) and six armour pieces (metal + 2 runes each: DEF, max HP, regeneration, speed, thorns) |
 | `Enter` | chat (multiplayer) |
 | `Esc` / `P` | pause menu (closes open windows first) |
-| `I` / `M` | inventory / map |
+| `I` / `M` / `N` | inventory / world map (wheel zooms, drag moves) / minimap |
+| `O` | sound on / off |
+| — | kills drop labelled loot on the ground; walk over it to pick it up |
 | `R` | toggle rain |
 | `T` | advance the time of day by 3 hours |
 | Right- or middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |

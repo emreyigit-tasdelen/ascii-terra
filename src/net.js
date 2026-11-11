@@ -3,7 +3,7 @@
 import { THREE, $, clamp, lerp, angDiff, heightAt } from './core.js';
 import { scene } from './render.js';
 import { makeKnight, makeHorse, animBiped, animWolf } from './models.js';
-import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, applySnapshot, snapshotRows } from './actors.js';
+import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, spawnWeb, applySnapshot, snapshotRows } from './actors.js';
 import { S, label, toast } from './game.js';
 
 export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Torvan', remotes: new Map() };
@@ -71,6 +71,7 @@ function onMsg(m) {
     case 'tele': telegraph(m.x, m.z, m.r, m.dl, m.d, !!m.f, false); break;
     case 'ep': spawnEproj(m.x, m.y, m.z, m.vx, m.vz, m.d, m.tid, false); break;
     case 'fx': spawnFxNet(m); break;
+    case 'web': spawnWeb(m.x, m.z, m.r, false); break;
   }
 }
 

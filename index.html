@@ -32,6 +32,11 @@
     <div class="clabel">click a rune to add it · click a slot to take it out · blade bonuses apply to sword hits, armour bonuses all the time</div>
   </div>
   <div id="dialog" class="panel" hidden></div>
+  <div id="map" class="panel" hidden>
+    <div class="ctop"><b>WORLD MAP</b><button id="mapClose">close (M)</button></div>
+    <div id="mapBox"><canvas id="mapCv"></canvas></div>
+    <div class="clabel">^ crag · T forest · = road · ~ water · o stones · &amp; people · ! ? quests · X objective · * shard · B boss · @ you — wheel: zoom · drag: move · double click: centre</div>
+  </div>
   <div id="bottom">
     <div class="bar hp"><i id="hpfill"></i><span id="hptxt"></span></div>
     <div class="bar st"><i id="stfill"></i></div>
@@ -40,7 +45,9 @@
   </div>
   <div id="help" class="panel">WASD walk · Shift run · Space jump · C roll
 Left click / 1 sword · Alt shield (timed right: parry) · 2 fireball · 3 whirlwind · 4 / Q potion
-E talk · F horse · I inventory · K craft · M map · R rain · T time · Enter chat · Esc / P pause
+5 void orb · 6 moon lance · walk over dropped loot to pick it up
+E talk · F horse · I inventory · K craft · M world map · N minimap · O sound
+R rain · T time · Enter chat · Esc / P pause
 Right/middle drag / arrows: camera (down to the horizon) · Wheel: zoom
 [ ] glyph size · H hide this help</div>
 </div>

@@ -7,6 +7,7 @@ import { scene, camera, ENV } from './render.js';
 import { crystals, CIRCLE, LAIR, DRAGON_LAIR, GRAVES } from './world.js';
 import { makeKnight, makeRobed, makeSkeleton, makeWolf, makeHorse, makeSpider, makeDragon, makeGhoul, makeWitch, makeTroll, animBiped, animWolf, animSpider, animDragon, flashMat } from './models.js';
 import { burst, hitFeel } from './fx.js';
+import { sfx } from './audio.js';
 import { craftMods, armorMods } from './craft.js';
 import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
@@ -17,7 +18,7 @@ let T = 0;
 /* ================= player ================= */
 export const P = { x: 0, z: 14, y: 0, vx: 0, vz: 0, vy: 0, air: false, face: Math.PI, hp: 100, maxhp: 100, dead: false, deadT: 0, hurtT: 0, hitT: 0, lastHit: 99,
   dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, block: false, blockT: 0, st: 100, stMax: 100, stCd: 0, stunT: 0, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
-export const CD = { slash: 0, fire: 0, whirl: 0 }, CDMAX = { slash: .42, fire: 2.5, whirl: 7 };
+export const CD = { slash: 0, fire: 0, whirl: 0, orb: 0, beam: 0 }, CDMAX = { slash: .42, fire: 2.5, whirl: 7, orb: 9, beam: 6 };
 export const TGT = { e: null };
 // character look (chosen on the creation screen, saved in S.look)
 export const LOOKS = {
@@ -111,9 +112,33 @@ function spawnEnemy(kind, x, z, lvlOverride) {
 /* ================= effects (ground telegraphs, explosions, projectiles) ================= */
 const effects = [], projectiles = [], eproj = [];
 const fireRingM = basic(0xff7a1a, MID.FIRE), fireFillM = basic(0x6a2008, MID.FIRE), blastM = basic(0xffb040, MID.FIRE), fireballM = basic(0xffa040, MID.FIRE), hexM = basic(0x66ff44, MID.GLOW);
+const voidM = basic(0x9a6aff, MID.GLOW), voidRingM = basic(0xe8dcff, MID.GLOW), beamM = basic(0xcfe6ff, MID.GLOW), webM = basic(0xdfe8f0, MID.GLOW);
+const orbs = [], strandG = new THREE.BoxGeometry(1, .04, .05);
+// spider web on the ground: jittered spokes + rings of thin strands; slows the player inside it
+function makeWeb(r) {
+  const g = new THREE.Group(), N = 9, A = [];
+  const add = (x1, z1, x2, z2) => { const m = new THREE.Mesh(strandG, webM), dx = x2 - x1, dz = z2 - z1; m.position.set((x1 + x2) / 2, 0, (z1 + z2) / 2); m.scale.x = Math.hypot(dx, dz); m.rotation.y = -Math.atan2(dz, dx); g.add(m); };
+  for (let i = 0; i < N; i++) { A.push(i / N * 6.283 + (Math.random() - .5) * .35); add(0, 0, Math.cos(A[i]) * r, Math.sin(A[i]) * r); }
+  for (const f of [.28, .52, .76, 1]) for (let i = 0; i < N; i++) { const a = A[i], b = A[(i + 1) % N], q = r * f * (.94 + Math.random() * .1); add(Math.cos(a) * q, Math.sin(a) * q, Math.cos(b) * q, Math.sin(b) * q); }
+  return g;
+}
+export function spawnWeb(x, z, r, net = true) {
+  if (net && isHost()) sendNet({ t: 'web', x, z, r });
+  const m = makeWeb(r); m.position.set(x, heightAt(x, z) + .14, z); m.scale.setScalar(.05); scene.add(m);
+  effects.push({ type: 'web', m, x, z, r, t: 0, life: 7 }); burst('web', x, heightAt(x, z) + .5, z, 24); sfx('web');
+}
+function spawnOrb(x, z, vx, vz, visual) {
+  const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.75, 1), voidM), ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, .05, 6, 28), voidRingM);
+  m.add(ring); scene.add(m); orbs.push({ m, ring, x, z, vx, vz, life: 2.8, tick: 0, visual }); sfx('void');
+}
+function spawnBeam(x, y, z, dx, dz, L) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(.55, .55, L), beamM); m.position.set(x + dx * (L / 2 + .8), y, z + dz * (L / 2 + .8)); m.rotation.y = Math.atan2(dx, dz); scene.add(m);
+  effects.push({ type: 'beam', m, t: 0 }); sfx('beam');
+  for (let i = 1; i < 14; i++) burst('magic', x + dx * i * L / 14, y, z + dz * i * L / 14, 2);
+}
 function blast(x, z, r, type = 'fire') {
   const m = new THREE.Mesh(new THREE.RingGeometry(.75, 1, 40).rotateX(-Math.PI / 2), blastM); m.position.set(x, heightAt(x, z) + .1, z); m.scale.setScalar(.3); scene.add(m);
-  effects.push({ type: 'blast', m, r, t: 0 }); burst(type, x, heightAt(x, z) + .4, z, Math.round(6 + r * 3));
+  effects.push({ type: 'blast', m, r, t: 0 }); burst(type, x, heightAt(x, z) + .4, z, Math.round(6 + r * 3)); sfx(type === 'spark' ? 'swing' : 'boom');
 }
 export function telegraph(x, z, r, delay, dmg, fire, net = true) {
   if (net && isHost()) sendNet({ t: 'tele', x, z, r, dl: delay, d: dmg, f: fire ? 1 : 0 });
@@ -124,8 +149,16 @@ export function telegraph(x, z, r, delay, dmg, fire, net = true) {
 }
 const disposeMesh = m => { scene.remove(m); m.geometry.dispose(); };
 export function updateEffects(dt) {
+  P.webT = Math.max(0, (P.webT || 0) - dt);
   for (let i = effects.length - 1; i >= 0; i--) {
     const f = effects[i]; f.t += dt;
+    if (f.type === 'web') {
+      f.m.scale.setScalar(Math.min(1, f.t / .3, Math.max(.01, f.life - f.t)));
+      if (!P.dead && Math.hypot(P.x - f.x, P.z - f.z) < f.r && P.y - heightAt(P.x, P.z) < 1) { if (P.webT <= 0) floatText('WEBBED', P.x, P.y + 2.8, P.z, 'info'); P.webT = .3; }
+      if (f.t >= f.life) { scene.remove(f.m); effects.splice(i, 1); }
+      continue;
+    }
+    if (f.type === 'beam') { const k = f.t / .4; f.m.scale.set(1 - k, 1 - k, 1); if (k >= 1) { disposeMesh(f.m); effects.splice(i, 1); } continue; }
     if (f.type === 'blast') { const k = f.t / .35; f.m.scale.setScalar(.3 + k * f.r); if (k >= 1) { disposeMesh(f.m); effects.splice(i, 1); } }
     else if (f.type === 'tele') {
       const k = f.t / f.delay; f.inner.scale.setScalar(Math.max(.01, k));
@@ -146,6 +179,18 @@ export function updateEffects(dt) {
       if (!p.visual) for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5, p.x, p.z);
       disposeMesh(p.m); projectiles.splice(i, 1);
     }
+  }
+  // void orbs: drift forward, drag enemies in, tick damage, implode at the end
+  for (let i = orbs.length - 1; i >= 0; i--) {
+    const p = orbs[i]; p.x += p.vx * dt; p.z += p.vz * dt; p.life -= dt; p.tick -= dt;
+    const y = heightAt(p.x, p.z) + 1.6; p.m.position.set(p.x, y, p.z); p.m.rotation.y += dt * 2; p.ring.rotation.x += dt * 4; p.ring.rotation.z += dt * 2.3;
+    if (Math.random() < .9) { const a = Math.random() * 6.283, r = 2 + Math.random() * 2; _dir.set(-Math.cos(a) * .9, 0, -Math.sin(a) * .9); burst('void', p.x + Math.cos(a) * r, y - .6 + Math.random() * 1.2, p.z + Math.sin(a) * r, 1, _dir); }
+    const end = p.life <= 0;
+    if (!p.visual && (p.tick <= 0 || end)) {
+      p.tick = .35; const R = end ? 4.5 : 3.8;   // the "from" point is mirrored so the knockback pulls enemies inward
+      for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < R + reachOf(e)) hitEnemy(e, baseDmg() * (end ? 1.5 : .5), 2 * e.x - p.x, 2 * e.z - p.z, { quiet: !end });
+    }
+    if (end) { blast(p.x, p.z, 4.5, 'void'); p.ring.geometry.dispose(); disposeMesh(p.m); orbs.splice(i, 1); }
   }
   // enemy projectiles (witch hex): slightly homing, dodged by rolling or jumping
   for (let i = eproj.length - 1; i >= 0; i--) {
@@ -169,6 +214,8 @@ export function spawnEproj(x, y, z, vx, vz, dmg, tid, net = true) {
 export function spawnFxNet(m) {
   if (m.k === 'fb') { const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(mesh); projectiles.push({ m: mesh, x: m.x, y: heightAt(m.x, m.z) + 1.3, z: m.z, vx: m.vx, vz: m.vz, life: 1.1, visual: true }); }
   else if (m.k === 'bl') blast(m.x, m.z, m.r || 4, 'spark');
+  else if (m.k === 'orb') spawnOrb(m.x, m.z, m.vx, m.vz, true);
+  else if (m.k === 'beam') spawnBeam(m.x, heightAt(m.x, m.z) + 1.3, m.z, m.vx, m.vz, m.r || 18);
 }
 
 /* ================= aiming + skills ================= */
@@ -182,7 +229,7 @@ function faceAim() { const a = aim(); P.face = Math.atan2(a.x - P.x, a.z - P.z);
 const baseDmg = () => dmgFor(S.lvl) + atkBonus();
 const reachOf = e => (e.k.scale ? e.k.scale * (e.k.id === 'dragon' ? 2.6 : 1) : e.k.id === 'troll' ? 1.2 : 0);
 export function doSlash() {
-  if (P.dead || CD.slash > 0 || P.dodgeT > 0 || P.block || P.stunT > 0) return; CD.slash = CDMAX.slash; faceAim();
+  if (P.dead || CD.slash > 0 || P.dodgeT > 0 || P.block || P.stunT > 0) return; CD.slash = CDMAX.slash; faceAim(); sfx('swing');
   P.atkType = P.comboT > 0 ? (P.atkType + 1) % 3 : 0; P.comboT = .75; P.atkT = 0;      // 3-hit combo
   const fx = Math.sin(P.face), fz = Math.cos(P.face), mult = [1, 1.1, 1.35][P.atkType];
   for (const e of enemies) {
@@ -193,7 +240,7 @@ export function doSlash() {
   hitDummy(fx, fz);
 }
 export function doFireball() {
-  if (P.dead || CD.fire > 0) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1;
+  if (P.dead || CD.fire > 0) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(m);
   projectiles.push({ m, x: P.x + dx * .9, y: P.y + 1.3, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24, life: 1.1 });
@@ -203,14 +250,28 @@ export function doWhirl() {
   if (P.dead || CD.whirl > 0) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
 }
+export function doOrb() {   // Void Orb: slow sphere that drags enemies in and implodes
+  if (P.dead || CD.orb > 0) return; CD.orb = CDMAX.orb; const a = faceAim(); P.atkT = 0; P.atkType = 1;
+  let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+  spawnOrb(P.x + dx * 1.4, P.z + dz * 1.4, dx * 5.5, dz * 5.5); sendNet({ t: 'fx', k: 'orb', x: P.x + dx * 1.4, z: P.z + dz * 1.4, vx: dx * 5.5, vz: dz * 5.5 });
+}
+export function doBeam() {   // Moon Lance: instant beam through everything in a line
+  if (P.dead || CD.beam > 0) return; CD.beam = CDMAX.beam; const a = faceAim(), L = 18; P.atkT = 0; P.atkType = 2;
+  let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
+  spawnBeam(P.x, P.y + 1.3, P.z, dx, dz, L); sendNet({ t: 'fx', k: 'beam', x: P.x, z: P.z, vx: dx, vz: dz, r: L }); hitFeel(.03, .25);
+  for (const e of enemies) {
+    if (e.dead) continue; const ex = e.x - P.x, ez = e.z - P.z, along = ex * dx + ez * dz, side = Math.abs(ex * dz - ez * dx), rr = reachOf(e);
+    if (along > -rr && along < L + 1 + rr && side < 1.3 + rr) hitEnemy(e, baseDmg() * 2.2, P.x, P.z);
+  }
+}
 export function doDodge() {
   if (P.dead || HORSE.on || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
   const l = Math.hypot(P.mx || 0, P.mz || 0);
   if (l > .1) { P.ddx = P.mx / l; P.ddz = P.mz / l; } else { P.ddx = Math.sin(P.face); P.ddz = Math.cos(P.face); }
-  P.face = Math.atan2(P.ddx, P.ddz); burst('dust', P.x, P.y + .1, P.z, 8);
+  P.face = Math.atan2(P.ddx, P.ddz); burst('dust', P.x, P.y + .1, P.z, 8); sfx('roll');
 }
 export function doJump() {
-  if (P.dead || HORSE.on || P.air || P.dodgeT > 0) return; P.vy = 8.6; P.air = true; burst('dust', P.x, P.y + .05, P.z, 5);
+  if (P.dead || HORSE.on || P.air || P.dodgeT > 0) return; P.vy = 8.6; P.air = true; burst('dust', P.x, P.y + .05, P.z, 5); sfx('jump');
 }
 const _dir = new THREE.Vector3();
 export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
@@ -226,7 +287,7 @@ export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
   burst(e.k.fx, e.x - dx / d * .3 * sc, e.y + e.k.h * .45, e.z - dz / d * .3 * sc, crit ? 18 : 9, _dir);
   floatText((crit ? 'CRIT ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : (local ? '' : 'info'));
   e.hurtT = .12; e.hitT = e.k.boss ? .15 : .35;
-  if (local) { TGT.e = e; hitFeel(crit ? .07 : .045, crit ? .3 : .14); }
+  if (local) { TGT.e = e; if (!o.quiet) { hitFeel(crit ? .07 : .045, crit ? .3 : .14); sfx(crit ? 'crit' : 'hit'); } }
   if (isClient() && local) { e.hp -= dmg; sendNet({ t: 'hit', e: e.idx, d: dmg, c: crit, x: fromX, z: fromZ }); return; }   // karar host'ta
   e.hp -= dmg; e.provoked = 6;
   const kb = e.k.boss ? 1 : e.k.elite ? 2.5 : 7; e.kx = dx / d * kb; e.kz = dz / d * kb;
@@ -235,12 +296,12 @@ export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
 function killEnemy(e, by) {
   e.dead = true; e.deadT = 7; e.respawnT = e.k.respawn || 35; e.atkT = -1;
   burst(e.k.fx, e.x, e.y + e.k.h * .4, e.z, e.k.boss ? 60 : 22);
-  if (e.k.boss || e.k.elite) hitFeel(.15, .6);
+  sfx('die'); if (e.k.boss || e.k.elite) hitFeel(.15, .6);
   if (by && by !== NET.myId) sendNet({ t: 'kill', to: by, e: e.idx }); else grantKill(e);
 }
 export function grantKill(e) {   // reward goes to the killer
   S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
-  rollDrop(e.k.id, e.lvl); addXP(e.xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
+  rollDrop(e.k.id, e.lvl, e.x, e.z); addXP(e.xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
   floatText('+' + e.xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
   if (e.k.boss || e.k.elite) toast(e.k.name + ' defeated!');
   checkQuests();
@@ -254,12 +315,12 @@ export function hurtPlayer(d, src) {
     if (Math.abs(angDiff(P.face, ang)) < 1.25) {       // frontal hit
       const sx = P.x + Math.sin(P.face) * .6, sz = P.z + Math.cos(P.face) * .6;
       if (P.blockT < .22) {                              // perfectly timed: parry
-        burst('spark', sx, P.y + 1.3, sz, 24); hitFeel(.09, .3); floatText('PARRY!', P.x, P.y + 2.8, P.z, 'crit');
+        burst('spark', sx, P.y + 1.3, sz, 24); hitFeel(.09, .3); floatText('PARRY!', P.x, P.y + 2.8, P.z, 'crit'); sfx('parry');
         P.st = Math.min(P.stMax, P.st + 15);
         if (src.e && !isClient()) { src.e.stunT = 1.4; src.e.atkT = -1; src.e.kx = Math.sin(ang) * 6; src.e.kz = Math.cos(ang) * 6; }
         return;
       }
-      P.st -= d * 1.4; P.stCd = 1; burst('spark', sx, P.y + 1.3, sz, 10); hitFeel(.03, .12);
+      P.st -= d * 1.4; P.stCd = 1; burst('spark', sx, P.y + 1.3, sz, 10); hitFeel(.03, .12); sfx('block');
       if (P.st <= 0) { P.st = 0; P.block = false; P.stunT = .9; floatText('SHIELD BROKEN', P.x, P.y + 2.8, P.z, 'hurt'); d *= .6; }
       else { d *= .15; floatText('BLOCK', P.x, P.y + 2.8, P.z, 'info'); if (d < 1) return; }
     }
@@ -267,7 +328,7 @@ export function hurtPlayer(d, src) {
   const AM = armorMods();
   if (AM.thorns > 0 && src && src.e && !src.e.dead && Math.hypot(src.x - P.x, src.z - P.z) < 6) hitEnemy(src.e, Math.max(1, d * AM.thorns), P.x, P.z, { crit: false });   // thorns
   d = Math.max(1, Math.round(d - defBonus() - AM.def)); P.hp -= d; P.hurtT = .35; P.hitT = .3; P.lastHit = 0;
-  burst('blood', P.x, P.y + 1.3, P.z, 7); hitFeel(.03, .22);
+  burst('blood', P.x, P.y + 1.3, P.z, 7); hitFeel(.03, .22); sfx('hurt');
   floatText('-' + d, P.x, P.y + 2.8, P.z, 'hurt');
   if (P.hp <= 0) { P.hp = 0; P.dead = true; P.deadT = 3.2; closeDialog(); toast('You were defeated... you will wake in the village.'); burst('blood', P.x, P.y + .6, P.z, 20); }
 }
@@ -351,7 +412,7 @@ function updateEnemy(e, dt) {
       e.lungeT = .38; e.hit = false; e.cd = 2.2; const ux = dxp / d, uz = dzp / d; e.lx = ux * 14; e.lz = uz * 14; burst('dust', e.x, e.y + .1, e.z, 5);
     }
     if (e.k.id === 'troll') { e.special -= dt; if (e.special <= 0) { e.special = 6; telegraph(tg.x, tg.z, 4, 1.2, e.dmg * 1.3); } }
-    if (e.k.id === 'widow') { e.special -= dt; if (e.special <= 0) { e.special = 6.5; telegraph(tg.x, tg.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } }
+    if (e.k.id === 'widow') { e.special -= dt; if (e.special <= 0) { e.special = 6.5; telegraph(tg.x, tg.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } e.special2 -= dt; if (e.special2 <= 0) { e.special2 = 8; spawnWeb(tg.x, tg.z, 5.5); e.hitT = .3; } }
     if (e.k.id === 'dragon') {
       e.special -= dt; e.special2 -= dt;
       if (e.special <= 0) {
@@ -443,7 +504,7 @@ export function updatePlayer(dt) {
   const pvx = P.vx, pvz = P.vz;
   if (P.dodgeT > 0) { P.dodgeT -= dt; P.vx = P.ddx * 13; P.vz = P.ddz * 13; }
   else {
-    const run = keys.shift && !P.block ? 1 : 0, sp = (HORSE.on ? (run ? 17 : 10) : (run ? 9.5 : 5.8)) * (1 + (P.armorSpeed || 0)) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
+    const run = keys.shift && !P.block ? 1 : 0, sp = (HORSE.on ? (run ? 17 : 10) : (run ? 9.5 : 5.8)) * (1 + (P.armorSpeed || 0)) * (P.block ? .45 : 1) * (P.stunT > 0 ? .3 : 1) * (inWater ? .55 : 1) * (P.webT > 0 ? .4 : 1) * (P.atkT >= 0 && !P.air ? .5 : 1), a = 1 - Math.exp(-(P.air ? 3 : 12) * dt);
     P.vx += (mx * sp - P.vx) * a; P.vz += (mz * sp - P.vz) * a;
   }
   let nx = P.x + P.vx * dt, nz = P.z + P.vz * dt;

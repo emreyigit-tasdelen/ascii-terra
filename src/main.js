@@ -4,10 +4,12 @@ import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, setZ
 import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
 import { openCreate, initCreate, updateIntro } from './intro.js';
-import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doDodge, doJump, nearestNPC, toggleMount, setLook } from './actors.js';
+import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doOrb, doBeam, doDodge, HORSE, doJump, nearestNPC, toggleMount, setLook } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
-import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion } from './game.js';
+import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot, collectLoot } from './game.js';
+import { initAudio, updateAudio, toggleSound, sfx } from './audio.js';
+import { initMap, toggleMap, updateMap, mapOpen } from './map.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: camera can drop to the horizon (to see far away)
 const cam = { yaw: 0, pitch: .98, dist: 17, tx: 0, ty: 0, tz: 0 };
@@ -22,6 +24,7 @@ addEventListener('keydown', e => {
     return;
   }
   if (started && (e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !e.repeat) {   // Esc: close an open window first, otherwise pause
+    if (e.key === 'Escape' && !paused && mapOpen()) { toggleMap(false); return; }
     if (e.key === 'Escape' && !paused && craftOpen()) { toggleCraft(false); return; }
     if (e.key === 'Escape' && !paused && ($('dialog').hidden === false || invOpen())) { closeDialog(); if (invOpen()) toggleInv(); return; }
     setPaused(!paused); return;
@@ -36,12 +39,13 @@ addEventListener('keydown', e => {
   if (!started || e.repeat) return;
   if (invOpen() && k >= '1' && k <= '9') { invPress(+k); return; }
   if (k === '1') doSlash(); else if (k === '2') doFireball(); else if (k === '3') doWhirl();
-  else if (k === '4' || k === 'q') usePotion();
+  else if (k === '4' || k === 'q') usePotion(); else if (k === '5') doOrb(); else if (k === '6') doBeam();
   else if (k === 'e') { const n = nearestNPC(); if (n) interact(n); else closeDialog(); }
   else if (k === 'c') doDodge();
   else if (k === 'f') toggleMount();
   else if (k === 'k') toggleCraft();
-  else if (k === 'i') toggleInv(); else if (k === 'm') toggleMini(); else if (k === 'h') toggleHelp();
+  else if (k === 'i') toggleInv(); else if (k === 'm') { toggleMap(); sfx('ui'); } else if (k === 'n') toggleMini(); else if (k === 'h') toggleHelp();
+  else if (k === 'o') toast(toggleSound() ? 'Sound on' : 'Sound off');
   else if (k === 't') { ENV.dayT = (ENV.dayT + .125) % 1; toast('Time ' + String(Math.floor(ENV.dayT * 24)).padStart(2, '0') + ':00'); }
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
@@ -64,14 +68,14 @@ function setPaused(on) {
 }
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
-$('pmenu').onclick = () => { save(); setTimeout(() => location.reload(), 300); };
+$('pmenu').onclick = () => { collectLoot(); save(); setTimeout(() => location.reload(), 300); };
 addEventListener('blur', () => { if (started && !paused && !NET.online) setPaused(true); });   // auto-pause in single player when the tab loses focus
 canvas.addEventListener('mousedown', e => { if (!started || paused) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
 addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; if (e.button === 1) MOUSE.mmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
-addEventListener('wheel', e => { cam.dist = clamp(cam.dist * Math.exp(e.deltaY * .0012), 5, 60); }, { passive: true });
+addEventListener('wheel', e => { if (mapOpen()) return; cam.dist = clamp(cam.dist * Math.exp(e.deltaY * .0012), 5, 60); }, { passive: true });
 addEventListener('resize', resize);
-addEventListener('beforeunload', () => { if (started) save(); });
+addEventListener('beforeunload', () => { if (started) { collectLoot(); save(); } });
 
 /* ---------------- start ---------------- */
 function begin(fresh) {
@@ -79,7 +83,7 @@ function begin(fresh) {
   if (!NET.account) try { localStorage.setItem('asciiTerraName', nm); } catch (e) { }
   NET.name = nm;
   const had = !fresh && load(); if (!had) resetSave();
-  applyState(); buildHotbar(); initCraft(); initCreate(); setLook(S.look || {});
+  applyState(); buildHotbar(); initCraft(); initCreate(); initMap(); initAudio(); setLook(S.look || {});
   if (!had) { S.tut = 0; openCreate(() => { }); }
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
@@ -165,6 +169,9 @@ function embers(dt, px, pz) {
   for (const f of flames) { const p = f.m.position; if (Math.abs(p.x - px) < 40 && Math.abs(p.z - pz) < 40 && Math.random() < dt * 5 * f.s) burst('ember', p.x, p.y + .3, p.z, 1); }
 }
 
+// 0..1: how close the player is to open water (drives the surf sound)
+function coastK() { let k = smooth(-2, -5.5, heightAt(P.x, P.z)); for (let a = 0; a < 6.28; a += 1.57) k = Math.max(k, smooth(-2, -5.5, heightAt(P.x + Math.cos(a) * 12, P.z + Math.sin(a) * 12))); return k; }
+
 /* ---------------- main loop ---------------- */
 resize();
 P.y = heightAt(P.x, P.z); updateGrass(0, 8, 999);
@@ -197,9 +204,13 @@ function frame(now, draw) {
   updateCamera(rdt, run);
   updateRain(rdt, cam.tx, cam.ty, cam.tz);
   updateWorld(T); embers(rdt, cam.tx, cam.tz);
+  { // sound: footsteps from the player's speed, ambience from weather, coast and nearby fires
+    let fire = 0; for (const f of flames) { const p = f.m.position; fire = Math.max(fire, 1 - Math.hypot(p.x - P.x, p.z - P.z) / 14); }
+    updateAudio(rdt, { speed: run && !P.dead ? Math.hypot(P.vx, P.vz) : 0, grounded: !P.air && !(P.dodgeT > 0), mounted: HORSE.on, rain: ENV.raining ? 1 : 0, coast: run ? coastK() : 0, fire: run ? Math.max(0, fire) : 0 });
+  }
   updateGrass(run ? P.x : 0, run ? P.z : 8, 2);
   GU.uPlayer.value.set(P.x, P.y, P.z); GU.uAspect.value = camera.aspect;
-  if (run) { actorLabels(); updateHUD(rdt); regT -= rdt; if (regT <= 0) { regT = .5; showRegion(regionAt(P.x, P.z)); } }
+  if (run) { actorLabels(); updateLoot(rdt); updateMap(rdt); updateHUD(rdt); regT -= rdt; if (regT <= 0) { regT = .5; showRegion(regionAt(P.x, P.z)); } }
   endLabels();
   if (draw) renderFrame(T, clamp(P.hurtT * 2, 0, .6));
 }
