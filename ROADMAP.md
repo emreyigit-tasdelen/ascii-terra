@@ -17,6 +17,13 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Enemies: skeleton warrior, wolf, boss Gloomweaver (orange AoE warning circles)
 - [x] Skills: sword, fireball, whirlwind, potion, void orb, moon lance; hotbar + cooldowns
 - [x] Procedural sound, ground loot with labels, world map screen, spider webs
+- [ ] From the reference clips, still to do:
+  - [ ] Duels: challenge prompt (accept / decline), PvP damage between the two players (see Phase 5, v0.11)
+  - [ ] Enemy level in name plates ("Skeleton Warrior · lv 5")
+  - [ ] Standing (vertical) spider webs around the Gloomweaver
+  - [ ] Sound volume setting in the pause menu; user to listen and tune the procedural sounds
+  - [ ] Two-tab multiplayer test of web, void orb and moon lance sync
+  - [ ] Ground loot saved with the game (now auto-collected on exit)
 - [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
 - [x] Public GitHub repository, README (EN + TR), sponsor links
 - [ ] Vite dev server and build (bundle three.js locally to drop the CDN dependency)

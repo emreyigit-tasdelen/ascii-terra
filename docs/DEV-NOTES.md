@@ -40,6 +40,7 @@
 - v0.2 Everything ASCII, modular code, public repo, README EN/TR, sponsor links.
 
 ## Open / next
+- Remaining reference-clip work is listed as a checklist in ROADMAP.md (under Skills); start there next session.
 - From the reference clips, still missing: duels with a challenge prompt (ROADMAP v0.11), enemy level in name plates, standing (vertical) spider webs, sound volume setting. The user should confirm how the sounds actually sound.
 - Next: parties (v0.9) → shared quests (v0.10) → duels (v0.11), details in ROADMAP Phase 5.
 - The user said multiplayer "could not be entered": sign up/log in/play tested fine with the Node server. Started with the Python fallback or by opening index.html directly, there is no online mode. How the user launches it is still unclear.
