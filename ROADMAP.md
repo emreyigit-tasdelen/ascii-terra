@@ -43,7 +43,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Dynamic weather: rain splashes, wet ground sheen, fog, snow; weather cycle
 - [ ] Day/night tuning, torch light radii, moonlight
 - [ ] Richer tree and rock models, leaves swaying in the wind
-- [ ] Quality settings menu: resolution scale done (pause menu, 100/75/50%); cell size is `[` `]`; grass density still to do
+- [x] Quality settings: resolution scale and grass density in the pause menu, cell size on `[` `]`
 
 ## Phase 2 — Core gameplay
 - [x] Combat feel: hit-stop, camera shake, 3-hit combo, shield block + parry + stamina

@@ -115,6 +115,8 @@ varying float vH;varying float vFl;varying float vAng;varying vec3 vGCol;`)
 gl_FragColor.a=(vFl>.5&&vH>.45)?.5:.02+fract(vAng)*.26;`);
 };
 const CH = 22, GR = 2, gchunks = new Map();
+let grassDensity = 1;
+export function setGrassDensity(d) { grassDensity = d; for (const c of gchunks.values()) c.mesh.geometry.instanceCount = Math.floor(c.n * d); }   // blade positions are random, so showing the first share thins them evenly
 function makeGrassChunk(cx, cz) {
   const rng = mulberry32((cx * 73856093) ^ (cz * 19349663)), N = 14000, off = new Float32Array(N * 3), par = new Float32Array(N * 3); let n = 0;
   for (let i = 0; i < N; i++) {
@@ -133,7 +135,7 @@ function makeGrassChunk(cx, cz) {
   g.setAttribute('offset', new THREE.InstancedBufferAttribute(off.slice(0, n * 3), 3));
   g.setAttribute('par', new THREE.InstancedBufferAttribute(par.slice(0, n * 3), 3));
   g.instanceCount = n; g.boundingSphere = new THREE.Sphere(new THREE.Vector3((cx + .5) * CH, 0, (cz + .5) * CH), CH + 30);
-  const m = new THREE.Mesh(g, grassMat); m.layers.set(1); m.receiveShadow = true; m.castShadow = false; scene.add(m); return { mesh: m, cx, cz };
+  const m = new THREE.Mesh(g, grassMat); m.layers.set(1); m.receiveShadow = true; m.castShadow = false; scene.add(m); g.instanceCount = Math.floor(n * grassDensity); return { mesh: m, cx, cz, n };
 }
 export function updateGrass(px, pz, limit) {
   const pcx = Math.floor(px / CH), pcz = Math.floor(pz / CH); let made = 0;

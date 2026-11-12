@@ -1,7 +1,7 @@
 // Entry point: input, camera, main loop
 import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, setZoom, gridFollow, ENV, VIEW } from './render.js';
-import { updateWorld, updateGrass, GU, flames, waterMat, regionAt } from './world.js';
+import { updateWorld, updateGrass, setGrassDensity, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
 import { openCreate, initCreate, updateIntro } from './intro.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doOrb, doBeam, doDodge, HORSE, doJump, nearestNPC, toggleMount, setLook } from './actors.js';
@@ -71,6 +71,8 @@ function setPaused(on) {
 }
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
+{ const s = $('pgrass'); let v = '1'; try { v = localStorage.getItem('terra.grass') || '1'; } catch (e) { /* default */ } if (![...s.options].some(o => o.value === v)) v = '1'; s.value = v; setGrassDensity(+v);
+  s.onchange = () => { setGrassDensity(+s.value); try { localStorage.setItem('terra.grass', s.value); } catch (e) { /* not saved */ } }; }
 { const s = $('pres'); let v = '1'; try { v = localStorage.getItem('terra.res') || '1'; } catch (e) { /* default */ } if (![...s.options].some(o => o.value === v)) v = '1'; s.value = v; VIEW.scale = +v; resize();
   s.onchange = () => { VIEW.scale = +s.value; resize(); try { localStorage.setItem('terra.res', s.value); } catch (e) { /* not saved */ } }; }   // render scale: lower is faster on weak GPUs
 { const s = $('pvol'), show = () => { $('pvolv').textContent = s.value + '%'; }; s.value = Math.round(getVolume() * 100); show(); s.oninput = () => { setVolume(s.value / 100); show(); }; s.onchange = () => sfx('pick'); }   // a blip on release to hear the level
