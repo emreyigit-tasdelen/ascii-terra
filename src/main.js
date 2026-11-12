@@ -8,8 +8,8 @@ import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, act
 import { FXS, burst, updateFX } from './fx.js';
 import { duelKey } from './duel.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
-import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot, collectLoot } from './game.js';
-import { initAudio, updateAudio, toggleSound, sfx } from './audio.js';
+import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot } from './game.js';
+import { initAudio, updateAudio, toggleSound, sfx, getVolume, setVolume } from './audio.js';
 import { initMap, toggleMap, updateMap, mapOpen } from './map.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: camera can drop to the horizon (to see far away)
@@ -70,14 +70,15 @@ function setPaused(on) {
 }
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
-$('pmenu').onclick = () => { collectLoot(); save(); setTimeout(() => location.reload(), 300); };
+{ const s = $('pvol'), show = () => { $('pvolv').textContent = s.value + '%'; }; s.value = Math.round(getVolume() * 100); show(); s.oninput = () => { setVolume(s.value / 100); show(); }; s.onchange = () => sfx('pick'); }   // a blip on release to hear the level
+$('pmenu').onclick = () => { save(); setTimeout(() => location.reload(), 300); };
 addEventListener('blur', () => { if (started && !paused && !NET.online) setPaused(true); });   // auto-pause in single player when the tab loses focus
 canvas.addEventListener('mousedown', e => { if (!started || paused) return; if (e.button === 0) { MOUSE.lmb = true; doSlash(); } if (e.button === 2) MOUSE.rmb = true; if (e.button === 1) { e.preventDefault(); MOUSE.mmb = true; } });
 addEventListener('mouseup', e => { if (e.button === 0) MOUSE.lmb = false; if (e.button === 2) MOUSE.rmb = false; if (e.button === 1) MOUSE.mmb = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 addEventListener('wheel', e => { if (mapOpen()) return; cam.dist = clamp(cam.dist * Math.exp(e.deltaY * .0012), 5, 60); }, { passive: true });
 addEventListener('resize', resize);
-addEventListener('beforeunload', () => { if (started) { collectLoot(); save(); } });
+addEventListener('beforeunload', () => { if (started) save(); });
 
 /* ---------------- start ---------------- */
 function begin(fresh) {

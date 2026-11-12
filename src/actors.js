@@ -126,6 +126,10 @@ function makeWeb(r) {
 export function spawnWeb(x, z, r, net = true) {
   if (net && isHost()) sendNet({ t: 'web', x, z, r });
   const m = makeWeb(r); m.position.set(x, heightAt(x, z) + .14, z); m.scale.setScalar(.05); scene.add(m);
+  for (let i = 0; i < 3; i++) {   // standing webs on the rim (visual only); they grow and vanish with the ground web
+    const s = makeWeb(r * .5), b = (i + Math.random() * .6) / 3 * 6.283; s.rotation.order = 'YXZ'; s.rotation.set(Math.PI / 2, -b + Math.PI / 2, 0);
+    s.position.set(Math.cos(b) * r * .85, r * .5, Math.sin(b) * r * .85); m.add(s);
+  }
   effects.push({ type: 'web', m, x, z, r, t: 0, life: 7 }); burst('web', x, heightAt(x, z) + .5, z, 24); sfx('web');
 }
 function spawnOrb(x, z, vx, vz, visual) {

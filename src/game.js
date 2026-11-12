@@ -43,16 +43,16 @@ export function rollDrop(kind, lvl, x, z) {
   }
 }
 const loot = [], lootMats = {}, gemG = new THREE.OctahedronGeometry(.2, 0), rayG = new THREE.BoxGeometry(1, .03, .035);
-export function dropLoot(id, n, x, z) {
-  const a = Math.random() * 6.283, d = .9 + Math.random() * 1.5; x += Math.cos(a) * d; z += Math.sin(a) * d;
+export function dropLoot(id, n, x, z, restored = false) {   // restored: loaded from a save, exact spot, no effects
+  if (!restored) { const a = Math.random() * 6.283, d = .9 + Math.random() * 1.5; x += Math.cos(a) * d; z += Math.sin(a) * d; }
   const mat = lootMats[id] || (lootMats[id] = basic(new THREE.Color(ITEMS[id].c).getHex(), MID.GLOW)), g = new THREE.Group(), gem = new THREE.Mesh(gemG, mat);
   gem.position.y = .45; g.add(gem);
   for (let i = 0; i < 7; i++) { const r = new THREE.Mesh(rayG, mat), b = i / 7 * 6.283 + Math.random() * .5, l = .4 + Math.random() * .6; r.scale.x = l; r.position.set(Math.cos(b) * (.35 + l / 2), .05, Math.sin(b) * (.35 + l / 2)); r.rotation.y = -b; g.add(r); }
   g.position.set(x, heightAt(x, z), z); scene.add(g);
-  loot.push({ id, n, x, z, g, gem, t: 0 }); burst('loot', x, g.position.y + .3, z, 14); sfx('drop');
+  loot.push({ id, n, x, z, g, gem, t: 0 }); if (!restored) { burst('loot', x, g.position.y + .3, z, 14); sfx('drop'); }
 }
 function takeLoot(L, quiet) { scene.remove(L.g); loot.splice(loot.indexOf(L), 1); giveItem(L.id, L.n); if (!quiet) { burst('loot', L.x, L.g.position.y + .5, L.z, 10); sfx('pick'); } }
-export function collectLoot() { while (loot.length) takeLoot(loot[0], true); }   // before leaving: nothing is lost on the ground
+const LOOT_KEEP = 60;   // ground loot is saved; anything beyond this is picked up automatically so nothing is lost
 export function updateLoot(dt) {
   for (let i = loot.length - 1; i >= 0; i--) {
     const L = loot[i], it = ITEMS[L.id]; L.t += dt;
@@ -149,6 +149,8 @@ export function interact(npc) {
 /* ================= saving ================= */
 // Signed-in players save on the server (continue from any device); guests save in the browser
 export function save() {
+  while (loot.length > LOOT_KEEP) takeLoot(loot[0], true);
+  S.loot = loot.map(L => [L.id, L.n, Math.round(L.x * 10) / 10, Math.round(L.z * 10) / 10]);
   S.x = P.x; S.z = P.z; S.dayT = ENV.dayT; S.q = {}; Q.forEach(q => S.q[q.id] = q.st);
   if (NET.account) { NET.accountSave = JSON.parse(JSON.stringify(S)); sendNet({ t: 'save', data: NET.accountSave }); return; }
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { }
@@ -164,6 +166,8 @@ export function load() {
     S = Object.assign(freshState(), j); Q.forEach(q => q.st = (S.q && S.q[q.id]) || 0);
     P.x = S.x; P.z = S.z; ENV.dayT = S.dayT ?? .3;
     S.taken.forEach(id => { const c = crystals[id]; if (c) { c.taken = true; c.mesh.visible = false; } });
+    while (loot.length) { scene.remove(loot[0].g); loot.shift(); }   // ground loot comes back where it was left
+    for (const r of (Array.isArray(S.loot) ? S.loot.slice(0, LOOT_KEEP) : [])) if (Array.isArray(r) && ITEMS[r[0]] && isFinite(r[2]) && isFinite(r[3])) dropLoot(r[0], Math.max(1, r[1] | 0), r[2], r[3], true);
     return true;
   } catch (e) { return false; }
 }

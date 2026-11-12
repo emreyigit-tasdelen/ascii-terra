@@ -111,9 +111,9 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `Enter` | sohbet (çok oyunculu) |
 | `Esc` / `P` | duraklatma menüsü (önce açık pencereyi kapatır) |
 | `I` / `M` / `N` | envanter / dünya haritası (tekerlek yakınlaştırır, sürükle kaydırır) / mini harita |
-| `O` | sesi aç / kapat |
+| `O` | sesi aç / kapat (ses seviyesi duraklatma menüsünde) |
 | `G` | yakındaki oyuncuya düello teklif et (`Y` kabul / `N` reddet); halkadan çıkan veya 1 HP'ye düşen kaybeder |
-| — | öldürülen düşmanlar yere etiketli ganimet bırakır; üstünden geçince alınır |
+| — | öldürülen düşmanlar yere etiketli ganimet bırakır; üstünden geçince alınır (yerde kalan ganimet kaydedilir) |
 | `R` | yağmuru aç / kapat |
 | `T` | günün saatini 3 saat ileri al |
 | Sağ ya da orta tuşla sürükle, ok tuşları, tekerlek | kamerayı döndür / ufka kadar eğ / yakınlaştır |

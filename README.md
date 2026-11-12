@@ -109,9 +109,9 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Enter` | chat (multiplayer) |
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` / `N` | inventory / world map (wheel zooms, drag moves) / minimap |
-| `O` | sound on / off |
+| `O` | sound on / off (volume slider in the pause menu) |
 | `G` | challenge a nearby player to a duel (`Y` accept / `N` decline); leaving the ring or dropping to 1 HP loses |
-| — | kills drop labelled loot on the ground; walk over it to pick it up |
+| — | kills drop labelled loot on the ground; walk over it to pick it up (loot left on the ground is saved) |
 | `R` | toggle rain |
 | `T` | advance the time of day by 3 hours |
 | Right- or middle-drag, arrow keys, wheel | rotate / tilt (down to the horizon) / zoom camera |

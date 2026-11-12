@@ -1,5 +1,6 @@
 // Procedural sound (WebAudio, no sample files): combat, footsteps, pickups and looping ambience
-let ctx = null, master = null, noiseBuf = null, on = true;
+let ctx = null, master = null, noiseBuf = null, on = true, vol = .5;
+try { const v = parseFloat(localStorage.getItem('terra.vol')); if (v >= 0 && v <= 1) vol = v; } catch (e) { /* storage blocked: keep the default */ }
 const amb = {};
 
 function noiseSrc(loop) { const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = !!loop; return s; }
@@ -12,12 +13,17 @@ function ambient(type, freq, q) {   // endless filtered noise, volume driven fro
 export function initAudio() {   // call from a user gesture (the Start button)
   if (ctx) { ctx.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
-  ctx = new AC(); master = ctx.createGain(); master.gain.value = on ? .5 : 0; master.connect(ctx.destination);
+  ctx = new AC(); master = ctx.createGain(); master.gain.value = on ? vol : 0; master.connect(ctx.destination);
   noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   amb.wind = ambient('bandpass', 420, .6); amb.rain = ambient('highpass', 2600, .3); amb.sea = ambient('lowpass', 520, .4); amb.fire = ambient('bandpass', 1500, 1.2);
 }
-export function toggleSound() { on = !on; if (master) master.gain.value = on ? .5 : 0; return on; }
+export function toggleSound() { on = !on; if (master) master.gain.value = on ? vol : 0; return on; }
+export const getVolume = () => vol;
+export function setVolume(v) {   // 0..1, remembered in this browser
+  vol = Math.max(0, Math.min(1, v)); if (master && on) master.gain.value = vol;
+  try { localStorage.setItem('terra.vol', String(vol)); } catch (e) { /* not saved */ }
+}
 
 // one shaped noise burst: filter sweep f0 → f1 over dur
 function noise(dur, f0, f1, vol, type = 'bandpass', q = 1, delay = 0) {
