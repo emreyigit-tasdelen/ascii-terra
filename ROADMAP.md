@@ -81,7 +81,8 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [~] Player sync (15 Hz + smoothing) done; prediction + reconciliation, area-of-interest (AOI) filter to do
 - [x] Chat
 - [x] PvP duel invites ("X challenges you to a duel", video)
-- [ ] Parties, shared quest progress
+- [x] Parties: invite (J or /invite), up to 4, HUD health bars, shared kill XP (`src/party.js`)
+- [ ] Shared quest progress in a party; party member dots on the map
 - [x] Account system (sign up/log in, scrypt, tokens, remember me), server-side saves
 - [x] SQLite database (node:sqlite), password reset with a recovery code, admin.js, daily backups
 - [ ] Anti-cheat

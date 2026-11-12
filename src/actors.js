@@ -13,6 +13,7 @@ import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
 import { DUEL, duelLost, duelNear, duelStrike } from './duel.js';
+import { partyShare } from './party.js';
 
 let T = 0;
 
@@ -311,8 +312,9 @@ function killEnemy(e, by) {
 }
 export function grantKill(e) {   // reward goes to the killer
   S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
-  rollDrop(e.k.id, e.lvl, e.x, e.z); addXP(e.xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
-  floatText('+' + e.xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
+  const xp = partyShare(e.xp);   // in a party the kill is split with members standing near
+  rollDrop(e.k.id, e.lvl, e.x, e.z); addXP(xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
+  floatText('+' + xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
   if (e.k.boss || e.k.elite) toast(e.k.name + ' defeated!');
   checkQuests();
 }

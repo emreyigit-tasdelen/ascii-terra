@@ -113,6 +113,7 @@ WebGL2 destekli bir tarayıcı gerekir; `index.html`'e diskten çift tıklamak �
 | `I` / `M` / `N` | envanter / dünya haritası (tekerlek yakınlaştırır, sürükle kaydırır) / mini harita |
 | `O` | sesi aç / kapat (ses seviyesi duraklatma menüsünde) |
 | `G` | yakındaki oyuncuya düello teklif et (`Y` kabul / `N` reddet); halkadan çıkan veya 1 HP'ye düşen kaybeder |
+| `J` | yakındaki oyuncuyu partiye davet et (`Y` / `N`) ya da `/invite <isim>` yaz; `/leave` ile çıkılır. En çok 4 üye, yakındaki üyeler öldürme XP'sini paylaşır (+%10) |
 | — | öldürülen düşmanlar yere etiketli ganimet bırakır; üstünden geçince alınır (yerde kalan ganimet kaydedilir) |
 | `R` | yağmuru aç / kapat |
 | `T` | günün saatini 3 saat ileri al |

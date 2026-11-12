@@ -121,6 +121,17 @@ for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { try { DB.close(
 /* ---------------- players, host election, relay ---------------- */
 const clients = new Map(); let nextId = 1, hostId = 0;
 const invites = new Map();   // target id -> { from }
+/* parties: in memory only, up to 4 members; members[0] is the leader */
+const parties = new Map(); let nextParty = 1; const PARTY_MAX = 4;
+function partySync(p) { const m = p.members.map(id => ({ id, name: (clients.get(id) || {}).name || '?' })); for (const id of p.members) send(clients.get(id), { t: 'party', id: p.id, m }); }
+function partyLeave(c) {
+  const p = c.party; if (!p) return; c.party = null; p.members = p.members.filter(id => id !== c.id);
+  send(c, { t: 'party', id: 0, m: [] });
+  for (const id of p.members) send(clients.get(id), { t: 'sys', text: c.name + ' left the party' });
+  if (p.members.length > 1) { partySync(p); return; }
+  for (const id of p.members) { const o = clients.get(id); if (o) { o.party = null; send(o, { t: 'party', id: 0, m: [] }); send(o, { t: 'sys', text: 'The party was disbanded' }); } }
+  parties.delete(p.id);
+}
 function endDuel(d, loserId) {
   if (!d || d.over) return; d.over = true;
   const a = clients.get(d.a), b = clients.get(d.b); if (a) a.duel = null; if (b) b.duel = null;
@@ -152,6 +163,7 @@ function drop(c) {
   if (!clients.has(c.id)) return; clients.delete(c.id);
   try { c.sock.destroy(); } catch { }
   if (c.duel) endDuel(c.duel, c.id);
+  partyLeave(c); invites.delete(c.id);
   if (c.hello) { bcast({ t: 'leave', id: c.id }); log(c.name + ' left (' + clients.size + ' online)'); }
   if (c.id === hostId) { hostId = 0; elect(); }
 }
@@ -197,7 +209,7 @@ function onMsg(c, txt) {
       break;
     }
     case 'duel_r': {
-      const iv = invites.get(c.id); if (!iv) break; invites.delete(c.id);
+      const iv = invites.get(c.id); if (!iv || iv.kind) break; invites.delete(c.id);   // iv.kind marks a party invite
       const a = clients.get(iv.from); if (!a || a.duel || c.duel) break;
       if (!m.ok) { send(a, { t: 'sys', text: c.name + ' declined the duel' }); break; }
       const d = { a: a.id, b: c.id, start: Date.now() + 3000, over: false }; a.duel = c.duel = d;
@@ -212,6 +224,37 @@ function onMsg(c, txt) {
       send(o, { t: 'dmg', d: Math.min(600, Math.max(0, num(m.d))), x: c.st.x, z: c.st.z }); break;
     }
     case 'duel_lose': endDuel(c.duel, c.id); break;
+    case 'party': {   // invite by id (key) or by name (/invite); only the leader invites, one pending invite per player
+      const sys = t => send(c, { t: 'sys', text: t });
+      const nm = clean(m.name, 16).toLowerCase();
+      const o = m.to ? clients.get(int(m.to)) : [...clients.values()].find(x => x.hello && x.name.toLowerCase() === nm);
+      if (!o || !o.hello) { sys('No such player online'); break; }
+      if (o === c) break;
+      if (c.party && c.party.members[0] !== c.id) { sys('Only the party leader can invite'); break; }
+      if (c.party && c.party.members.length >= PARTY_MAX) { sys('The party is full'); break; }
+      if (o.party) { sys(o.name + ' is already in a party'); break; }
+      if (invites.has(o.id) || [...invites.values()].some(v => v.from === c.id)) { sys('An invite is already pending'); break; }
+      const iv = { from: c.id, kind: 'party' }; invites.set(o.id, iv);
+      send(o, { t: 'party_inv', from: c.id, name: c.name }); sys('Party invite sent to ' + o.name);
+      setTimeout(() => { if (invites.get(o.id) === iv) { invites.delete(o.id); sys(o.name + ' did not answer'); send(o, { t: 'party_inv', from: 0 }); } }, 20000);
+      break;
+    }
+    case 'party_r': {
+      const iv = invites.get(c.id); if (!iv || iv.kind !== 'party') break; invites.delete(c.id);
+      const a = clients.get(iv.from); if (!a || c.party) break;
+      if (!m.ok) { send(a, { t: 'sys', text: c.name + ' declined the party invite' }); break; }
+      let p = a.party; if (p && (p.members[0] !== a.id || p.members.length >= PARTY_MAX)) break;
+      if (!p) { p = { id: nextParty++, members: [a.id] }; parties.set(p.id, p); a.party = p; }
+      p.members.push(c.id); c.party = p; partySync(p);
+      for (const id of p.members) send(clients.get(id), { t: 'sys', text: c.name + ' joined the party' });
+      break;
+    }
+    case 'party_leave': if (c.party) partyLeave(c); else send(c, { t: 'sys', text: 'You are not in a party' }); break;
+    case 'pxp': {   // a member's kill: the same share goes to party members near the killer
+      const p = c.party; if (!p || !c.st) break; const xp = Math.min(5000, Math.max(0, int(m.xp))); if (!xp) break;
+      for (const id of p.members) { const o = clients.get(id); if (o && o !== c && o.st && Math.hypot(o.st.x - c.st.x, o.st.z - c.st.z) < 70) send(o, { t: 'pxp', xp, name: c.name }); }
+      break;
+    }
     case 'kill': if (isHost) send(clients.get(int(m.to)), { t: 'kill', e: int(m.e) }); break;
     case 'dmg': if (isHost) send(clients.get(int(m.to)), { t: 'dmg', d: Math.min(5000, Math.max(0, num(m.d))), x: num(m.x), z: num(m.z) }); break;
   }

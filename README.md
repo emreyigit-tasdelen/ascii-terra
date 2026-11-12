@@ -111,6 +111,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `I` / `M` / `N` | inventory / world map (wheel zooms, drag moves) / minimap |
 | `O` | sound on / off (volume slider in the pause menu) |
 | `G` | challenge a nearby player to a duel (`Y` accept / `N` decline); leaving the ring or dropping to 1 HP loses |
+| `J` | invite a nearby player to a party (`Y` / `N`), or type `/invite <name>`; `/leave` quits. Up to 4 members, kills near each other share XP (+10%) |
 | — | kills drop labelled loot on the ground; walk over it to pick it up (loot left on the ground is saved) |
 | `R` | toggle rain |
 | `T` | advance the time of day by 3 hours |
