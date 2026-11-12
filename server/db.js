@@ -46,6 +46,9 @@ const q = {
   tokDel: db.prepare('DELETE FROM tokens WHERE hash = ?'),
   tokDelUser: db.prepare('DELETE FROM tokens WHERE user = ?'),
   tokPurge: db.prepare('DELETE FROM tokens WHERE exp < ?'),
+  duelW: db.prepare('INSERT INTO stats (user, duel_w) VALUES (?, 1) ON CONFLICT(user) DO UPDATE SET duel_w = duel_w + 1'),
+  duelL: db.prepare('INSERT INTO stats (user, duel_l) VALUES (?, 1) ON CONFLICT(user) DO UPDATE SET duel_l = duel_l + 1'),
+  stats: db.prepare('SELECT duel_w AS w, duel_l AS l FROM stats WHERE user = ?'),
 };
 function tx(fn) { db.exec('BEGIN'); try { const r = fn(); db.exec('COMMIT'); return r; } catch (e) { db.exec('ROLLBACK'); throw e; } }
 
@@ -98,6 +101,7 @@ module.exports = {
     return code;
   },
   touch: key => q.last.run(Date.now(), key),
+  duel(key, won) { (won ? q.duelW : q.duelL).run(key); return q.stats.get(key); },   // account duel record: { w, l }
   ban: (key, on) => { q.ban.run(on ? 1 : 0, key); if (on) q.tokDelUser.run(key); },
   remove: key => { pending.delete(key); return q.del.run(key).changes > 0; },
   list: () => q.list.all(),

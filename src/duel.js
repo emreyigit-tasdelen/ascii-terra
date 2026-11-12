@@ -57,13 +57,22 @@ export function onDuelMsg(m) {
 /* Called by hurtPlayer when a duelist reaches 1 HP (sent once per duel) */
 export function duelLost() { if (DUEL.on && !DUEL.lost) { DUEL.lost = true; sendNet({ t: 'duel_lose' }); } }
 
-/* Called by the player's attacks. kind: 'arc' (sword), 'rad' (whirlwind, range=r), 'line' (beam, range=length) */
+/* True when the duel opponent is within r of the path a projectile flew this frame: it ended at (x, z) after moving (sx, sz) */
+export function duelNear(x, z, r, sx = 0, sz = 0) {
+  if (!DUEL.on || DUEL.t > 0) return false;
+  const R = NET.remotes.get(DUEL.opp); if (!R || !R.got) return false;
+  const ax = x - sx, az = z - sz, l2 = sx * sx + sz * sz, t = l2 ? Math.max(0, Math.min(1, ((R.x - ax) * sx + (R.z - az) * sz) / l2)) : 0;
+  return Math.hypot(R.x - ax - sx * t, R.z - az - sz * t) < r;
+}
+
+/* Called by the player's attacks. kind: 'arc' (sword), 'rad' (whirlwind, range=r), 'line' (beam, range=length), 'pt' (blast at fx,fz, range=r) */
 export function duelStrike(kind, fx, fz, dmg, range) {
   if (!DUEL.on || DUEL.t > 0) return;
   const R = NET.remotes.get(DUEL.opp); if (!R || !R.got) return;
   const dx = R.x - P.x, dz = R.z - P.z, d = Math.hypot(dx, dz); let hit = false;
   if (kind === 'arc') hit = d < 3.4 && (d < 1 || (dx * fx + dz * fz) / d >= .2);
   else if (kind === 'rad') hit = d < range;
+  else if (kind === 'pt') hit = Math.hypot(R.x - fx, R.z - fz) < range;
   else hit = (dx * fx + dz * fz) > -1 && (dx * fx + dz * fz) < range + 1 && Math.abs(dx * fz - dz * fx) < 1.3;
   if (!hit) return;
   dmg = Math.round(dmg); sendNet({ t: 'pvp', d: dmg }); floatText(String(dmg), R.x, R.y + 2.2, R.z, 'info');

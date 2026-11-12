@@ -125,7 +125,8 @@ function endDuel(d, loserId) {
   if (!d || d.over) return; d.over = true;
   const a = clients.get(d.a), b = clients.get(d.b); if (a) a.duel = null; if (b) b.duel = null;
   const win = loserId === d.a ? d.b : d.a, w = clients.get(win), l = clients.get(loserId);
-  bcast({ t: 'sys', text: (w ? w.name : 'Someone') + ' won the duel against ' + (l ? l.name : 'a player that left') });
+  const rec = w && w.user ? DB.duel(w.user, true) : null; if (l && l.user) DB.duel(l.user, false);   // only accounts keep a record
+  bcast({ t: 'sys', text: (w ? w.name : 'Someone') + ' won the duel against ' + (l ? l.name : 'a player that left') + (rec ? ' (' + rec.w + 'W ' + rec.l + 'L)' : '') });
   for (const c of [a, b]) if (c) send(c, { t: 'duel_end', win, lose: loserId });
 }
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f<>&"'`]/g, '').trim().slice(0, n);
@@ -207,7 +208,7 @@ function onMsg(c, txt) {
     }
     case 'pvp': {   // duel damage: only between the two duelists, after the countdown, rate-limited, range-checked
       const d = c.duel; if (!d || d.over || now < d.start || now - (c.pvpT || 0) < 120) break; c.pvpT = now;
-      const o = clients.get(d.a === c.id ? d.b : d.a); if (!o || !c.st || !o.st || Math.hypot(c.st.x - o.st.x, c.st.z - o.st.z) > 22) break;
+      const o = clients.get(d.a === c.id ? d.b : d.a); if (!o || !c.st || !o.st || Math.hypot(c.st.x - o.st.x, c.st.z - o.st.z) > 26) break;   // ring is 24 across
       send(o, { t: 'dmg', d: Math.min(600, Math.max(0, num(m.d))), x: c.st.x, z: c.st.z }); break;
     }
     case 'duel_lose': endDuel(c.duel, c.id); break;

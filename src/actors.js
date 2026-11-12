@@ -12,7 +12,7 @@ import { craftMods, armorMods } from './craft.js';
 import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
-import { DUEL, duelLost, duelStrike } from './duel.js';
+import { DUEL, duelLost, duelNear, duelStrike } from './duel.js';
 
 let T = 0;
 
@@ -175,9 +175,11 @@ export function updateEffects(dt) {
     p.m.position.set(p.x, p.y, p.z); p.m.rotation.y += dt * 9; if (Math.random() < .7) burst('fire', p.x, p.y, p.z, 1);
     let boom = p.life <= 0 || heightAt(p.x, p.z) > p.y;
     for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 1.2 + (e.k.scale || 1) * .6) { boom = true; break; }
+    if (!p.visual && duelNear(p.x, p.z, 1.6, p.vx * dt, p.vz * dt)) boom = true;
     if (boom) {
       blast(p.x, p.z, 3.2);
       if (!p.visual) for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5, p.x, p.z);
+      if (!p.visual) duelStrike('pt', p.x, p.z, baseDmg() * 1.5, 3.8);
       disposeMesh(p.m); projectiles.splice(i, 1);
     }
   }
@@ -190,6 +192,7 @@ export function updateEffects(dt) {
     if (!p.visual && (p.tick <= 0 || end)) {
       p.tick = .35; const R = end ? 4.5 : 3.8;   // the "from" point is mirrored so the knockback pulls enemies inward
       for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < R + reachOf(e)) hitEnemy(e, baseDmg() * (end ? 1.5 : .5), 2 * e.x - p.x, 2 * e.z - p.z, { quiet: !end });
+      duelStrike('pt', p.x, p.z, baseDmg() * (end ? 1.5 : .5), R + .6);
     }
     if (end) { blast(p.x, p.z, 4.5, 'void'); p.ring.geometry.dispose(); disposeMesh(p.m); orbs.splice(i, 1); }
   }
@@ -434,6 +437,7 @@ function updateEnemy(e, dt) {
   e.curSpd = lerp(e.curSpd || 0, sp, 1 - Math.exp(-6 * dt));
   const nx = e.x + (dx * e.curSpd + e.kx) * dt, nz = e.z + (dz * e.curSpd + e.kz) * dt;
   e.kx *= Math.max(0, 1 - 9 * dt); e.kz *= Math.max(0, 1 - 9 * dt);
+  if (nx !== nx || nz !== nz) { e.x = e.home.x; e.z = e.home.z; e.kx = e.kz = e.lx = e.lz = 0; return; }   // NaN position (cause unknown, seen once online): send it home instead of crashing the frame
   const gh = heightAt(nx, nz);
   if (gh > WATER - 1.2 && Math.abs(gh - e.y) < 1.6 * (e.k.scale || 1)) { const q = { x: nx, z: nz }; collide(q, e.k.boss ? 1.8 : e.k.elite ? 1 : .6); e.x = q.x; e.z = q.z; }
   e.y = heightAt(e.x, e.z); e.moving = e.curSpd > .3;
