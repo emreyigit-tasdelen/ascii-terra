@@ -19,10 +19,10 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Procedural sound, ground loot with labels, world map screen, spider webs
 - [ ] From the reference clips, still to do:
   - [x] Duels: challenge prompt (G near a player, Y/N), countdown, ring, PvP damage between the two players (`src/duel.js`; see Phase 5, v0.11)
-  - [ ] Enemy level in name plates ("Skeleton Warrior · lv 5")
+  - [x] Enemy level in name plates ("Skeleton Warrior · lv 5")
   - [ ] Standing (vertical) spider webs around the Gloomweaver
   - [ ] Sound volume setting in the pause menu; user to listen and tune the procedural sounds
-  - [ ] Two-tab multiplayer test of web, void orb and moon lance sync
+  - [x] Two-tab multiplayer test of web, void orb and moon lance sync
   - [ ] Ground loot saved with the game (now auto-collected on exit)
 - [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
 - [x] Public GitHub repository, README (EN + TR), sponsor links
