@@ -10,7 +10,7 @@ import { partyQuest } from './party.js';
 
 const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
-function freshState() { return { lvl: 1, xp: 0, gold: 0, kills: {}, shards: 0, circle: false, taken: [], q: {}, inv: { pot: 3 }, eq: { weapon: 'rust', armor: null }, x: 0, z: 14, dayT: .3 }; }
+function freshState() { return { lvl: 1, xp: 0, gold: 0, kills: {}, shards: 0, circle: false, taken: [], q: {}, inv: { pot: 3 }, eq: { weapon: 'rust', armor: null }, x: 0, z: 14, dayT: .3, sens: 1 }; }
 
 /* ================= items ================= */
 export const ITEMS = {
@@ -166,7 +166,7 @@ export function save() {
 export function hasSave() { if (NET.account) return !!NET.accountSave; try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 export function resetSave() {
   if (NET.account) NET.accountSave = null; else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
-  S = freshState(); Q.forEach(q => q.st = 0);
+  const sens = S.sens; S = freshState(); S.sens = sens; Q.forEach(q => q.st = 0);   // settings survive a reset
 }
 export function load() {
   try {

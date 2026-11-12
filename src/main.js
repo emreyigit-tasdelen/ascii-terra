@@ -63,7 +63,7 @@ addEventListener('mousemove', e => {
   if ((MOUSE.mmb || MOUSE.rmb) && started) {
     // impulses feed an angular velocity (decays in updateCamera); faster flicks get extra gain
     const gx = 1 + Math.min(Math.abs(e.movementX) / 25, 1) * .7, gy = 1 + Math.min(Math.abs(e.movementY) / 25, 1) * .7;
-    cam.vyaw = (cam.vyaw || 0) - e.movementX * .005 * 7 * gx; cam.vpitch = (cam.vpitch || 0) + e.movementY * .004 * 7 * gy;
+    const sn = S.sens || 1; cam.vyaw = (cam.vyaw || 0) - e.movementX * .005 * 7 * gx * sn; cam.vpitch = (cam.vpitch || 0) + e.movementY * .004 * 7 * gy * sn;
   }
 });
 /* ---------------- pause menu ---------------- */
@@ -71,8 +71,10 @@ let paused = false;
 function setPaused(on) {
   paused = on; $('pause').hidden = !on; for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false;
   $('pnote').textContent = NET.online ? 'You are online: the world keeps running for other players, but nobody can hit you.' : 'Game paused.';
-  if (on) save();
+  if (on) { const v = S.sens || 1; $('psens').value = v; $('psensv').textContent = v.toFixed(1) + 'x'; save(); }
 }
+$('psens').onchange = () => save();
+$('psens').oninput = () => { S.sens = +$('psens').value; $('psensv').textContent = S.sens.toFixed(1) + 'x'; };   // saved with the account (or browser save) when the menu closes / autosave
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
 { const s = $('pgrass'); let v = '1'; try { v = localStorage.getItem('terra.grass') || '1'; } catch (e) { /* default */ } if (![...s.options].some(o => o.value === v)) v = '1'; s.value = v; setGrassDensity(+v);
@@ -164,7 +166,7 @@ function updateCamera(dt, run) {
   const k = 1 - Math.exp(-8 * dt), ox = cam.tx, oy = cam.ty, oz = cam.tz;
   if (started) {   // held arrows ease toward a target angular speed; drag impulses decay with inertia
     const ty = (keys.aL ? 1 : 0) - (keys.aR ? 1 : 0), tp = (keys.aU ? 1 : 0) - (keys.aD ? 1 : 0), ke = 1 - Math.exp(-7 * dt);
-    if (ty) cam.vyaw = lerp(cam.vyaw || 0, ty * 2.4, ke); if (tp) cam.vpitch = lerp(cam.vpitch || 0, tp * 1.1, ke);
+    if (ty) cam.vyaw = lerp(cam.vyaw || 0, ty * 2.4 * (S.sens || 1), ke); if (tp) cam.vpitch = lerp(cam.vpitch || 0, tp * 1.1 * (S.sens || 1), ke);
     const dec = Math.exp(-(ty || tp ? 3 : 7) * dt);
     cam.yaw += (cam.vyaw || 0) * dt; cam.pitch = clamp(cam.pitch + (cam.vpitch || 0) * dt, PMIN, 1.35);
     if (cam.pitch <= PMIN || cam.pitch >= 1.35) cam.vpitch = 0;
