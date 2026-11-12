@@ -18,7 +18,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Skills: sword, fireball, whirlwind, potion, void orb, moon lance; hotbar + cooldowns
 - [x] Procedural sound, ground loot with labels, world map screen, spider webs
 - [ ] From the reference clips, still to do:
-  - [ ] Duels: challenge prompt (accept / decline), PvP damage between the two players (see Phase 5, v0.11)
+  - [x] Duels: challenge prompt (G near a player, Y/N), countdown, ring, PvP damage between the two players (`src/duel.js`; see Phase 5, v0.11)
   - [ ] Enemy level in name plates ("Skeleton Warrior · lv 5")
   - [ ] Standing (vertical) spider webs around the Gloomweaver
   - [ ] Sound volume setting in the pause menu; user to listen and tune the procedural sounds
@@ -79,7 +79,8 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Fully server-authoritative simulation (enemy AI on the server, fixed tick), anti-cheat
 - [~] Player sync (15 Hz + smoothing) done; prediction + reconciliation, area-of-interest (AOI) filter to do
 - [x] Chat
-- [ ] PvP duel invites ("X challenges you to a duel", video), parties, shared quest progress
+- [x] PvP duel invites ("X challenges you to a duel", video)
+- [ ] Parties, shared quest progress
 - [x] Account system (sign up/log in, scrypt, tokens, remember me), server-side saves
 - [x] SQLite database (node:sqlite), password reset with a recovery code, admin.js, daily backups
 - [ ] Anti-cheat

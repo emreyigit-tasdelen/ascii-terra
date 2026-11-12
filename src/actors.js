@@ -12,6 +12,7 @@ import { craftMods, armorMods } from './craft.js';
 import { hitDummy } from './intro.js';
 import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
+import { DUEL, duelLost, duelStrike } from './duel.js';
 
 let T = 0;
 
@@ -237,7 +238,7 @@ export function doSlash() {
     if (d > 3.4 + reachOf(e)) continue; if (d > 1 && (dx * fx + dz * fz) / d < (P.atkType === 1 ? -.1 : .2)) continue;
     hitEnemy(e, baseDmg() * mult * (.9 + Math.random() * .3), P.x, P.z);
   }
-  hitDummy(fx, fz);
+  hitDummy(fx, fz); duelStrike('arc', fx, fz, baseDmg() * mult * (.9 + Math.random() * .3));
 }
 export function doFireball() {
   if (P.dead || CD.fire > 0) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
@@ -249,6 +250,7 @@ export function doFireball() {
 export function doWhirl() {
   if (P.dead || CD.whirl > 0) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
+  duelStrike('rad', 0, 0, baseDmg() * 1.6, 4.4);
 }
 export function doOrb() {   // Void Orb: slow sphere that drags enemies in and implodes
   if (P.dead || CD.orb > 0) return; CD.orb = CDMAX.orb; const a = faceAim(); P.atkT = 0; P.atkType = 1;
@@ -263,6 +265,7 @@ export function doBeam() {   // Moon Lance: instant beam through everything in a
     if (e.dead) continue; const ex = e.x - P.x, ez = e.z - P.z, along = ex * dx + ez * dz, side = Math.abs(ex * dz - ez * dx), rr = reachOf(e);
     if (along > -rr && along < L + 1 + rr && side < 1.3 + rr) hitEnemy(e, baseDmg() * 2.2, P.x, P.z);
   }
+  duelStrike('line', dx, dz, baseDmg() * 2.2, L);
 }
 export function doDodge() {
   if (P.dead || HORSE.on || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
@@ -330,6 +333,7 @@ export function hurtPlayer(d, src) {
   d = Math.max(1, Math.round(d - defBonus() - AM.def)); P.hp -= d; P.hurtT = .35; P.hitT = .3; P.lastHit = 0;
   burst('blood', P.x, P.y + 1.3, P.z, 7); hitFeel(.03, .22); sfx('hurt');
   floatText('-' + d, P.x, P.y + 2.8, P.z, 'hurt');
+  if (DUEL.on && P.hp <= 1) { P.hp = 1; duelLost(); return; }   // duel: never drops below 1
   if (P.hp <= 0) { P.hp = 0; P.dead = true; P.deadT = 3.2; closeDialog(); toast('You were defeated... you will wake in the village.'); burst('blood', P.x, P.y + .6, P.z, 20); }
 }
 

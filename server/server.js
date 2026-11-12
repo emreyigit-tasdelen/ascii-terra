@@ -120,6 +120,14 @@ for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { try { DB.close(
 
 /* ---------------- players, host election, relay ---------------- */
 const clients = new Map(); let nextId = 1, hostId = 0;
+const invites = new Map();   // target id -> { from }
+function endDuel(d, loserId) {
+  if (!d || d.over) return; d.over = true;
+  const a = clients.get(d.a), b = clients.get(d.b); if (a) a.duel = null; if (b) b.duel = null;
+  const win = loserId === d.a ? d.b : d.a, w = clients.get(win), l = clients.get(loserId);
+  bcast({ t: 'sys', text: (w ? w.name : 'Someone') + ' won the duel against ' + (l ? l.name : 'a player that left') });
+  for (const c of [a, b]) if (c) send(c, { t: 'duel_end', win, lose: loserId });
+}
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f<>&"'`]/g, '').trim().slice(0, n);
 const num = v => { v = +v; return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0; };
 const int = v => { v = Math.trunc(+v); return Number.isFinite(v) ? v : 0; };
@@ -142,6 +150,7 @@ function connect(sock) {
 function drop(c) {
   if (!clients.has(c.id)) return; clients.delete(c.id);
   try { c.sock.destroy(); } catch { }
+  if (c.duel) endDuel(c.duel, c.id);
   if (c.hello) { bcast({ t: 'leave', id: c.id }); log(c.name + ' left (' + clients.size + ' online)'); }
   if (c.id === hostId) { hostId = 0; elect(); }
 }
@@ -175,6 +184,33 @@ function onMsg(c, txt) {
     case 'tele': if (isHost) bcast({ t: 'tele', x: num(m.x), z: num(m.z), r: num(m.r), dl: num(m.dl), d: num(m.d), f: m.f ? 1 : 0 }, c); break;
     case 'web': if (isHost) bcast({ t: 'web', x: num(m.x), z: num(m.z), r: Math.min(12, num(m.r)) }, c); break;
     case 'ep': if (isHost) bcast({ t: 'ep', x: num(m.x), y: num(m.y), z: num(m.z), vx: num(m.vx), vz: num(m.vz), d: num(m.d), tid: int(m.tid) }, c); break;
+    case 'duel': {   // challenge: target must be close, nobody busy; invite expires after 20 s
+      const o = clients.get(int(m.to)); if (!o || !o.hello || o === c) break;
+      const sys = t => send(c, { t: 'sys', text: t });
+      if (c.duel || o.duel) { sys('Already in a duel'); break; }
+      if (invites.has(o.id) || [...invites.values()].some(v => v.from === c.id)) { sys('An invite is already pending'); break; }
+      if (!c.st || !o.st || Math.hypot(c.st.x - o.st.x, c.st.z - o.st.z) > 14) { sys('That player is too far away'); break; }
+      const iv = { from: c.id }; invites.set(o.id, iv);
+      send(o, { t: 'duel_inv', from: c.id, name: c.name }); sys('Duel challenge sent to ' + o.name);
+      setTimeout(() => { if (invites.get(o.id) === iv) { invites.delete(o.id); sys(o.name + ' did not answer'); send(o, { t: 'duel_inv', from: 0 }); } }, 20000);
+      break;
+    }
+    case 'duel_r': {
+      const iv = invites.get(c.id); if (!iv) break; invites.delete(c.id);
+      const a = clients.get(iv.from); if (!a || a.duel || c.duel) break;
+      if (!m.ok) { send(a, { t: 'sys', text: c.name + ' declined the duel' }); break; }
+      const d = { a: a.id, b: c.id, start: Date.now() + 3000, over: false }; a.duel = c.duel = d;
+      const cx = num(((a.st ? a.st.x : 0) + (c.st ? c.st.x : 0)) / 2), cz = num(((a.st ? a.st.z : 0) + (c.st ? c.st.z : 0)) / 2);
+      send(a, { t: 'duel_go', opp: c.id, name: c.name, cx, cz }); send(c, { t: 'duel_go', opp: a.id, name: a.name, cx, cz });
+      bcast({ t: 'sys', text: a.name + ' and ' + c.name + ' begin a duel' });
+      break;
+    }
+    case 'pvp': {   // duel damage: only between the two duelists, after the countdown, rate-limited, range-checked
+      const d = c.duel; if (!d || d.over || now < d.start || now - (c.pvpT || 0) < 120) break; c.pvpT = now;
+      const o = clients.get(d.a === c.id ? d.b : d.a); if (!o || !c.st || !o.st || Math.hypot(c.st.x - o.st.x, c.st.z - o.st.z) > 22) break;
+      send(o, { t: 'dmg', d: Math.min(600, Math.max(0, num(m.d))), x: c.st.x, z: c.st.z }); break;
+    }
+    case 'duel_lose': endDuel(c.duel, c.id); break;
     case 'kill': if (isHost) send(clients.get(int(m.to)), { t: 'kill', e: int(m.e) }); break;
     case 'dmg': if (isHost) send(clients.get(int(m.to)), { t: 'dmg', d: Math.min(5000, Math.max(0, num(m.d))), x: num(m.x), z: num(m.z) }); break;
   }

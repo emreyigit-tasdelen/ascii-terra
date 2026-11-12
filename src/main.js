@@ -6,6 +6,7 @@ import { toggleCraft, initCraft, craftOpen } from './craft.js';
 import { openCreate, initCreate, updateIntro } from './intro.js';
 import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, actorLabels, doSlash, doFireball, doWhirl, doOrb, doBeam, doDodge, HORSE, doJump, nearestNPC, toggleMount, setLook } from './actors.js';
 import { FXS, burst, updateFX } from './fx.js';
+import { duelKey } from './duel.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot, collectLoot } from './game.js';
 import { initAudio, updateAudio, toggleSound, sfx } from './audio.js';
@@ -38,6 +39,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); if (started && !e.repeat) doJump(); }
   if (!started || e.repeat) return;
   if (invOpen() && k >= '1' && k <= '9') { invPress(+k); return; }
+  if (duelKey(k)) return;
   if (k === '1') doSlash(); else if (k === '2') doFireball(); else if (k === '3') doWhirl();
   else if (k === '4' || k === 'q') usePotion(); else if (k === '5') doOrb(); else if (k === '6') doBeam();
   else if (k === 'e') { const n = nearestNPC(); if (n) interact(n); else closeDialog(); }

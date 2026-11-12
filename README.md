@@ -110,6 +110,7 @@ A WebGL2-capable browser is required; opening `index.html` directly from disk wi
 | `Esc` / `P` | pause menu (closes open windows first) |
 | `I` / `M` / `N` | inventory / world map (wheel zooms, drag moves) / minimap |
 | `O` | sound on / off |
+| `G` | challenge a nearby player to a duel (`Y` accept / `N` decline); leaving the ring or dropping to 1 HP loses |
 | — | kills drop labelled loot on the ground; walk over it to pick it up |
 | `R` | toggle rain |
 | `T` | advance the time of day by 3 hours |

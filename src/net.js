@@ -5,6 +5,7 @@ import { scene } from './render.js';
 import { makeKnight, makeHorse, animBiped, animWolf } from './models.js';
 import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, spawnWeb, applySnapshot, snapshotRows } from './actors.js';
 import { S, label, toast } from './game.js';
+import { onDuelMsg, updateDuel } from './duel.js';
 
 export const NET = { role: 'solo', myId: 0, hostId: 0, ws: null, online: false, available: false, tried: false, account: null, accountSave: null, onAuth: null, onReady: null, name: 'Torvan', remotes: new Map() };
 const TABARDS = [0x1b2c5e, 0x1e5a2a, 0x5a1e5a, 0x6a4a10, 0x205060, 0x6a1a1a, 0x3a3a3a, 0x4a2a10];
@@ -72,6 +73,8 @@ function onMsg(m) {
     case 'ep': spawnEproj(m.x, m.y, m.z, m.vx, m.vz, m.d, m.tid, false); break;
     case 'fx': spawnFxNet(m); break;
     case 'web': spawnWeb(m.x, m.z, m.r, false); break;
+    case 'duel_inv': case 'duel_go': case 'duel_end': onDuelMsg(m); break;
+    case 'sys': toast(m.text); chatLine('', m.text, 'sys'); break;
   }
 }
 
@@ -99,7 +102,7 @@ function applyState(R, m) {
 }
 let T = 0, sendT = 0, snapT = 0;
 export function updateNet(dt) {
-  T += dt;
+  T += dt; updateDuel(dt);
   for (const R of NET.remotes.values()) {
     const k = 1 - Math.exp(-12 * dt);
     R.x = lerp(R.x, R.tx, k); R.y = lerp(R.y, R.ty, k); R.z = lerp(R.z, R.tz, k); R.f += angDiff(R.f, R.tf) * k;
