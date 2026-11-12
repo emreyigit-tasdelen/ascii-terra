@@ -125,9 +125,9 @@ function endDuel(d, loserId) {
   if (!d || d.over) return; d.over = true;
   const a = clients.get(d.a), b = clients.get(d.b); if (a) a.duel = null; if (b) b.duel = null;
   const win = loserId === d.a ? d.b : d.a, w = clients.get(win), l = clients.get(loserId);
-  const rec = w && w.user ? DB.duel(w.user, true) : null; if (l && l.user) DB.duel(l.user, false);   // only accounts keep a record
+  const rec = w && w.user ? DB.duel(w.user, true) : null, recL = l && l.user ? DB.duel(l.user, false) : null;   // only accounts keep a record
   bcast({ t: 'sys', text: (w ? w.name : 'Someone') + ' won the duel against ' + (l ? l.name : 'a player that left') + (rec ? ' (' + rec.w + 'W ' + rec.l + 'L)' : '') });
-  for (const c of [a, b]) if (c) send(c, { t: 'duel_end', win, lose: loserId });
+  for (const c of [a, b]) if (c) send(c, { t: 'duel_end', win, lose: loserId, rec: c === w ? rec : recL });   // rec: own { w, l }, null for guests
 }
 const clean = (s, n) => String(s ?? '').replace(/[\u0000-\u001f<>&"'`]/g, '').trim().slice(0, n);
 const num = v => { v = +v; return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0; };

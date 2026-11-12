@@ -399,7 +399,8 @@ function updateEnemy(e, dt) {
   const aggro = e.k.aggro * (ENV.night > .5 ? 1.3 : 1);
   let tx = e.wx, tz = e.wz, sp = e.k.spd * .35; e.chasing = false; e.run = 0;
   if (e.stunT > 0) { e.stunT -= dt; e.atkT = -1; e.lungeT = 0; sp = 0; e.hitT = .3; }   // parried: staggering
-  else if (e.lungeT > 0) { sp = 0; e.x += e.lx * dt; e.z += e.lz * dt; if (d < 1.6 && !e.hit) { e.hit = true; dmgTarget(tg, e.dmg * 1.3, e); } }
+  else if (e.lungeT > 0) { sp = 0; e.x += (e.lx || 0) * dt; e.z += (e.lz || 0) * dt;   // lx/lz are unset on a client that just became host mid-lunge
+    if (d < 1.6 && !e.hit) { e.hit = true; dmgTarget(tg, e.dmg * 1.3, e); } }
   else if (e.atkT >= 0) {
     e.atkT += dt / e.k.atkTime; sp = 0; tx = tg.x; tz = tg.z;
     if (!e.hit && e.atkT > .5) {
@@ -437,7 +438,7 @@ function updateEnemy(e, dt) {
   e.curSpd = lerp(e.curSpd || 0, sp, 1 - Math.exp(-6 * dt));
   const nx = e.x + (dx * e.curSpd + e.kx) * dt, nz = e.z + (dz * e.curSpd + e.kz) * dt;
   e.kx *= Math.max(0, 1 - 9 * dt); e.kz *= Math.max(0, 1 - 9 * dt);
-  if (nx !== nx || nz !== nz) { e.x = e.home.x; e.z = e.home.z; e.kx = e.kz = e.lx = e.lz = 0; return; }   // NaN position (cause unknown, seen once online): send it home instead of crashing the frame
+  if (nx !== nx || nz !== nz) { e.x = e.home.x; e.z = e.home.z; e.kx = e.kz = e.lx = e.lz = 0; return; }   // safety net: a NaN position would throw in heightAt every frame and freeze the game
   const gh = heightAt(nx, nz);
   if (gh > WATER - 1.2 && Math.abs(gh - e.y) < 1.6 * (e.k.scale || 1)) { const q = { x: nx, z: nz }; collide(q, e.k.boss ? 1.8 : e.k.elite ? 1 : .6); e.x = q.x; e.z = q.z; }
   e.y = heightAt(e.x, e.z); e.moving = e.curSpd > .3;

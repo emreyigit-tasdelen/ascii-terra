@@ -15,8 +15,8 @@ const need = () => { const u = name && DB.user(DB.ukey(name)); if (!u) { console
   switch (cmd) {
     case 'list': {
       const rows = DB.list();
-      console.log('NAME'.padEnd(18) + 'CREATED'.padEnd(18) + 'LAST LOGIN'.padEnd(18) + 'SAVED'.padEnd(18) + 'STATUS');
-      for (const r of rows) console.log(r.name.padEnd(18) + d(r.created).padEnd(18) + d(r.last).padEnd(18) + d(r.updated).padEnd(18) + (r.banned ? 'BANNED' : ''));
+      console.log('NAME'.padEnd(18) + 'CREATED'.padEnd(18) + 'LAST LOGIN'.padEnd(18) + 'SAVED'.padEnd(18) + 'DUELS'.padEnd(10) + 'STATUS');
+      for (const r of rows) console.log(r.name.padEnd(18) + d(r.created).padEnd(18) + d(r.last).padEnd(18) + d(r.updated).padEnd(18) + ((r.duel_w || 0) + 'W ' + (r.duel_l || 0) + 'L').padEnd(10) + (r.banned ? 'BANNED' : ''));
       console.log(rows.length + ' account(s)'); break;
     }
     case 'reset': {

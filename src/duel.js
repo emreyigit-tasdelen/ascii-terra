@@ -51,6 +51,7 @@ export function onDuelMsg(m) {
     DUEL.on = false; clearRing(); say('');
     P.hp = P.maxhp; P.dead = false;   // no death or item loss in a duel
     const won = m.win === NET.myId; floatText(won ? 'VICTORY' : 'DEFEAT', P.x, P.y + 3.2, P.z, won ? 'crit' : 'hurt');
+    if (m.rec) toast('Your duel record: ' + m.rec.w + ' won, ' + m.rec.l + ' lost');
   }
 }
 

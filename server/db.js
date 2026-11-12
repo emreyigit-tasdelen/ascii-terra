@@ -38,7 +38,7 @@ const q = {
   pass: db.prepare('UPDATE users SET salt = ?, hash = ?, rec = COALESCE(?, rec) WHERE key = ?'),
   ban: db.prepare('UPDATE users SET banned = ? WHERE key = ?'),
   del: db.prepare('DELETE FROM users WHERE key = ?'),
-  list: db.prepare('SELECT u.name, u.created, u.last, u.banned, s.updated FROM users u LEFT JOIN saves s ON s.user = u.key ORDER BY u.last DESC'),
+  list: db.prepare('SELECT u.name, u.created, u.last, u.banned, s.updated, t.duel_w, t.duel_l FROM users u LEFT JOIN saves s ON s.user = u.key LEFT JOIN stats t ON t.user = u.key ORDER BY u.last DESC'),
   save: db.prepare('INSERT INTO saves (user, data, updated) VALUES (?, ?, ?) ON CONFLICT(user) DO UPDATE SET data = excluded.data, updated = excluded.updated'),
   load: db.prepare('SELECT data FROM saves WHERE user = ?'),
   tokAdd: db.prepare('INSERT INTO tokens (hash, user, exp) VALUES (?, ?, ?)'),
