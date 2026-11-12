@@ -71,6 +71,8 @@ function setPaused(on) {
 }
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
+{ const s = $('pres'); let v = '1'; try { v = localStorage.getItem('terra.res') || '1'; } catch (e) { /* default */ } if (![...s.options].some(o => o.value === v)) v = '1'; s.value = v; VIEW.scale = +v; resize();
+  s.onchange = () => { VIEW.scale = +s.value; resize(); try { localStorage.setItem('terra.res', s.value); } catch (e) { /* not saved */ } }; }   // render scale: lower is faster on weak GPUs
 { const s = $('pvol'), show = () => { $('pvolv').textContent = s.value + '%'; }; s.value = Math.round(getVolume() * 100); show(); s.oninput = () => { setVolume(s.value / 100); show(); }; s.onchange = () => sfx('pick'); }   // a blip on release to hear the level
 $('pmenu').onclick = () => { save(); setTimeout(() => location.reload(), 300); };
 addEventListener('blur', () => { if (started && !paused && !NET.online) setPaused(true); });   // auto-pause in single player when the tab loses focus

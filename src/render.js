@@ -163,7 +163,7 @@ quadScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), asciiMat));
 
 const _bs = new THREE.Vector2();
 export function resize() {
-  const W = innerWidth, H = innerHeight; VIEW.dpr = Math.min(devicePixelRatio || 1, 1.5);
+  const W = innerWidth, H = innerHeight; VIEW.dpr = Math.min(devicePixelRatio || 1, 1.5) * (VIEW.scale || 1);
   renderer.setPixelRatio(VIEW.dpr); renderer.setSize(W, H);
   renderer.getDrawingBufferSize(_bs); rt.setSize(_bs.x, _bs.y); REFL.rt.setSize(Math.ceil(_bs.x / 2), Math.ceil(_bs.y / 2));
   U.res.value.copy(_bs); cellW = 0; applyCells();
