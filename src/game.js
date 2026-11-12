@@ -6,6 +6,7 @@ import { sfx } from './audio.js';
 import { crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies, CD, CDMAX, TGT, resetPlayer } from './actors.js';
 import { NET, sendNet } from './net.js';
+import { partyQuest } from './party.js';
 
 const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
@@ -118,6 +119,13 @@ export const Q = [
 const qById = {}; Q.forEach(q => { q.st = 0; qById[q.id] = q; });
 export function progress(q) { return q.obj === 'slay' ? Math.min(q.n, S.kills[q.kind] || 0) : q.obj === 'collect' ? Math.min(q.n, S.shards) : (S.circle ? 1 : 0); }
 export function checkQuests() { Q.forEach(q => { if (q.st === 1 && progress(q) >= q.n) { q.st = 2; sfx('quest'); toast('Quest complete: ' + q.title + ' — return for your reward'); } }); }
+/* party: a kill by a member standing near counts for this player's quests too */
+export function partyKill(kind) { if (typeof kind !== 'string' || !Q.some(q => q.kind === kind)) return; S.kills[kind] = (S.kills[kind] || 0) + 1; checkQuests(); }
+/* party: the leader accepted a quest; take it too when it is still open here */
+export function takeQuest(id) {
+  const q = qById[id]; if (!q || q.st !== 0 || (q.req && !q.req.every(r => qById[r].st === 3))) return;
+  q.st = 1; toast('Party quest: ' + q.title); checkQuests();
+}
 export function addXP(v) {
   S.xp += v;
   while (S.xp >= need(S.lvl)) { S.xp -= need(S.lvl); S.lvl++; P.maxhp = maxHpFor(S.lvl); P.hp = P.maxhp; sfx('level'); toast('LEVEL UP! Lv.' + S.lvl); }
@@ -135,7 +143,7 @@ export function closeDialog() { dialog = null; $('dialog').hidden = true; }
 export function interact(npc) {
   if (dialog && dialog.npc === npc) {
     const q = dialog.q;
-    if (q) { if (q.st === 0) { q.st = 1; toast('Quest accepted: ' + q.title); checkQuests(); } else if (q.st === 2) turnIn(q); }
+    if (q) { if (q.st === 0) { q.st = 1; toast('Quest accepted: ' + q.title); checkQuests(); partyQuest(q.id); } else if (q.st === 2) turnIn(q); }
     closeDialog(); return;
   }
   const qs = questsFor(npc), q = qs.find(x => x.st === 2) || qs[0]; let text;

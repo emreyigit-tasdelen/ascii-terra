@@ -250,9 +250,14 @@ function onMsg(c, txt) {
       break;
     }
     case 'party_leave': if (c.party) partyLeave(c); else send(c, { t: 'sys', text: 'You are not in a party' }); break;
+    case 'pq': {   // the leader accepted a quest: offer it to the other members
+      const p = c.party; if (!p || p.members[0] !== c.id) break; const q = clean(m.q, 12); if (!q) break;
+      for (const id of p.members) if (id !== c.id) send(clients.get(id), { t: 'pq', q });
+      break;
+    }
     case 'pxp': {   // a member's kill: the same share goes to party members near the killer
       const p = c.party; if (!p || !c.st) break; const xp = Math.min(5000, Math.max(0, int(m.xp))); if (!xp) break;
-      for (const id of p.members) { const o = clients.get(id); if (o && o !== c && o.st && Math.hypot(o.st.x - c.st.x, o.st.z - c.st.z) < 70) send(o, { t: 'pxp', xp, name: c.name }); }
+      for (const id of p.members) { const o = clients.get(id); if (o && o !== c && o.st && Math.hypot(o.st.x - c.st.x, o.st.z - c.st.z) < 70) send(o, { t: 'pxp', xp, name: c.name, k: clean(m.k, 12) }); }
       break;
     }
     case 'kill': if (isHost) send(clients.get(int(m.to)), { t: 'kill', e: int(m.e) }); break;

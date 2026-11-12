@@ -312,7 +312,7 @@ function killEnemy(e, by) {
 }
 export function grantKill(e) {   // reward goes to the killer
   S.kills[e.k.id] = (S.kills[e.k.id] || 0) + 1;
-  const xp = partyShare(e.xp);   // in a party the kill is split with members standing near
+  const xp = partyShare(e.xp, e.k.id);   // in a party the kill is split with members standing near
   rollDrop(e.k.id, e.lvl, e.x, e.z); addXP(xp); S.gold += Math.round(e.gold * (1 + craftMods().gold));
   floatText('+' + xp + ' XP', e.x, e.y + e.k.h, e.z, 'info');
   if (e.k.boss || e.k.elite) toast(e.k.name + ' defeated!');

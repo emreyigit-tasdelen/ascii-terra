@@ -2,6 +2,8 @@
 import { $, clamp, heightAt, sketchAt, pathDist, riverDist, swampF, WATER, HALF } from './core.js';
 import { REGIONS, crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies } from './actors.js';
+import { PARTY } from './party.js';
+import { NET } from './net.js';
 import { Q, npcMark } from './game.js';
 
 const CW = 8, CH = 13;                       // glyph cell in pixels
@@ -57,6 +59,7 @@ function draw() {
   enemies.forEach(e => { if (e.k.boss && !e.dead) mark('B', e.home.x, e.home.z, '#ff5050'); });
   NPCS.forEach(n => mark('&' + npcMark(n).replace(/[ \[\]]/g, ''), n.x, n.z, '#ffd866'));
   if (blink < .7) Q.forEach(q => { if (q.st !== 1 && q.st !== 2) return; const o = objective(q); if (o) mark('X', o.x, o.z, '#ffb020'); });
+  for (const R of NET.remotes.values()) if (R.got) { const mate = PARTY.m.some(m => m.id === R.id); mark(mate ? 'P' : 'p', R.x, R.z, mate ? '#7dff9a' : '#8fb8ff'); }   // other players; party members in green
   mark('@', P.x, P.z, blink < .5 ? '#ffffff' : '#9fb0c0');
   g.fillStyle = '#d8d2c0'; g.textAlign = 'center';
   for (const R of REGIONS) { const px = sx(R.x), py = sy(R.z - R.r * .55); if (px > 0 && py > 0 && px < cv.width && py < cv.height) g.fillText(R.name.toUpperCase().split('').join(' '), px, py); }

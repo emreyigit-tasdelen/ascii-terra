@@ -82,7 +82,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Chat
 - [x] PvP duel invites ("X challenges you to a duel", video)
 - [x] Parties: invite (J or /invite), up to 4, HUD health bars, shared kill XP (`src/party.js`)
-- [ ] Shared quest progress in a party; party member dots on the map
+- [x] Shared quest progress in a party (leader's accepted quests, kill counters); players and party members on the map
 - [x] Account system (sign up/log in, scrypt, tokens, remember me), server-side saves
 - [x] SQLite database (node:sqlite), password reset with a recovery code, admin.js, daily backups
 - [ ] Anti-cheat

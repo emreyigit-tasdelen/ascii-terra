@@ -1,7 +1,7 @@
 // Parties: /invite <name> (or J near a player), Y accept / N decline, /leave. Up to 4 members, kept on the server in memory.
 // Members near a kill share its XP: +10% bonus, split evenly. The HUD lists the members with health bars.
 import { P } from './actors.js';
-import { addXP, floatText, toast } from './game.js';
+import { addXP, floatText, toast, partyKill, takeQuest } from './game.js';
 import { NET, sendNet } from './net.js';
 
 export const PARTY = { id: 0, m: [] };   // m: [{ id, name }], first is the leader
@@ -45,16 +45,19 @@ export function onPartyMsg(m) {
   } else if (m.t === 'party') {
     PARTY.id = m.id || 0; PARTY.m = Array.isArray(m.m) ? m.m : []; hudT = 0;
   } else if (m.t === 'pxp') {
-    addXP(m.xp); floatText('+' + m.xp + ' XP (party)', P.x, P.y + 2.6, P.z, 'info');
-  }
+    addXP(m.xp); floatText('+' + m.xp + ' XP (party)', P.x, P.y + 2.6, P.z, 'info'); if (m.k) partyKill(m.k);
+  } else if (m.t === 'pq') takeQuest(m.q);
 }
 
-/* XP the killer keeps for a kill worth xp; the same share is sent to the members standing near */
-export function partyShare(xp) {
+/* The leader's accepted quest is offered to the whole party */
+export function partyQuest(id) { if (PARTY.id && PARTY.m[0] && PARTY.m[0].id === NET.myId) sendNet({ t: 'pq', q: id }); }
+
+/* XP the killer keeps for a kill worth xp; the same share and the kill credit (quest counters) go to the members standing near */
+export function partyShare(xp, kind) {
   if (!PARTY.id) return xp;
   let n = 0; for (const mb of PARTY.m) { const R = NET.remotes.get(mb.id); if (R && R.got && Math.hypot(R.x - P.x, R.z - P.z) < SHARE_R) n++; }
   if (!n) return xp;
-  const share = Math.max(1, Math.round(xp * 1.1 / (n + 1))); sendNet({ t: 'pxp', xp: share }); return share;
+  const share = Math.max(1, Math.round(xp * 1.1 / (n + 1))); sendNet({ t: 'pxp', xp: share, k: kind }); return share;
 }
 
 export function updateParty(dt) {

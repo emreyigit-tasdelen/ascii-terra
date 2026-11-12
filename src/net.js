@@ -75,7 +75,7 @@ function onMsg(m) {
     case 'fx': spawnFxNet(m); break;
     case 'web': spawnWeb(m.x, m.z, m.r, false); break;
     case 'duel_inv': case 'duel_go': case 'duel_end': onDuelMsg(m); break;
-    case 'party_inv': case 'party': case 'pxp': onPartyMsg(m); break;
+    case 'party_inv': case 'party': case 'pxp': case 'pq': onPartyMsg(m); break;
     case 'sys': toast(m.text); chatLine('', m.text, 'sys'); break;
   }
 }
