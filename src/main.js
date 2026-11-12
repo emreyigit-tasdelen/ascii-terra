@@ -52,15 +52,19 @@ addEventListener('keydown', e => {
   else if (k === 't') { ENV.dayT = (ENV.dayT + .125) % 1; toast('Time ' + String(Math.floor(ENV.dayT * 24)).padStart(2, '0') + ':00'); }
   else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
-  else if (e.key === 'ArrowLeft') cam.yaw += .2; else if (e.key === 'ArrowRight') cam.yaw -= .2;
-  else if (e.key === 'ArrowUp') cam.pitch = clamp(cam.pitch + .06, PMIN, 1.35); else if (e.key === 'ArrowDown') cam.pitch = clamp(cam.pitch - .06, PMIN, 1.35);
+  else if (e.key === 'ArrowLeft') { keys.aL = true; e.preventDefault(); } else if (e.key === 'ArrowRight') { keys.aR = true; e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { keys.aU = true; e.preventDefault(); } else if (e.key === 'ArrowDown') { keys.aD = true; e.preventDefault(); }
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
+addEventListener('keyup', e => { const k = e.key.toLowerCase(); if (e.key === 'ArrowLeft') keys.aL = false; else if (e.key === 'ArrowRight') keys.aR = false; else if (e.key === 'ArrowUp') keys.aU = false; else if (e.key === 'ArrowDown') keys.aD = false; if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false; });
 addEventListener('mousemove', e => {
   MOUSE.x = e.clientX; MOUSE.y = e.clientY;
   const c = $('cross'); c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px';
-  if ((MOUSE.mmb || MOUSE.rmb) && started) { cam.yaw -= e.movementX * .005; cam.pitch = clamp(cam.pitch + e.movementY * .004, PMIN, 1.35); }
+  if ((MOUSE.mmb || MOUSE.rmb) && started) {
+    // impulses feed an angular velocity (decays in updateCamera); faster flicks get extra gain
+    const gx = 1 + Math.min(Math.abs(e.movementX) / 25, 1) * .7, gy = 1 + Math.min(Math.abs(e.movementY) / 25, 1) * .7;
+    cam.vyaw = (cam.vyaw || 0) - e.movementX * .005 * 7 * gx; cam.vpitch = (cam.vpitch || 0) + e.movementY * .004 * 7 * gy;
+  }
 });
 /* ---------------- pause menu ---------------- */
 let paused = false;
@@ -158,6 +162,14 @@ initNet();
 /* ---------------- camera (follow + shake) ---------------- */
 function updateCamera(dt, run) {
   const k = 1 - Math.exp(-8 * dt), ox = cam.tx, oy = cam.ty, oz = cam.tz;
+  if (started) {   // held arrows ease toward a target angular speed; drag impulses decay with inertia
+    const ty = (keys.aL ? 1 : 0) - (keys.aR ? 1 : 0), tp = (keys.aU ? 1 : 0) - (keys.aD ? 1 : 0), ke = 1 - Math.exp(-7 * dt);
+    if (ty) cam.vyaw = lerp(cam.vyaw || 0, ty * 2.4, ke); if (tp) cam.vpitch = lerp(cam.vpitch || 0, tp * 1.1, ke);
+    const dec = Math.exp(-(ty || tp ? 3 : 7) * dt);
+    cam.yaw += (cam.vyaw || 0) * dt; cam.pitch = clamp(cam.pitch + (cam.vpitch || 0) * dt, PMIN, 1.35);
+    if (cam.pitch <= PMIN || cam.pitch >= 1.35) cam.vpitch = 0;
+    cam.vyaw = (cam.vyaw || 0) * (ty ? 1 : dec); cam.vpitch = (cam.vpitch || 0) * (tp ? 1 : dec);
+  }
   if (run) { cam.tx = lerp(cam.tx, P.x, k); cam.ty = lerp(cam.ty, P.y, k); cam.tz = lerp(cam.tz, P.z, k); }
   else { cam.yaw += dt * .05; cam.tx = 0; cam.tz = 8; cam.ty = heightAt(0, 8); }
   cam.hk = lerp(cam.hk || 0, run ? smooth(1.5, 6, P.high || 0) : 0, 1 - Math.exp(-2.5 * dt));   // high ground: zoom in
