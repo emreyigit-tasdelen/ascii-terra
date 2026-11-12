@@ -52,7 +52,7 @@
 ## Open / next
 - Remaining reference-clip work is listed as a checklist in ROADMAP.md (under Skills); start there next session.
 - From the reference clips, still missing: enemy level in name plates, standing (vertical) spider webs, sound volume setting. The user should confirm how the sounds actually sound.
-- Next: parties (v0.9) → shared quests (v0.10) → duels (done, v0.11), details in ROADMAP Phase 5.
+- Parties, shared quests and duels are done (v0.9–v0.11); camera feel is done. Next pick from ROADMAP: Vite build (drop the CDN), skills/support gems, equipment slots, or weather.
 - The user said multiplayer "could not be entered": sign up/log in/play tested fine with the Node server. Started with the Python fallback or by opening index.html directly, there is no online mode. How the user launches it is still unclear.
 - Sword/whirlwind hits in multiplayer still need a manual test (two tabs).
 - Shield-in-front pose: user has not confirmed the latest version.

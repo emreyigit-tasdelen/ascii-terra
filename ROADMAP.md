@@ -17,7 +17,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Enemies: skeleton warrior, wolf, boss Gloomweaver (orange AoE warning circles)
 - [x] Skills: sword, fireball, whirlwind, potion, void orb, moon lance; hotbar + cooldowns
 - [x] Procedural sound, ground loot with labels, world map screen, spider webs
-- [ ] Camera feel (user request, do first after the token reset): right-drag orbit should feel intuitive with momentum/inertia and smoothing, no raw 1:1 sensitivity jumps; arrow keys must keep rotating while held (now one step per key press, see `src/main.js` keydown, `e.repeat` is skipped)
+- [x] Camera feel: inertial right-drag orbit, arrow keys rotate while held, sensitivity setting saved with the account
 - [ ] From the reference clips, still to do:
   - [x] Duels: challenge prompt (G near a player, Y/N), countdown, ring, PvP damage between the two players (`src/duel.js`; see Phase 5, v0.11)
   - [x] Enemy level in name plates ("Skeleton Warrior · lv 5")
