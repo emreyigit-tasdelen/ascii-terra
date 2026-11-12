@@ -28,7 +28,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
   - [x] Ground loot saved with the game
 - [x] 5-quest starting chain, inventory/equipment, saving (localStorage)
 - [x] Public GitHub repository, README (EN + TR), sponsor links
-- [ ] Vite dev server and build (bundle three.js locally to drop the CDN dependency)
+- [x] three.js r128 vendored in `vendor/` (no CDN, works offline, no build step; Vite deliberately skipped)
 
 ## Phase 1 — Visual fidelity (match the reference videos)
 - [x] Real shadow map (character, wall, tree shadows); grass receives shadows too
