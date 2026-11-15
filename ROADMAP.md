@@ -136,6 +136,6 @@ the `net.js` client: `invite`, `invite_reply`, `party_*`, `duel_*`. Invites expi
 ---
 
 ## Next sprint (suggested)
-1. Parties (v0.9)
-2. Vite dev server and build
-3. Equipment slots and a first version of the craft screen
+1. Equipment slots (the craft screen already has blade and armour tabs)
+2. Skills and support gems
+3. Dynamic weather

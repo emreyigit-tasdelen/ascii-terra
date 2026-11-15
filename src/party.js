@@ -63,6 +63,7 @@ export function partyShare(xp, kind) {
 export function updateParty(dt) {
   hudT -= dt; if (hudT > 0) return; hudT = .25;
   if (!NET.online && PARTY.id) { PARTY.id = 0; PARTY.m = []; }
+  if (!NET.online && inv) { inv = null; box.textContent = ''; }
   if (!PARTY.id) { if (hud.textContent) hud.textContent = ''; return; }
   let t = 'PARTY';
   for (const [i, mb] of PARTY.m.entries()) {

@@ -80,6 +80,11 @@ export function duelStrike(kind, fx, fz, dmg, range) {
 }
 
 export function updateDuel(dt) {
+  if (!NET.online) {   // connection lost: the server has already ended the duel, so drop the prompt, the ring and the 1 HP floor
+    if (inv) { inv = null; say(''); }
+    if (DUEL.on) { DUEL.on = false; clearRing(); say(''); }
+    return;
+  }
   if (!DUEL.on) return;
   ringT += dt;
   if (ring) ring.visible = ((ringT * 2) | 0) % 2 === 0 || DUEL.t <= 0;

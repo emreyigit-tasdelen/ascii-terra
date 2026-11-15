@@ -456,7 +456,7 @@ function updateEnemy(e, dt) {
 /* client: enemies are drawn smoothed from the host's snapshots */
 function updateEnemyRemote(e, dt) {
   const g = e.rig.g;
-  if (e.netDead && !e.dead) { e.dead = true; e.deadT = 7; e.atkT = -1; burst(e.k.fx, e.x, e.y + e.k.h * .4, e.z, e.k.boss ? 60 : 22); }
+  if (e.netDead && !e.dead) { e.dead = true; e.deadT = 7; e.respawnT = e.k.respawn || 35; e.atkT = -1; /* respawnT: used if this client becomes the host */ burst(e.k.fx, e.x, e.y + e.k.h * .4, e.z, e.k.boss ? 60 : 22); }
   if (!e.netDead && e.dead) { e.dead = false; if (e.nx != null) { e.x = e.nx; e.z = e.nz; } g.visible = true; g.rotation.set(0, 0, 0); }
   if (e.dead) { deadAnim(e, dt); return; }
   const dLocal = Math.hypot(P.x - e.x, P.z - e.z);

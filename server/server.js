@@ -132,10 +132,10 @@ function partyLeave(c) {
   for (const id of p.members) { const o = clients.get(id); if (o) { o.party = null; send(o, { t: 'party', id: 0, m: [] }); send(o, { t: 'sys', text: 'The party was disbanded' }); } }
   parties.delete(p.id);
 }
-function endDuel(d, loserId) {
+function endDuel(d, loserId, gone) {   // gone: the loser's client when it has already been dropped (a disconnect still counts as a loss)
   if (!d || d.over) return; d.over = true;
   const a = clients.get(d.a), b = clients.get(d.b); if (a) a.duel = null; if (b) b.duel = null;
-  const win = loserId === d.a ? d.b : d.a, w = clients.get(win), l = clients.get(loserId);
+  const win = loserId === d.a ? d.b : d.a, w = clients.get(win), l = clients.get(loserId) || gone;
   const rec = w && w.user ? DB.duel(w.user, true) : null, recL = l && l.user ? DB.duel(l.user, false) : null;   // only accounts keep a record
   bcast({ t: 'sys', text: (w ? w.name : 'Someone') + ' won the duel against ' + (l ? l.name : 'a player that left') + (rec ? ' (' + rec.w + 'W ' + rec.l + 'L)' : '') });
   for (const c of [a, b]) if (c) send(c, { t: 'duel_end', win, lose: loserId, rec: c === w ? rec : recL });   // rec: own { w, l }, null for guests
@@ -155,14 +155,14 @@ function elect() {   // host: the oldest player, preferably one with a visible t
 function connect(sock) {
   const c = { id: nextId++, sock, ip: sock.remoteAddress || '?', user: null, name: '', st: null, hello: false, rate: 0, rateT: Date.now() };
   clients.set(c.id, c);
-  attach(sock, t => onMsg(c, t), () => drop(c));
+  attach(sock, t => { try { onMsg(c, t); } catch (e) { log('message error: ' + e.message); } }, () => drop(c));   // one bad message must not take the server down
   sock.on('close', () => drop(c)); sock.on('error', () => drop(c));
   setTimeout(() => { if (!c.hello) drop(c); }, 15 * 60000);   // how long a client may idle on the start screen
 }
 function drop(c) {
   if (!clients.has(c.id)) return; clients.delete(c.id);
   try { c.sock.destroy(); } catch { }
-  if (c.duel) endDuel(c.duel, c.id);
+  if (c.duel) endDuel(c.duel, c.id, c);
   partyLeave(c); invites.delete(c.id);
   if (c.hello) { bcast({ t: 'leave', id: c.id }); log(c.name + ' left (' + clients.size + ' online)'); }
   if (c.id === hostId) { hostId = 0; elect(); }
@@ -174,8 +174,9 @@ function onMsg(c, txt) {
   if (!c.hello) {
     if (m.t !== 'hello') return;
     c.hello = true;
-    if (c.user) c.name = DB.user(c.user).name;
-    else { let n = clean(m.name, 16) || ('Knight' + c.id); if (DB.user(ukey(n))) n = ('Guest-' + n).slice(0, 16); c.name = n; }
+    const u = c.user && DB.user(c.user);
+    if (u) c.name = u.name;
+    else { c.user = null; /* also covers an account deleted (admin.js) after it logged in */ let n = clean(m.name, 16) || ('Knight' + c.id); if (DB.user(ukey(n))) n = ('Guest-' + n).slice(0, 16); c.name = n; }
     if ([...clients.values()].some(o => o !== c && o.hello && o.name === c.name)) c.name = c.name.slice(0, 12) + '#' + c.id;
     if (!hostId) hostId = c.id;
     send(c, { t: 'welcome', id: c.id, name: c.name, account: !!c.user, host: hostId, players: [...clients.values()].filter(o => o.hello && o !== c).map(o => ({ id: o.id, name: o.name, st: o.st })) });

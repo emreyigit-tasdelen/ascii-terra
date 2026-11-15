@@ -73,7 +73,11 @@ q.tokPurge.run(Date.now());
 
 // game saves are batched for 1.5 s and written in one transaction
 const pending = new Map(); let flushT = null;
-function flush() { flushT = null; if (!pending.size) return; const now = Date.now(); tx(() => { for (const [k, d] of pending) q.save.run(k, d, now); }); pending.clear(); }
+function flush() {
+  flushT = null; if (!pending.size) return; const now = Date.now(), rows = [...pending]; pending.clear();
+  try { tx(() => { for (const [k, d] of rows) q.save.run(k, d, now); }); }
+  catch (e) { for (const [k, d] of rows) try { q.save.run(k, d, now); } catch { } }   // e.g. an account deleted while online: skip that row, keep the other saves
+}
 
 // daily backup (last 7 kept)
 function backup() {
