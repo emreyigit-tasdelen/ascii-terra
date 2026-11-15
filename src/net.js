@@ -30,7 +30,7 @@ export function initNet() {
   };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
   ws.onclose = () => {
-    if (NET.online) toast('Lost connection to the server — continuing in single player');
+    if (NET.online) toast('Lost connection to the server — continuing in single player' + (NET.account ? ' (progress is kept in this browser until you log in again)' : ''));
     const wasAvail = NET.available; NET.online = false; NET.available = false; NET.role = 'solo';
     for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); status();
     if (!NET.tried || wasAvail) { NET.tried = true; NET.onReady && NET.onReady(); }

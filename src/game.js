@@ -160,17 +160,26 @@ export function save() {
   while (loot.length > LOOT_KEEP) takeLoot(loot[0], true);
   S.loot = loot.map(L => [L.id, L.n, Math.round(L.x * 10) / 10, Math.round(L.z * 10) / 10]);
   S.x = P.x; S.z = P.z; S.dayT = ENV.dayT; S.q = {}; Q.forEach(q => S.q[q.id] = q.st);
-  if (NET.account) { NET.accountSave = JSON.parse(JSON.stringify(S)); sendNet({ t: 'save', data: NET.accountSave }); return; }
+  S.ts = Date.now();
+  if (NET.account) {   // offline (connection lost, kicked): keep a backup in this browser; the next login picks it up if it is newer
+    NET.accountSave = JSON.parse(JSON.stringify(S));
+    try { if (NET.online) { sendNet({ t: 'save', data: NET.accountSave }); localStorage.removeItem(bakKey()); } else localStorage.setItem(bakKey(), JSON.stringify(S)); } catch (e) { }
+    return;
+  }
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { }
 }
-export function hasSave() { if (NET.account) return !!NET.accountSave; try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
+const bakKey = () => SAVE_KEY + '.acc.' + String(NET.account).toLowerCase();
+function backup() { try { const b = JSON.parse(localStorage.getItem(bakKey()) || 'null'); return b && typeof b === 'object' ? b : null; } catch (e) { return null; } }
+export function hasSave() { if (NET.account) return !!NET.accountSave || !!backup(); try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }
 export function resetSave() {
-  if (NET.account) NET.accountSave = null; else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
+  if (NET.account) { NET.accountSave = null; try { localStorage.removeItem(bakKey()); } catch (e) { } } else { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } }
   const sens = S.sens; S = freshState(); S.sens = sens; Q.forEach(q => q.st = 0);   // settings survive a reset
 }
 export function load() {
   try {
-    const j = NET.account ? NET.accountSave : JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (!j) return false;
+    let j = NET.account ? NET.accountSave : JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (NET.account) { const b = backup(); if (b && (!j || (b.ts || 0) > (j.ts || 0))) j = b; }   // progress made while disconnected
+    if (!j) return false;
     S = Object.assign(freshState(), j); Q.forEach(q => q.st = (S.q && S.q[q.id]) || 0);
     P.x = S.x; P.z = S.z; ENV.dayT = S.dayT ?? .3;
     S.taken.forEach(id => { const c = crystals[id]; if (c) { c.taken = true; c.mesh.visible = false; } });
