@@ -77,7 +77,7 @@ const darkKnight = () => makeKnight({ armor: 0x3b3e45, armorDark: 0x24262b, clot
 const KINDS = {
   skeleton: { id: 'skeleton', block: .18, name: 'Skeleton Warrior', hp: 42, spd: 3.4, dmg: 8, xp: 16, gold: 4, aggro: 15, reach: 1.9, atkCd: 1.4, atkTime: .7, h: 2.3, make: s => makeSkeleton(s), biped: 'shamble', fx: 'bone' },
   dknight: { id: 'dknight', block: .45, name: 'Dark Knight', hp: 120, spd: 3.7, dmg: 15, xp: 48, gold: 18, aggro: 16, reach: 2.1, atkCd: 1.5, atkTime: .75, h: 2.4, make: darkKnight, biped: 'knight', fx: 'spark' },
-  wolf: { id: 'wolf', name: 'Black Wolf', hp: 60, spd: 6.8, dmg: 11, xp: 28, gold: 8, aggro: 22, reach: 2.1, atkCd: 1.2, atkTime: .5, h: 1.9, make: s => makeWolf(s), scale: 1.15, fx: 'blood', anim: 'wolf' },
+  wolf: { id: 'wolf', flee: true, name: 'Black Wolf', hp: 60, spd: 6.8, dmg: 11, xp: 28, gold: 8, aggro: 22, reach: 2.1, atkCd: 1.2, atkTime: .5, h: 1.9, make: s => makeWolf(s), scale: 1.15, fx: 'blood', anim: 'wolf' },
   ghoul: { id: 'ghoul', name: 'Ghoul', hp: 50, spd: 5.4, dmg: 10, xp: 30, gold: 6, aggro: 18, reach: 1.9, atkCd: 1.1, atkTime: .55, h: 2, make: s => makeGhoul(s), biped: 'hunch', fx: 'blood', lunge: true },
   witch: { id: 'witch', name: 'Swamp Witch', hp: 70, spd: 3.2, dmg: 16, xp: 45, gold: 14, aggro: 24, reach: 13, atkCd: 2.4, atkTime: .8, h: 2.4, make: makeWitch, biped: 'robe-hunch', fx: 'blood', ranged: true },
   troll: { id: 'troll', name: 'Swamp Troll', hp: 650, spd: 3.0, dmg: 28, xp: 320, gold: 90, aggro: 18, reach: 3.4, atkCd: 2.6, atkTime: 1.1, h: 4.4, make: makeTroll, biped: 'heavy', fx: 'blood', elite: true, respawn: 180 },
@@ -407,7 +407,7 @@ function updateEnemy(e, dt) {
     deadAnim(e, dt);
     e.respawnT -= dt;
     if (e.respawnT <= 0 && nearestPlayerDist(e.home.x, e.home.z) > 50) {
-      e.dead = false; e.hp = e.hpMax; e.x = e.home.x; e.z = e.home.z; g.visible = true; g.rotation.set(0, 0, 0);
+      e.dead = false; e.fled = false; e.fleeT = 0; e.hp = e.hpMax; e.x = e.home.x; e.z = e.home.z; g.visible = true; g.rotation.set(0, 0, 0);
     }
     return;
   }
@@ -431,7 +431,10 @@ function updateEnemy(e, dt) {
     if (e.atkT >= 1) e.atkT = -1;
   } else if ((d < aggro || e.provoked > 0) && !tg.dead) {
     tx = tg.x; tz = tg.z; sp = e.k.spd; e.chasing = true; e.run = 1;
-    if (e.k.ranged) {
+    // a badly wounded beast breaks off and runs for ~4 s once, then turns to fight again
+    if (e.k.flee && !e.fled && e.hp < e.hpMax * .25) { e.fled = true; e.fleeT = 4; }
+    if (e.fleeT > 0) { e.fleeT -= dt; tx = e.x - dxp; tz = e.z - dzp; sp = e.k.spd * 1.1; e.chasing = false; }
+    else if (e.k.ranged) {
       if (d < 8) { tx = e.x - dxp; tz = e.z - dzp; sp = e.k.spd * .9; }
       else if (d < e.k.reach) { sp = 0; if (e.cd <= 0) { e.atkT = 0; e.hit = false; e.cd = e.k.atkCd; e.atkType = 2; } }
     } else if (d < e.k.reach) { sp = 0; if (e.cd <= 0) { e.atkT = 0; e.hit = false; e.cd = e.k.atkCd; e.atkType = Math.floor(Math.random() * 3); } }

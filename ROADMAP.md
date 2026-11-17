@@ -56,7 +56,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] 3D ASCII item preview on the craft screen (rotatable)
 - [x] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")
 - [~] Mouse-driven inventory: rows clickable (grid and drag and drop still to do)
-- [ ] Enemy AI: groups, archers, casters, fleeing/flanking; boss phases
+- [~] Enemy AI: fleeing done (wolves); groups, archers, casters, flanking, boss phases to do
 - [x] Character creation screen (tabard, cape, emblem) + starting tutorial
 
 ## Phase 3 — World
