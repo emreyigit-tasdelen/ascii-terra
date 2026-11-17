@@ -129,7 +129,7 @@ the `net.js` client: `invite`, `invite_reply`, `party_*`, `duel_*`. Invites expi
 
 ## Phase 6 — Release
 - [ ] Desktop package (Tauri/Electron), Steam page
-- [~] Settings menu, key rebinding (done), gamepad
+- [x] Settings menu, key rebinding, gamepad
 - [ ] Localization (EN / TR)
 - [ ] Performance profiling, low-end hardware mode
 

@@ -8,7 +8,7 @@ import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, act
 import { FXS, burst, updateFX } from './fx.js';
 import { duelKey } from './duel.js';
 import { partyKey } from './party.js';
-import { mapKey, captureKey, initKeys, renderKeys } from './keys.js';
+import { mapKey, captureKey, initKeys, renderKeys, keyOf } from './keys.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot } from './game.js';
 import { initAudio, updateAudio, toggleSound, sfx, getVolume, setVolume } from './audio.js';
@@ -218,8 +218,28 @@ P.y = heightAt(P.x, P.z); updateGrass(0, 8, 999);
 let lastFrameAt = performance.now();
 function loop(now) { requestAnimationFrame(loop); frame(now, true); }
 setInterval(() => { const n = performance.now(); if (n - lastFrameAt > 250) frame(n, false); }, 100);
+/* ---------------- gamepad (standard mapping) ----------------
+   Left stick moves (pushed far = run), right stick turns the camera, LT blocks. Buttons send the player's current key
+   for that action (so rebinding applies): A jump, X sword, B dodge, Y fireball, LB whirlwind, RB void orb, RT moon lance,
+   d-pad up potion / down talk / left mount / right map, Back inventory, Start pause. */
+const PAD_BTN = { 0: ' ', 1: 'c', 2: '1', 3: '2', 4: '3', 5: '5', 7: '6', 8: 'i', 9: 'Escape', 12: '4', 13: 'e', 14: 'f', 15: 'm' };
+let padPrev = [], padHeld = {};
+function pollPad() {
+  const gp = navigator.getGamepads ? [...navigator.getGamepads()].find(g => g && g.connected) : null;
+  const set = (k, on) => { if (on) { keys[k] = true; padHeld[k] = true; } else if (padHeld[k]) { keys[k] = false; delete padHeld[k]; } };
+  if (!gp) { for (const k in padHeld) keys[k] = false; padHeld = {}; return; }
+  const ax = gp.axes, dz = .35, lx = ax[0] || 0, ly = ax[1] || 0, rx = ax[2] || 0, ry = ax[3] || 0;
+  set('a', lx < -dz); set('d', lx > dz); set('w', ly < -dz); set('s', ly > dz);
+  set('shift', Math.hypot(lx, ly) > .92); set('aL', rx < -dz); set('aR', rx > dz); set('aU', ry < -dz); set('aD', ry > dz);
+  set('alt', !!(gp.buttons[6] && gp.buttons[6].pressed));
+  gp.buttons.forEach((b, i) => {
+    const on = b.pressed, def = PAD_BTN[i];
+    if (on && !padPrev[i] && def) { const key = def.length === 1 && def !== ' ' ? keyOf(def) : def; dispatchEvent(new KeyboardEvent('keydown', { key, code: key === ' ' ? 'Space' : '' })); }
+    padPrev[i] = on;
+  });
+}
 function frame(now, draw) {
-  lastFrameAt = now;
+  lastFrameAt = now; pollPad();
   const rdt = Math.min(.05, (now - last) / 1000); last = now; T += rdt;
   let dt = rdt; if (FXS.stop > 0) { FXS.stop -= rdt; dt = rdt * .05; }   // short hit-stop
   const run = started && !(paused && !NET.online);   // single player freezes the world; online it keeps running
