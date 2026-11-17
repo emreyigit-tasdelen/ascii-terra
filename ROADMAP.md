@@ -51,7 +51,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Directional strikes, enemies that block too
 - [ ] Skill system + support gems for builds (video: skills & support gems)
 - [ ] Mana / stamina, skill tree, classless — item-driven builds
-- [ ] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
+- [x] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
 - [x] Crafting (K): blade and six armour pieces, metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments
 - [ ] 3D ASCII item preview on the craft screen (rotatable)
 - [ ] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")

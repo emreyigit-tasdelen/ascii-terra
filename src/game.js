@@ -10,7 +10,7 @@ import { partyQuest } from './party.js';
 
 const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
-function freshState() { return { lvl: 1, xp: 0, gold: 0, kills: {}, shards: 0, circle: false, taken: [], q: {}, inv: { pot: 3 }, eq: { weapon: 'rust', armor: null }, x: 0, z: 14, dayT: .3, sens: 1 }; }
+function freshState() { return { lvl: 1, xp: 0, gold: 0, kills: {}, shards: 0, circle: false, taken: [], q: {}, inv: { pot: 3 }, eq: { weapon: 'rust', helm: null, shoulders: null, armor: null, gloves: null, legs: null, boots: null }, x: 0, z: 14, dayT: .3, sens: 1 }; }
 
 /* ================= items ================= */
 export const ITEMS = {
@@ -23,10 +23,21 @@ export const ITEMS = {
   gamb: { n: 'Gambeson', t: 'armor', def: 2, c: '#9cf', d: 'DEF +2', icon: '#' },
   chain: { n: 'Chainmail', t: 'armor', def: 5, c: '#6f6', d: 'DEF +5', icon: '#' },
   plate: { n: 'Plate Armor', t: 'armor', def: 9, c: '#fd6', d: 'DEF +9', icon: '#' },
-  moonp: { n: 'Moonsteel Armor', t: 'armor', def: 14, c: '#6ff', d: 'DEF +14', icon: '#' }
+  moonp: { n: 'Moonsteel Armor', t: 'armor', def: 14, c: '#6ff', d: 'DEF +14', icon: '#' },
+  lcap: { n: 'Leather Cap', t: 'helm', def: 1, c: '#c96', d: 'DEF +1', icon: '^' },
+  ihelm: { n: 'Iron Helm', t: 'helm', def: 3, c: '#9cf', d: 'DEF +3', icon: '^' },
+  lpaul: { n: 'Leather Pauldrons', t: 'shoulders', def: 1, c: '#c96', d: 'DEF +1', icon: 'm' },
+  ipaul: { n: 'Iron Pauldrons', t: 'shoulders', def: 2, c: '#9cf', d: 'DEF +2', icon: 'm' },
+  lglov: { n: 'Leather Gloves', t: 'gloves', def: 1, c: '#c96', d: 'DEF +1', icon: 'w' },
+  iglov: { n: 'Iron Gauntlets', t: 'gloves', def: 2, c: '#9cf', d: 'DEF +2', icon: 'w' },
+  llegs: { n: 'Leather Leggings', t: 'legs', def: 1, c: '#c96', d: 'DEF +1', icon: 'H' },
+  ilegs: { n: 'Iron Greaves', t: 'legs', def: 3, c: '#9cf', d: 'DEF +3', icon: 'H' },
+  lboot: { n: 'Leather Boots', t: 'boots', def: 1, c: '#c96', d: 'DEF +1', icon: 'b' },
+  iboot: { n: 'Iron Sabatons', t: 'boots', def: 2, c: '#9cf', d: 'DEF +2', icon: 'b' }
 };
+export const EQ_SLOTS = [['weapon', 'Weapon'], ['helm', 'Helmet'], ['shoulders', 'Pauldrons'], ['armor', 'Chest'], ['gloves', 'Gloves'], ['legs', 'Legs'], ['boots', 'Boots']];
 export const need = l => 50 * l, maxHpFor = l => 100 + 20 * (l - 1), dmgFor = l => 9 + 3 * l;
-export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = () => (ITEMS[S.eq.armor] || {}).def || 0;
+export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = () => EQ_SLOTS.reduce((s, [k]) => s + ((ITEMS[S.eq[k]] || {}).def || 0), 0);
 export function giveItem(id, n = 1) { S.inv[id] = (S.inv[id] || 0) + n; toast('Item: ' + ITEMS[id].n + (n > 1 ? ' x' + n : '')); renderInv(); }
 // Kills drop their items on the ground at (x, z): a glinting gem in a star of rays with a name label; walk over it to pick it up
 export function rollDrop(kind, lvl, x, z) {
@@ -39,7 +50,7 @@ export function rollDrop(kind, lvl, x, z) {
   const r = Math.random();
   if (r < .22) drop('pot');
   else if (r < (kind === 'wolf' ? .34 : .29)) {
-    const pool = lvl < 3 ? ['gamb', 'iron'] : lvl < 6 ? ['iron', 'chain', 'steel'] : ['steel', 'chain', 'plate'];
+    const pool = lvl < 3 ? ['gamb', 'iron', 'lcap', 'lpaul', 'lglov', 'llegs', 'lboot'] : lvl < 6 ? ['iron', 'chain', 'steel', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'] : ['steel', 'chain', 'plate', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'];
     drop(pool[Math.floor(Math.random() * pool.length)]);
   }
 }
@@ -73,8 +84,8 @@ export const invOpen = () => !$('inv').hidden;
 export function toggleInv() { $('inv').hidden = !$('inv').hidden; renderInv(); }
 export function renderInv() {
   invList = Object.keys(S.inv).filter(id => S.inv[id] > 0 && ITEMS[id]).slice(0, 9);
-  const w = ITEMS[S.eq.weapon], a = ITEMS[S.eq.armor];
-  let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>Weapon: <span style="color:' + (w ? w.c : '#888') + '">' + (w ? w.n : '-') + '</span><br>Armor: <span style="color:' + (a ? a.c : '#888') + '">' + (a ? a.n : '-') + '</span><br>';
+  let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>';
+  for (const [k, n] of EQ_SLOTS) { const it = ITEMS[S.eq[k]]; h += '<small>' + n + ':</small> <span style="color:' + (it ? it.c : '#666') + '">' + (it ? it.n : '-') + '</span><br>'; }
   invList.forEach((id, i) => { const it = ITEMS[id]; h += '<span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer">[' + (i + 1) + '] </span><span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer;color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
   if (!invList.length) h += '<small>Empty</small><br>';
   $('inv').innerHTML = h + '<small>Number: use/equip · I: close</small>';
@@ -181,7 +192,7 @@ export function load() {
     let j = NET.account ? NET.accountSave : JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (NET.account) { const b = backup(); if (b && (!j || (b.ts || 0) > (j.ts || 0))) j = b; }   // progress made while disconnected
     if (!j) return false;
-    S = Object.assign(freshState(), j); Q.forEach(q => q.st = (S.q && S.q[q.id]) || 0);
+    S = Object.assign(freshState(), j); S.eq = Object.assign(freshState().eq, j.eq); Q.forEach(q => q.st = (S.q && S.q[q.id]) || 0);
     P.x = S.x; P.z = S.z; ENV.dayT = S.dayT ?? .3;
     S.taken.forEach(id => { const c = crystals[id]; if (c) { c.taken = true; c.mesh.visible = false; } });
     while (loot.length) { scene.remove(loot[0].g); loot.shift(); }   // ground loot comes back where it was left
