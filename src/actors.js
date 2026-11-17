@@ -407,7 +407,7 @@ function updateEnemy(e, dt) {
     deadAnim(e, dt);
     e.respawnT -= dt;
     if (e.respawnT <= 0 && nearestPlayerDist(e.home.x, e.home.z) > 50) {
-      e.dead = false; e.fled = false; e.fleeT = 0; e.hp = e.hpMax; e.x = e.home.x; e.z = e.home.z; g.visible = true; g.rotation.set(0, 0, 0);
+      e.dead = false; e.fled = false; e.enraged = false; e.fleeT = 0; e.hp = e.hpMax; e.x = e.home.x; e.z = e.home.z; g.visible = true; g.rotation.set(0, 0, 0);
     }
     return;
   }
@@ -441,10 +441,13 @@ function updateEnemy(e, dt) {
     else if (e.k.lunge && d > 3 && d < 6.5 && e.cd <= 0) {
       e.lungeT = .38; e.hit = false; e.cd = 2.2; const ux = dxp / d, uz = dzp / d; e.lx = ux * 14; e.lz = uz * 14; burst('dust', e.x, e.y + .1, e.z, 5);
     }
-    if (e.k.id === 'troll') { e.special -= dt; if (e.special <= 0) { e.special = 6; telegraph(tg.x, tg.z, 4, 1.2, e.dmg * 1.3); } }
-    if (e.k.id === 'widow') { e.special -= dt; if (e.special <= 0) { e.special = 6.5; telegraph(tg.x, tg.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } e.special2 -= dt; if (e.special2 <= 0) { e.special2 = 8; spawnWeb(tg.x, tg.z, 5.5); e.hitT = .3; } }
+    // boss phase 2: below half health a boss enrages once: specials come 1.6x as often and it moves 25% faster
+    if (e.k.boss && !e.enraged && e.hp < e.hpMax * .5) { e.enraged = true; floatText('ENRAGED', e.x, e.y + e.k.h * 1.05, e.z, 'crit'); burst('fire', e.x, e.y + e.k.h * .5, e.z, 40); hitFeel(0, .4); }
+    const rage = e.enraged ? 1.6 : 1; if (e.enraged) sp *= 1.25;
+    if (e.k.id === 'troll') { e.special -= dt * rage; if (e.special <= 0) { e.special = 6; telegraph(tg.x, tg.z, 4, 1.2, e.dmg * 1.3); } }
+    if (e.k.id === 'widow') { e.special -= dt * rage; if (e.special <= 0) { e.special = 6.5; telegraph(tg.x, tg.z, 4.5, 1.15, e.dmg * 1.4); telegraph(e.x, e.z, 6, 1.6, e.dmg); } e.special2 -= dt * rage; if (e.special2 <= 0) { e.special2 = 8; spawnWeb(tg.x, tg.z, 5.5); e.hitT = .3; } }
     if (e.k.id === 'dragon') {
-      e.special -= dt; e.special2 -= dt;
+      e.special -= dt * rage; e.special2 -= dt * rage;
       if (e.special <= 0) {
         e.special = 7.5; e.breathT = 1.6; const ux = dxp / (d || 1), uz = dzp / (d || 1); hitFeel(0, .35);
         for (let k = 1; k <= 6; k++) telegraph(e.x + ux * (4 + k * 3), e.z + uz * (4 + k * 3), 2.6, 1.0 + k * .08, e.dmg * 1.2, true);
