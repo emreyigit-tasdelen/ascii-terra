@@ -75,10 +75,11 @@ export function renderInv() {
   invList = Object.keys(S.inv).filter(id => S.inv[id] > 0 && ITEMS[id]).slice(0, 9);
   const w = ITEMS[S.eq.weapon], a = ITEMS[S.eq.armor];
   let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>Weapon: <span style="color:' + (w ? w.c : '#888') + '">' + (w ? w.n : '-') + '</span><br>Armor: <span style="color:' + (a ? a.c : '#888') + '">' + (a ? a.n : '-') + '</span><br>';
-  invList.forEach((id, i) => { const it = ITEMS[id]; h += '[' + (i + 1) + '] <span style="color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
+  invList.forEach((id, i) => { const it = ITEMS[id]; h += '<span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer">[' + (i + 1) + '] </span><span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer;color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
   if (!invList.length) h += '<small>Empty</small><br>';
   $('inv').innerHTML = h + '<small>Number: use/equip · I: close</small>';
 }
+document.getElementById('inv').addEventListener('click', e => { const r = e.target.closest('.irow'); if (r) invPress(+r.dataset.n); });
 export function invPress(n) {
   const id = invList[n - 1]; if (!id) return; const it = ITEMS[id];
   if (it.t === 'use') usePotion();

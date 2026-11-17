@@ -21,7 +21,7 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 #prompt{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);color:#fff;font-size:12px}
 #dialog{position:absolute;left:50%;bottom:110px;transform:translateX(-50%);width:min(560px,90vw);font-size:13px;line-height:1.45}
 #dialog b{color:#fff}#dialog i{color:#c9a227;font-style:normal}
-#inv{position:absolute;right:10px;bottom:110px;min-width:250px;line-height:1.55;font-size:12px}#inv b{color:#fff}
+#inv{pointer-events:auto;position:absolute;right:10px;bottom:110px;min-width:250px;line-height:1.55;font-size:12px}#inv b{color:#fff}
 
 #bottom{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);width:min(560px,94vw)}
 .bar{position:relative;height:8px;border:1px solid #888;background:#0c0c0c;margin-bottom:-1px}
