@@ -73,7 +73,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Ghoul, swamp witch (ranged), swamp troll (elite), dark knight, dragon
 - [ ] Bestiary: skeleton archer, giant spider variants, horses/mounts
 - [~] Bosses: Gloomweaver and Ash Dragon (fire breath + tail swipe) added; phases and the Castle Lord to do
-- [ ] Achievements, titles
+- [~] Achievements, titles (own title in inventory; not yet on name plates)
 
 ## Phase 5 — Multiplayer (MMO)
 - [x] Dependency-free Node.js server (static + WebSocket), player presence, chat, host election and handover

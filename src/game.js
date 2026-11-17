@@ -89,7 +89,7 @@ export const invOpen = () => !$('inv').hidden;
 export function toggleInv() { $('inv').hidden = !$('inv').hidden; renderInv(); }
 export function renderInv() {
   invList = Object.keys(S.inv).filter(id => S.inv[id] > 0 && ITEMS[id]).slice(0, 9);
-  let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>';
+  let h = (title() ? '<span style="color:#fd6">«' + title() + '»</span> · ' + (S.ach || []).length + '/' + ACH.length + ' achievements<br>' : '') + '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>';
   for (const [k, n] of EQ_SLOTS) { const it = ITEMS[S.eq[k]]; h += '<small>' + n + ':</small> <span style="color:' + (it ? it.c : '#666') + '">' + (it ? it.n : '-') + '</span><br>'; }
   invList.forEach((id, i) => { const it = ITEMS[id]; h += '<span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer">[' + (i + 1) + '] </span><span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer;color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + (it.r !== 'common' ? it.r + ' · ' : '') + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
   if (!invList.length) h += '<small>Empty</small><br>';
@@ -253,12 +253,34 @@ export function showRegion(name) {
   if (name === region) return; region = name; const el = $('region'); el.textContent = '— ' + name + ' —';
   el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
 }
+/* ================= achievements & titles ================= */
+const kills = () => Object.values(S.kills).reduce((a, b) => a + b, 0);
+export const ACH = [
+  { id: 'blood', n: 'First Blood', d: 'Slay your first foe', t: 'Blooded', ok: () => kills() >= 1 },
+  { id: 'k50', n: 'Hunter', d: 'Slay 50 foes', t: 'the Hunter', ok: () => kills() >= 50 },
+  { id: 'k250', n: 'Slayer', d: 'Slay 250 foes', t: 'the Slayer', ok: () => kills() >= 250 },
+  { id: 'bones', n: 'Gravekeeper', d: 'Slay 30 skeletons', t: 'Gravekeeper', ok: () => (S.kills.skeleton || 0) >= 30 },
+  { id: 'wolf', n: 'Wolfbane', d: 'Slay 20 wolves', t: 'Wolfbane', ok: () => (S.kills.wolf || 0) >= 20 },
+  { id: 'widow', n: 'Webcutter', d: 'Slay the Gloomweaver', t: 'Webcutter', ok: () => (S.kills.widow || 0) >= 1 },
+  { id: 'dragon', n: 'Dragonslayer', d: 'Slay a dragon', t: 'Dragonslayer', ok: () => (S.kills.dragon || 0) >= 1 },
+  { id: 'lv5', n: 'Seasoned', d: 'Reach level 5', t: 'the Seasoned', ok: () => S.lvl >= 5 },
+  { id: 'lv10', n: 'Veteran', d: 'Reach level 10', t: 'the Veteran', ok: () => S.lvl >= 10 },
+  { id: 'circle', n: 'Pathfinder', d: 'Find the Stone Circle', t: 'Pathfinder', ok: () => S.circle },
+  { id: 'gold', n: 'Hoarder', d: 'Hold 500 gold', t: 'the Rich', ok: () => S.gold >= 500 },
+  { id: 'armed', n: 'Fully Armed', d: 'Fill all seven equipment slots', t: 'Ironclad', ok: () => EQ_SLOTS.every(([k]) => S.eq[k]) }
+];
+export const title = () => { const a = ACH.filter(a => (S.ach || []).includes(a.id)).pop(); return a ? a.t : ''; };
+function checkAch() {
+  const quiet = !S.ach; S.ach = S.ach || [];   // older saves get their earned achievements without a burst of toasts
+  for (const a of ACH) if (!S.ach.includes(a.id) && a.ok()) { S.ach.push(a.id); if (!quiet) toast('Achievement: ' + a.n + ' — title "' + a.t + '"'), sfx('level'); }
+}
+
 export function updateHUD(dt) {
   const near = NPCS.find(n => Math.hypot(n.x - P.x, n.z - P.z) < 4);
   $('prompt').textContent = (near && !dialog && !P.dead) ? '[E] Talk to ' + near.name : '';
   if (dialog && Math.hypot(dialog.npc.x - P.x, dialog.npc.z - P.z) > 6) closeDialog();
   miniT -= dt; if (miniT <= 0 && !$('mini').hidden) { miniT = .25; updateMini(); }
-  hudT -= dt; if (hudT > 0) return; hudT = .1;
+  hudT -= dt; if (hudT > 0) return; hudT = .1; checkAch();
   const hr = ENV.dayT * 24, hh = Math.floor(hr), mm = Math.floor((hr - hh) * 60);
   $('info').textContent = 'Torvan · Lv.' + S.lvl + '   Gold ' + S.gold + '   Shards ' + S.shards + '   ' + (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm;
   let qt = ''; Q.forEach(q => {
