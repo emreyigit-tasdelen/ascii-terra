@@ -18,14 +18,25 @@ export const isHost = () => NET.role === 'host';
 const TOK = 'asciiTerraTok';
 const raw = o => { if (NET.ws && NET.ws.readyState === 1) NET.ws.send(JSON.stringify(o)); };
 /* Connects to the server on page load (for the start screen); joining the world happens in joinWorld */
-export function initNet() {
+let joined = false, retryT = 0, retryN = 0;
+const getTok = () => { try { return localStorage.getItem(TOK) || sessionStorage.getItem(TOK); } catch (e) { return null; } };
+/* After a lost connection the world is rejoined automatically: every 3-30 s a new socket is tried; an account
+   logs in again with its token first (hello follows the auth reply), a guest sends hello at once. A kick stops it. */
+function scheduleRetry() {
+  if (!joined || NET.kicked || retryT) return;
+  const d = Math.min(30, 3 * 2 ** retryN++);
+  retryT = setTimeout(() => { retryT = 0; initNet(true); }, d * 1000);
+}
+export function initNet(rejoin = false) {
   const fail = () => { NET.tried = true; NET.available = false; NET.onReady && NET.onReady(); };
   if (!('WebSocket' in window) || location.protocol === 'file:') return fail();
-  let ws; try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { return fail(); }
+  let ws; try { ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws'); } catch (e) { return rejoin ? scheduleRetry() : fail(); }
   NET.ws = ws;
   ws.onopen = () => {
-    NET.tried = true; NET.available = true; NET.onReady && NET.onReady();
-    let t = null; try { t = localStorage.getItem(TOK) || sessionStorage.getItem(TOK); } catch (e) { }
+    NET.tried = true; NET.available = true;
+    const t = getTok();
+    if (rejoin) { retryN = 0; if (NET.account && t) { NET.rejoin = true; raw({ t: 'tok', token: t }); } else hello(); return; }
+    NET.onReady && NET.onReady();
     if (t) raw({ t: 'tok', token: t });
   };
   ws.onmessage = ev => { let m; try { m = JSON.parse(ev.data); } catch (e) { return; } onMsg(m); };
@@ -33,7 +44,8 @@ export function initNet() {
     if (NET.online) toast('Lost connection to the server — continuing in single player' + (NET.account ? ' (progress is kept in this browser until you log in again)' : ''));
     const wasAvail = NET.available; NET.online = false; NET.available = false; NET.role = 'solo';
     for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); status();
-    if (!NET.tried || wasAvail) { NET.tried = true; NET.onReady && NET.onReady(); }
+    if (!joined && (!NET.tried || wasAvail)) { NET.tried = true; NET.onReady && NET.onReady(); }
+    scheduleRetry();
   };
   ws.onerror = () => { };
 }
@@ -44,21 +56,24 @@ export function logout() {
 }
 export function joinWorld(name) {
   NET.name = name;
-  if (!NET.available) return;
-  raw({ t: 'hello', name }); raw({ t: 'vis', h: document.hidden ? 1 : 0 });
+  joined = true;
+  if (!NET.available) return scheduleRetry();
+  hello();
 }
+function hello() { raw({ t: 'hello', name: NET.name }); raw({ t: 'vis', h: document.hidden ? 1 : 0 }); }
 export const connectNet = joinWorld;
 function setRole() { NET.role = NET.hostId === NET.myId ? 'host' : 'client'; status(); }
 function onMsg(m) {
   switch (m.t) {
     case 'auth':
+      if (NET.rejoin) { NET.rejoin = false; if (m.ok) { NET.account = m.name; NET.accountSave = m.save; } hello(); return; }
       if (m.ok) {
         NET.account = m.name; NET.accountSave = m.save;
         try { (NET.remember === false ? sessionStorage : localStorage).setItem(TOK, m.token); } catch (e) { }
       } else if (!m.silent) NET.account = null;
       if (m.out || (m.silent && !m.ok)) { try { localStorage.removeItem(TOK); sessionStorage.removeItem(TOK); } catch (e) { } }
       NET.onAuth && NET.onAuth(m); break;
-    case 'kick': toast(m.why || 'Disconnected'); break;
+    case 'kick': NET.kicked = true; toast(m.why || 'Disconnected'); break;
     case 'welcome': NET.myId = m.id; NET.hostId = m.host; NET.online = true; if (m.name) NET.name = m.name; setRole(); m.players.forEach(p => addRemote(p.id, p.name, p.st));
       toast('Connected — ' + (m.players.length ? m.players.length + ' other player(s) online' : 'you are alone for now') + (isHost() ? ' (you host the world)' : '')); break;
     case 'join': addRemote(m.id, m.name); toast(m.name + ' joined the world'); chatLine('', m.name + ' joined', 'sys'); status(); break;
