@@ -35,6 +35,11 @@ export const ITEMS = {
   lboot: { n: 'Leather Boots', t: 'boots', def: 1, c: '#c96', d: 'DEF +1', icon: 'b' },
   iboot: { n: 'Iron Sabatons', t: 'boots', def: 2, c: '#9cf', d: 'DEF +2', icon: 'b' }
 };
+// rarity sets every item's colour (inventory, ground gem, ground label) and how often it is picked from a loot pool
+export const RARITY = { common: { c: '#c8c8c8', w: 6 }, uncommon: { c: '#5f5', w: 3 }, rare: { c: '#59f', w: 1.4 }, epic: { c: '#c6f', w: .6 }, legendary: { c: '#fa3', w: .25 } };
+const RAR = {"pot": "common", "rust": "common", "iron": "uncommon", "steel": "rare", "silver": "epic", "moon": "legendary", "gamb": "common", "chain": "uncommon", "plate": "rare", "moonp": "legendary", "lcap": "common", "ihelm": "uncommon", "lpaul": "common", "ipaul": "uncommon", "lglov": "common", "iglov": "uncommon", "llegs": "common", "ilegs": "uncommon", "lboot": "common", "iboot": "uncommon"};
+for (const id in ITEMS) { ITEMS[id].r = RAR[id] || 'common'; if (id !== 'pot') ITEMS[id].c = RARITY[ITEMS[id].r].c; }
+const pickW = pool => { let t = 0; for (const id of pool) t += RARITY[ITEMS[id].r].w; let x = Math.random() * t; for (const id of pool) if ((x -= RARITY[ITEMS[id].r].w) < 0) return id; return pool[0]; };
 export const EQ_SLOTS = [['weapon', 'Weapon'], ['helm', 'Helmet'], ['shoulders', 'Pauldrons'], ['armor', 'Chest'], ['gloves', 'Gloves'], ['legs', 'Legs'], ['boots', 'Boots']];
 export const need = l => 50 * l, maxHpFor = l => 100 + 20 * (l - 1), dmgFor = l => 9 + 3 * l;
 export const atkBonus = () => (ITEMS[S.eq.weapon] || {}).atk || 0, defBonus = () => EQ_SLOTS.reduce((s, [k]) => s + ((ITEMS[S.eq[k]] || {}).def || 0), 0);
@@ -50,8 +55,8 @@ export function rollDrop(kind, lvl, x, z) {
   const r = Math.random();
   if (r < .22) drop('pot');
   else if (r < (kind === 'wolf' ? .34 : .29)) {
-    const pool = lvl < 3 ? ['gamb', 'iron', 'lcap', 'lpaul', 'lglov', 'llegs', 'lboot'] : lvl < 6 ? ['iron', 'chain', 'steel', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'] : ['steel', 'chain', 'plate', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'];
-    drop(pool[Math.floor(Math.random() * pool.length)]);
+    const pool = lvl < 3 ? ['gamb', 'iron', 'lcap', 'lpaul', 'lglov', 'llegs', 'lboot'] : lvl < 6 ? ['iron', 'chain', 'steel', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'] : ['steel', 'chain', 'plate', 'silver', 'moon', 'moonp', 'ihelm', 'ipaul', 'iglov', 'ilegs', 'iboot'];
+    drop(pickW(pool));
   }
 }
 const loot = [], lootMats = {}, gemG = new THREE.OctahedronGeometry(.2, 0), rayG = new THREE.BoxGeometry(1, .03, .035);
@@ -86,7 +91,7 @@ export function renderInv() {
   invList = Object.keys(S.inv).filter(id => S.inv[id] > 0 && ITEMS[id]).slice(0, 9);
   let h = '<b>INVENTORY</b>  ATK ' + (dmgFor(S.lvl) + atkBonus()) + '  DEF ' + defBonus() + '<br>';
   for (const [k, n] of EQ_SLOTS) { const it = ITEMS[S.eq[k]]; h += '<small>' + n + ':</small> <span style="color:' + (it ? it.c : '#666') + '">' + (it ? it.n : '-') + '</span><br>'; }
-  invList.forEach((id, i) => { const it = ITEMS[id]; h += '<span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer">[' + (i + 1) + '] </span><span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer;color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
+  invList.forEach((id, i) => { const it = ITEMS[id]; h += '<span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer">[' + (i + 1) + '] </span><span class="irow" data-n="' + (i + 1) + '" style="cursor:pointer;color:' + it.c + '">' + it.n + '</span> x' + S.inv[id] + ' <small>' + (it.r !== 'common' ? it.r + ' · ' : '') + it.d + (it.t === 'use' ? ' (use)' : ' (equip)') + '</small><br>'; });
   if (!invList.length) h += '<small>Empty</small><br>';
   $('inv').innerHTML = h + '<small>Number: use/equip · I: close</small>';
 }

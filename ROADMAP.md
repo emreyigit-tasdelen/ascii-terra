@@ -54,7 +54,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
 - [x] Crafting (K): blade and six armour pieces, metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments
 - [ ] 3D ASCII item preview on the craft screen (rotatable)
-- [ ] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")
+- [x] Loot tables, rarity colours, item labels on the ground (e.g. "Rusty Stiletto")
 - [~] Mouse-driven inventory: rows clickable (grid and drag and drop still to do)
 - [ ] Enemy AI: groups, archers, casters, fleeing/flanking; boss phases
 - [x] Character creation screen (tabard, cape, emblem) + starting tutorial
