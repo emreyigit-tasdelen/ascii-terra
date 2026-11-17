@@ -34,7 +34,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Real shadow map (character, wall, tree shadows); grass receives shadows too
 - [x] Moss/ivy glyphs on stone, per-blade stroke grass, planar water reflections
 - [x] High ground: watchtower with spiral stair, camera zooms in on high ground; horse mount
-- [ ] Coastal mist/haze particles, foam curls on the sea, wave animation
+- [x] Coastal mist/haze particles, foam curls on the sea, wave animation
 - [x] Fire/ember/blood/bone/spark particles, fireball trail, blood decals, hit-stop and camera shake
 - [x] Detailed models: plate-armored knight, dark knight, anatomical skeleton, giant wolf, hairy giant spider, winged dragon
 - [x] Animation v2: spring joints, combo, roll, jump, hit reaction, cape physics, creature gaits, jointed dragon

@@ -51,8 +51,12 @@ const depthTex = new THREE.DataTexture(dd, DT, DT, THREE.RGBAFormat);
 depthTex.minFilter = depthTex.magFilter = THREE.LinearFilter; depthTex.needsUpdate = true;
 export const waterMat = new THREE.ShaderMaterial({
   uniforms: { tDepth: { value: depthTex }, tRefl: { value: REFL.rt.texture }, uRefl: REFL.mat, uTime: { value: 0 }, uLight: { value: ENV.light }, uFogColor: { value: ENV.sky }, uFogNear: { value: 30 }, uFogFar: { value: 170 } },
-  vertexShader: `varying vec3 vW;varying float vFog;void main(){vec4 w=modelMatrix*vec4(position,1.);vW=w.xyz;vec4 mv=viewMatrix*w;vFog=-mv.z;gl_Position=projectionMatrix*mv;}`,
-  fragmentShader: `uniform sampler2D tDepth,tRefl;uniform mat4 uRefl;uniform float uTime,uFogNear,uFogFar;uniform vec3 uLight,uFogColor;varying vec3 vW;varying float vFog;
+  // swell: the surface rises and falls in open water (depth from tDepth), flat at the shore; vH is the height for crest highlights
+  vertexShader: `uniform sampler2D tDepth;uniform float uTime;varying vec3 vW;varying float vFog,vH;void main(){vec4 w=modelMatrix*vec4(position,1.);
+    float d=texture2D(tDepth,(w.xz+200.)/400.).r,a=.28*smoothstep(.04,.5,d);
+    vH=sin(w.x*.15+uTime*1.1)+.6*sin(w.z*.21-uTime*.8+sin(w.x*.04)*2.)+.3*sin((w.x+w.z)*.37+uTime*1.9);w.y+=a*vH;
+    vW=w.xyz;vec4 mv=viewMatrix*w;vFog=-mv.z;gl_Position=projectionMatrix*mv;}`,
+  fragmentShader: `uniform sampler2D tDepth,tRefl;uniform mat4 uRefl;uniform float uTime,uFogNear,uFogFar;uniform vec3 uLight,uFogColor;varying vec3 vW;varying float vFog,vH;
   void main(){
     float d=texture2D(tDepth,(vW.xz+200.)/400.).r;
     float shore=1.-smoothstep(0.,.2,d);
@@ -61,17 +65,22 @@ export const waterMat = new THREE.ShaderMaterial({
     float foam=shore*smoothstep(.72,.97,wave)+(1.-smoothstep(0.,.04,d))*.9;
     float nn=sin(vW.x*.13+uTime*.4)*sin(vW.z*.11-uTime*.3+sin(vW.x*.05)*2.);
     foam+=smoothstep(.97,.995,nn)*.25*(1.-shore);
+    // curling breakers: bright lines that roll in toward the shore, broken up along their length
+    float br=sin(d*34.-uTime*2.3+sin(vW.x*.11-vW.z*.07)*2.5);
+    float curl=(1.-smoothstep(.12,.42,d))*smoothstep(.86,.99,br)*smoothstep(.2,.8,sin(vW.x*.31+vW.z*.23+uTime*.5)*.5+.5);
+    foam+=curl*.85+smoothstep(1.3,1.8,vH)*.18*smoothstep(.1,.5,d);
     float mist=shore*.22*(.5+.5*sin(vW.x*.05+vW.z*.07+uTime*.2));
     foam*=1.-sw*.85; float algae=sw*smoothstep(.55,.8,sin(vW.x*1.7+sin(vW.z*1.3))*sin(vW.z*1.9+uTime*.1));
     vec3 col=mix(mix(vec3(.008,.014,.032),vec3(.02,.035,.02),sw),vec3(.72,.77,.84),clamp(foam+mist*(1.-sw),0.,1.));
     col=mix(col,vec3(.12,.16,.06),algae*.8);
+    col+=vec3(.02,.03,.045)*(vH+.9)*smoothstep(.04,.4,d)*(1.-sw);   // swell crests catch a little more light
     col*=uLight*.9+.15;
     vec4 rp=uRefl*vec4(vW,1.);vec2 ruv=rp.xy/rp.w*.5+.5+vec2(sin(vW.z*1.3+uTime*1.1),sin(vW.x*1.1-uTime*.9))*.004*(1.-shore);
     vec3 rc=texture2D(tRefl,ruv).rgb;col+=rc*2.2*(1.-clamp(foam,0.,1.))*(1.-sw*.5);   // still water mirrors the world, the moon and the clouds
     gl_FragColor=vec4(mix(col,uFogColor,smoothstep(uFogNear,uFogFar,vFog)),.75);
   }`
 });
-{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; w.layers.set(1); scene.add(w); REFL.y = WATER; }
+{ const w = new THREE.Mesh(new THREE.PlaneGeometry(700, 700, 175, 175).rotateX(-Math.PI / 2), waterMat); w.position.y = WATER; w.userData.noShadow = true; w.layers.set(1); scene.add(w); REFL.y = WATER; }
 
 /* ================= grass: Lambert based (receives real shadow + light), writes blade angle to alpha ================= */
 const grassBase = (() => {

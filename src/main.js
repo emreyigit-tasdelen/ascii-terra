@@ -1,5 +1,5 @@
 // Entry point: input, camera, main loop
-import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF } from './core.js';
+import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF, WATER } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, setZoom, gridFollow, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, setGrassDensity, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
@@ -258,6 +258,8 @@ function frame(now, draw) {
     scene.fog.near = lerp(30, 12, sw); scene.fog.far = lerp(170, 90, sw) * farK;
     if (sw > 0) { ENV.sky.lerp(_swc, sw * .55); scene.background.copy(ENV.sky); scene.fog.color.copy(ENV.sky); }
     waterMat.uniforms.uFogNear.value = scene.fog.near; waterMat.uniforms.uFogFar.value = scene.fog.far;
+    { const ck = run ? coastK() : 0;   // coastal haze drifting over the shore
+      if (ck > .1 && Math.random() < rdt * 10 * ck) burst('mist', P.x + (Math.random() - .5) * 36, WATER + .4 + Math.random() * 1.2, P.z + (Math.random() - .5) * 28, 1); }
     if (sw > .2 && Math.random() < rdt * 14 * sw) burst('mist', cam.tx + (Math.random() - .5) * 40, cam.ty + .3 + Math.random() * 1.5, cam.tz + (Math.random() - .5) * 30, 1);
   }
   updateCamera(rdt, run);
