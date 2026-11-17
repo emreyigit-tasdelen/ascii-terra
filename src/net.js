@@ -4,7 +4,7 @@ import { THREE, $, clamp, lerp, angDiff, heightAt } from './core.js';
 import { scene } from './render.js';
 import { makeKnight, makeHorse, animBiped, animWolf } from './models.js';
 import { P, LOOKS, HORSE, enemies, hitEnemy, grantKill, hurtPlayer, telegraph, spawnEproj, spawnFxNet, spawnWeb, applySnapshot, snapshotRows } from './actors.js';
-import { S, label, toast } from './game.js';
+import { S, label, toast, ACH, titleIdx } from './game.js';
 import { onDuelMsg, updateDuel } from './duel.js';
 import { onPartyMsg, updateParty, partyCmd } from './party.js';
 
@@ -97,7 +97,7 @@ function applyLook(R, code) {
   scene.remove(R.rig.g); scene.add(r.g); R.rig = r;
 }
 function applyState(R, m) {
-  R.tx = m.x; R.ty = m.y; R.tz = m.z; R.tf = m.f; R.hp = m.hp; R.mh = m.mh || 100; R.lv = m.lv || 1; R.mt = !!m.mt; applyLook(R, m.lk);
+  R.tx = m.x; R.ty = m.y; R.tz = m.z; R.tf = m.f; R.hp = m.hp; R.mh = m.mh || 100; R.lv = m.lv || 1; R.mt = !!m.mt; R.ti = (ACH[(m.ti | 0) - 1] || {}).t || ''; applyLook(R, m.lk);
   const a = m.a || []; R.a = a;
   if (a[2] >= 0 && (R.atk < 0 || Math.abs(R.atk - a[2]) > .3)) { R.atk = a[2]; R.atkType = a[3]; }
   if (!R.got) { R.x = R.tx; R.y = R.ty; R.z = R.tz; R.f = R.tf; R.got = true; }
@@ -123,13 +123,13 @@ export function updateNet(dt) {
     R.rig.g.rotation.y = R.f; R.rig.g.visible = R.got;
     R.px = R.x; R.pz = R.z;
     R.rig.g.rotation.x = R.hp <= 0 ? -1.45 : 0;
-    if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + ' · lv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
+    if (R.got && Math.hypot(R.x - P.x, R.z - P.z) < 60) label(R.name + (R.ti ? ' «' + R.ti + '»' : '') + ' · lv ' + R.lv, R.x, R.y + 2.6, R.z, 'ally', R.mh ? R.hp / R.mh : 1);
   }
   if (!NET.online) return;
   sendT -= dt;
   if (sendT <= 0) {   // local player state ~15 Hz
     sendT = .066;
-    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl, lk: lookCode(), mt: HORSE.on ? 1 : 0 });
+    sendNet({ t: 'st', x: P.x, y: P.y, z: P.z, f: P.face, a: [Math.round((P.animAmt || 0) * 100), Math.round((P.animRun || 0) * 100), P.atkT, P.atkType, P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, P.air ? 1 : 0, Math.max(0, P.hitT) * 3, P.block ? 1 : 0], hp: P.dead ? 0 : P.hp, mh: P.maxhp, lv: S.lvl, lk: lookCode(), mt: HORSE.on ? 1 : 0, ti: titleIdx() });
   }
   if (isHost()) { snapT -= dt; if (snapT <= 0) { snapT = .1; const d = snapshotRows(); if (d.length) sendNet({ t: 'en', d }); } }
 }

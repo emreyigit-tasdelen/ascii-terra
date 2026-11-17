@@ -269,6 +269,7 @@ export const ACH = [
   { id: 'gold', n: 'Hoarder', d: 'Hold 500 gold', t: 'the Rich', ok: () => S.gold >= 500 },
   { id: 'armed', n: 'Fully Armed', d: 'Fill all seven equipment slots', t: 'Ironclad', ok: () => EQ_SLOTS.every(([k]) => S.eq[k]) }
 ];
+export const titleIdx = () => { const a = ACH.filter(a => (S.ach || []).includes(a.id)).pop(); return a ? ACH.indexOf(a) + 1 : 0; };
 export const title = () => { const a = ACH.filter(a => (S.ach || []).includes(a.id)).pop(); return a ? a.t : ''; };
 function checkAch() {
   const quiet = !S.ach; S.ach = S.ach || [];   // older saves get their earned achievements without a burst of toasts
