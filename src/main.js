@@ -8,6 +8,7 @@ import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, act
 import { FXS, burst, updateFX } from './fx.js';
 import { duelKey } from './duel.js';
 import { partyKey } from './party.js';
+import { mapKey, captureKey, initKeys, renderKeys } from './keys.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot } from './game.js';
 import { initAudio, updateAudio, toggleSound, sfx, getVolume, setVolume } from './audio.js';
@@ -25,6 +26,7 @@ addEventListener('keydown', e => {
     if (ae.id === 'chatin') { if (e.key === 'Enter') { e.preventDefault(); chatToggle(); } else if (e.key === 'Escape') chatCancel(); }
     return;
   }
+  if (captureKey(e)) return;
   if (started && (e.key === 'Escape' || e.key === 'p' || e.key === 'P') && !e.repeat) {   // Esc: close an open window first, otherwise pause
     if (e.key === 'Escape' && !paused && mapOpen()) { toggleMap(false); return; }
     if (e.key === 'Escape' && !paused && craftOpen()) { toggleCraft(false); return; }
@@ -33,13 +35,13 @@ addEventListener('keydown', e => {
   }
   if (paused) return;
   if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
-  const k = e.key.toLowerCase();
+  const rk = e.key.toLowerCase(), k = mapKey(rk);
   if ('wasd'.includes(k) && k.length === 1) keys[k] = true;
   if (e.key === 'Shift') keys.shift = true;
   if (e.key === 'Alt') { e.preventDefault(); keys.alt = true; }
   if (e.code === 'Space') { e.preventDefault(); if (started && !e.repeat) doJump(); }
   if (!started || e.repeat) return;
-  if (invOpen() && k >= '1' && k <= '9') { invPress(+k); return; }
+  if (invOpen() && rk >= '1' && rk <= '9') { invPress(+rk); return; }
   if (duelKey(k) || partyKey(k)) return;
   if (k === '1') doSlash(); else if (k === '2') doFireball(); else if (k === '3') doWhirl();
   else if (k === '4' || k === 'q') usePotion(); else if (k === '5') doOrb(); else if (k === '6') doBeam();
@@ -55,7 +57,7 @@ addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') { keys.aL = true; e.preventDefault(); } else if (e.key === 'ArrowRight') { keys.aR = true; e.preventDefault(); }
   else if (e.key === 'ArrowUp') { keys.aU = true; e.preventDefault(); } else if (e.key === 'ArrowDown') { keys.aD = true; e.preventDefault(); }
 });
-addEventListener('keyup', e => { const k = e.key.toLowerCase(); if (e.key === 'ArrowLeft') keys.aL = false; else if (e.key === 'ArrowRight') keys.aR = false; else if (e.key === 'ArrowUp') keys.aU = false; else if (e.key === 'ArrowDown') keys.aD = false; if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
+addEventListener('keyup', e => { const k = mapKey(e.key.toLowerCase()); if (e.key === 'ArrowLeft') keys.aL = false; else if (e.key === 'ArrowRight') keys.aR = false; else if (e.key === 'ArrowUp') keys.aU = false; else if (e.key === 'ArrowDown') keys.aD = false; if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false; });
 addEventListener('mousemove', e => {
   MOUSE.x = e.clientX; MOUSE.y = e.clientY;
@@ -71,8 +73,10 @@ let paused = false;
 function setPaused(on) {
   paused = on; $('pause').hidden = !on; for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false;
   $('pnote').textContent = NET.online ? 'You are online: the world keeps running for other players, but nobody can hit you.' : 'Game paused.';
+  if (on) renderKeys();
   if (on) { const v = S.sens || 1; $('psens').value = v; $('psensv').textContent = v.toFixed(1) + 'x'; save(); }
 }
+initKeys();
 $('psens').onchange = () => save();
 $('psens').oninput = () => { S.sens = +$('psens').value; $('psensv').textContent = S.sens.toFixed(1) + 'x'; };   // saved with the account (or browser save) when the menu closes / autosave
 $('presume').onclick = () => setPaused(false);
