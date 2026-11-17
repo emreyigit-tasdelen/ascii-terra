@@ -17,6 +17,18 @@ import { initMap, toggleMap, updateMap, mapOpen } from './map.js';
 const DAYLEN = 480, PMIN = .05;   // PMIN: camera can drop to the horizon (to see far away)
 const cam = { yaw: 0, pitch: .98, dist: 17, tx: 0, ty: 0, tz: 0 };
 const _swc = ENV.sky.clone().setRGB(.075, .09, .08);
+/* ---------------- weather cycle ---------------- */
+// Every 4 minutes of wall-clock time picks clear / rain / fog from a hash of the period number, so every player
+// sees the same weather without any network message. R toggles rain by hand and stops the cycle for this session.
+export const WEATHER = { fog: 0, kind: '', manual: false }, W_PERIOD = 240000;
+function weatherAt(t) { let h = Math.floor(t / W_PERIOD) * 2654435761 >>> 0; h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0; const r = (h % 1000) / 1000; return r < .55 ? 'clear' : r < .8 ? 'rain' : 'fog'; }
+function updateWeather(dt) {
+  if (WEATHER.manual) { WEATHER.fog = Math.max(0, WEATHER.fog - dt * .1); return; }
+  const k = weatherAt(Date.now());
+  if (k !== WEATHER.kind) { if (WEATHER.kind && started) toast(k === 'rain' ? 'Rain is falling' : k === 'fog' ? 'A fog rolls in' : 'The sky clears'); WEATHER.kind = k; }
+  ENV.raining = k === 'rain'; WEATHER.fog = clamp(WEATHER.fog + (k === 'fog' ? 1 : -1) * dt * .1, 0, 1);
+}
+
 let started = false, last = performance.now(), T = 0, saveT = 0, regT = 0;
 
 /* ---------------- input ---------------- */
@@ -52,7 +64,7 @@ addEventListener('keydown', e => {
   else if (k === 'i') toggleInv(); else if (k === 'm') { toggleMap(); sfx('ui'); } else if (k === 'n') toggleMini(); else if (k === 'h') toggleHelp();
   else if (k === 'o') toast(toggleSound() ? 'Sound on' : 'Sound off');
   else if (k === 't') { ENV.dayT = (ENV.dayT + .125) % 1; toast('Time ' + String(Math.floor(ENV.dayT * 24)).padStart(2, '0') + ':00'); }
-  else if (k === 'r') { ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
+  else if (k === 'r') { WEATHER.manual = true; ENV.raining = !ENV.raining; toast(ENV.raining ? 'Rain started' : 'Rain stopped'); }
   else if (e.key === '[' || e.key === ']') { VIEW.cellW = clamp(VIEW.cellW + (e.key === ']' ? 1 : -1), 4, 14); VIEW.cellH = Math.round(VIEW.cellW * 1.8); resize(); }
   else if (e.key === 'ArrowLeft') { keys.aL = true; e.preventDefault(); } else if (e.key === 'ArrowRight') { keys.aR = true; e.preventDefault(); }
   else if (e.key === 'ArrowUp') { keys.aU = true; e.preventDefault(); } else if (e.key === 'ArrowDown') { keys.aD = true; e.preventDefault(); }
@@ -220,8 +232,9 @@ function frame(now, draw) {
   }
   updateNPCs(rdt); updateFX(dt);
   updateDay(run ? rdt : 0, DAYLEN);
-  { // region atmosphere: thick greenish fog in the swamp
-    const sw = swampF(cam.tx, cam.tz), farK = 1 + (1 - clamp(cam.pitch / .6, 0, 1)) * 1.6;
+  updateWeather(rdt);
+  { // region atmosphere: thick greenish fog in the swamp, plus the weather fog
+    const sw = Math.max(swampF(cam.tx, cam.tz), WEATHER.fog * .8), farK = 1 + (1 - clamp(cam.pitch / .6, 0, 1)) * 1.6;
     scene.fog.near = lerp(30, 12, sw); scene.fog.far = lerp(170, 90, sw) * farK;
     if (sw > 0) { ENV.sky.lerp(_swc, sw * .55); scene.background.copy(ENV.sky); scene.fog.color.copy(ENV.sky); }
     waterMat.uniforms.uFogNear.value = scene.fog.near; waterMat.uniforms.uFogFar.value = scene.fog.far;

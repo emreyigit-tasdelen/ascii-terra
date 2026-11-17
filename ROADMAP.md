@@ -41,7 +41,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [ ] Bloom-like glow, skinned mesh animation, foot IK (foot placement on slopes)
 - [ ] Lightning/ice/purple magic effects (video: New skills)
 - [x] Per-material grids: chainmail rings, creature fur, dragon scales
-- [ ] Dynamic weather: rain splashes, wet ground sheen, fog, snow; weather cycle
+- [~] Dynamic weather: weather cycle + fog done; rain splashes, wet ground sheen, snow to do
 - [ ] Day/night tuning, torch light radii, moonlight
 - [ ] Richer tree and rock models, leaves swaying in the wind
 - [x] Quality settings: resolution scale and grass density in the pause menu, cell size on `[` `]`
