@@ -49,7 +49,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 ## Phase 2 — Core gameplay
 - [x] Combat feel: hit-stop, camera shake, 3-hit combo, shield block + parry + stamina
 - [ ] Directional strikes, enemies that block too
-- [ ] Skill system + support gems for builds (video: skills & support gems)
+- [x] Skill system + support gems for builds (video: skills & support gems)
 - [~] Mana / stamina (done), skill tree, classless — item-driven builds
 - [x] Equipment slots: Weapon, Helmet, Pauldrons, Chest, Gloves, Legs, Boots (video: craft screen)
 - [x] Crafting (K): blade and six armour pieces, metal choice (Iron, Steel, Bronze, Silver, Gold, Moonsteel, Nightglass, Bloodiron, Bonestone, Emberstone) + rune slots + enchantments

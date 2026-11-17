@@ -10,7 +10,7 @@ import { burst, hitFeel } from './fx.js';
 import { sfx } from './audio.js';
 import { craftMods, armorMods } from './craft.js';
 import { hitDummy } from './intro.js';
-import { S, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
+import { S, gemMod, toast, floatText, addXP, checkQuests, rollDrop, dmgFor, atkBonus, defBonus, closeDialog, label, npcMark } from './game.js';
 import { NET, sendNet, isClient, isHost, remoteTargets } from './net.js';
 import { DUEL, duelLost, duelNear, duelStrike } from './duel.js';
 import { partyShare } from './party.js';
@@ -24,7 +24,7 @@ export const P = { x: 0, z: 14, y: 0, vx: 0, vz: 0, vy: 0, air: false, face: Mat
 export const MANA = { fire: 15, whirl: 25, orb: 35, beam: 30 }, MP_REGEN = 7;
 let noMpT = 0;
 function spendMp(k) {
-  if (P.mp >= MANA[k]) { P.mp -= MANA[k]; return true; }
+  const c = MANA[k] * gemMod(k, 'mp'); if (P.mp >= c) { P.mp -= c; return true; }
   if (performance.now() - noMpT > 1200) { noMpT = performance.now(); floatText('NO MANA', P.x, P.y + 2.8, P.z, 'hurt'); }
   return false;
 }
@@ -191,8 +191,8 @@ export function updateEffects(dt) {
     if (!p.visual && duelNear(p.x, p.z, 1.6, p.vx * dt, p.vz * dt)) boom = true;
     if (boom) {
       blast(p.x, p.z, 3.2);
-      if (!p.visual) for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5, p.x, p.z);
-      if (!p.visual) duelStrike('pt', p.x, p.z, baseDmg() * 1.5, 3.8);
+      if (!p.visual) for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < 3.2 + (e.k.scale || 1) * .6) hitEnemy(e, baseDmg() * 1.5 * gemMod('fire', 'dmg'), p.x, p.z);
+      if (!p.visual) duelStrike('pt', p.x, p.z, baseDmg() * 1.5 * gemMod('fire', 'dmg'), 3.8);
       disposeMesh(p.m); projectiles.splice(i, 1);
     }
   }
@@ -204,8 +204,8 @@ export function updateEffects(dt) {
     const end = p.life <= 0;
     if (!p.visual && (p.tick <= 0 || end)) {
       p.tick = .35; const R = end ? 4.5 : 3.8;   // the "from" point is mirrored so the knockback pulls enemies inward
-      for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < R + reachOf(e)) hitEnemy(e, baseDmg() * (end ? 1.5 : .5), 2 * e.x - p.x, 2 * e.z - p.z, { quiet: !end });
-      duelStrike('pt', p.x, p.z, baseDmg() * (end ? 1.5 : .5), R + .6);
+      for (const e of enemies) if (!e.dead && Math.hypot(e.x - p.x, e.z - p.z) < R + reachOf(e)) hitEnemy(e, baseDmg() * (end ? 1.5 : .5) * gemMod('orb', 'dmg'), 2 * e.x - p.x, 2 * e.z - p.z, { quiet: !end });
+      duelStrike('pt', p.x, p.z, baseDmg() * (end ? 1.5 : .5) * gemMod('orb', 'dmg'), R + .6);
     }
     if (end) { blast(p.x, p.z, 4.5, 'void'); p.ring.geometry.dispose(); disposeMesh(p.m); orbs.splice(i, 1); }
   }
@@ -257,31 +257,31 @@ export function doSlash() {
   hitDummy(fx, fz); duelStrike('arc', fx, fz, baseDmg() * mult * (.9 + Math.random() * .3));
 }
 export function doFireball() {
-  if (P.dead || CD.fire > 0 || !spendMp('fire')) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
+  if (P.dead || CD.fire > 0 || !spendMp('fire')) return; CD.fire = CDMAX.fire * gemMod('fire', 'cd'); const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(m);
   projectiles.push({ m, x: P.x + dx * .9, y: P.y + 1.3, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24, life: 1.1 });
   sendNet({ t: 'fx', k: 'fb', x: P.x + dx * .9, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24 });
 }
 export function doWhirl() {
-  if (P.dead || CD.whirl > 0 || !spendMp('whirl')) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
-  for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
-  duelStrike('rad', 0, 0, baseDmg() * 1.6, 4.4);
+  if (P.dead || CD.whirl > 0 || !spendMp('whirl')) return; CD.whirl = CDMAX.whirl * gemMod('whirl', 'cd'); P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
+  for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6 * gemMod('whirl', 'dmg'), P.x, P.z);
+  duelStrike('rad', 0, 0, baseDmg() * 1.6 * gemMod('whirl', 'dmg'), 4.4);
 }
 export function doOrb() {   // Void Orb: slow sphere that drags enemies in and implodes
-  if (P.dead || CD.orb > 0 || !spendMp('orb')) return; CD.orb = CDMAX.orb; const a = faceAim(); P.atkT = 0; P.atkType = 1;
+  if (P.dead || CD.orb > 0 || !spendMp('orb')) return; CD.orb = CDMAX.orb * gemMod('orb', 'cd'); const a = faceAim(); P.atkT = 0; P.atkType = 1;
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   spawnOrb(P.x + dx * 1.4, P.z + dz * 1.4, dx * 5.5, dz * 5.5); sendNet({ t: 'fx', k: 'orb', x: P.x + dx * 1.4, z: P.z + dz * 1.4, vx: dx * 5.5, vz: dz * 5.5 });
 }
 export function doBeam() {   // Moon Lance: instant beam through everything in a line
-  if (P.dead || CD.beam > 0 || !spendMp('beam')) return; CD.beam = CDMAX.beam; const a = faceAim(), L = 18; P.atkT = 0; P.atkType = 2;
+  if (P.dead || CD.beam > 0 || !spendMp('beam')) return; CD.beam = CDMAX.beam * gemMod('beam', 'cd'); const a = faceAim(), L = 18; P.atkT = 0; P.atkType = 2;
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   spawnBeam(P.x, P.y + 1.3, P.z, dx, dz, L); sendNet({ t: 'fx', k: 'beam', x: P.x, z: P.z, vx: dx, vz: dz, r: L }); hitFeel(.03, .25);
   for (const e of enemies) {
     if (e.dead) continue; const ex = e.x - P.x, ez = e.z - P.z, along = ex * dx + ez * dz, side = Math.abs(ex * dz - ez * dx), rr = reachOf(e);
-    if (along > -rr && along < L + 1 + rr && side < 1.3 + rr) hitEnemy(e, baseDmg() * 2.2, P.x, P.z);
+    if (along > -rr && along < L + 1 + rr && side < 1.3 + rr) hitEnemy(e, baseDmg() * 2.2 * gemMod('beam', 'dmg'), P.x, P.z);
   }
-  duelStrike('line', dx, dz, baseDmg() * 2.2, L);
+  duelStrike('line', dx, dz, baseDmg() * 2.2 * gemMod('beam', 'dmg'), L);
 }
 export function doDodge() {
   if (P.dead || HORSE.on || P.dodgeCd > 0 || P.air || P.st < 15 || P.stunT > 0) return; P.dodgeCd = .8; P.dodgeT = .42; P.st -= 15; P.stCd = .6; P.block = false;
