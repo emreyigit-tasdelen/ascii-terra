@@ -49,6 +49,8 @@ export function pathDist(x, z) {
 }
 export const SWAMP = { x: 135, z: 20, r: 58 };                 // Misty Swamp (east)
 export const CHAPEL = { x: 150, z: 34 }, CAMP = { x: 93, z: 13.5 };
+export const FROST = { x: 118, z: -150, r: 55 };              // Frostpeaks: snowy mountains (north-east)
+export const frostF = (x, z) => 1 - smooth(30, 55, Math.hypot(x - FROST.x, z - FROST.z));
 export const swampF = (x, z) => 1 - smooth(32, 58, Math.hypot(x - SWAMP.x, z - SWAMP.z));
 
 /* ---------------- map sketch ----------------
@@ -105,6 +107,11 @@ export function heightAt(x, z) {
   const sw = swampF(x, z); if (sw > 0) h = lerp(h, WATER + .45 + (fbm(x * .05 + 7, z * .05 - 3, 3) - .5) * 3.4, sw);   // swamp with shallow pools
   const dc = Math.hypot(x - CHAPEL.x, z - CHAPEL.z); if (dc < 24) h = lerp(WATER + 1.5, h, smooth(13, 24, dc));          // chapel islet
   const dk = Math.hypot(x - CAMP.x, z - CAMP.z); if (dk < 16) h = lerp(WATER + 1.8, h, smooth(7, 16, dk));               // priest camp
+  const fr = frostF(x, z); if (fr > 0) {   // Frostpeaks: ridged peaks around walkable snowy valleys
+    const rg = 1 - Math.abs(fbm(x * .03 + 41, z * .03 - 17, 4) * 2 - 1);
+    const pass = 1 - smooth(5, 14, segDist(x, z, [[116, -92], [114, -118], [112, -142]]));   // a walkable pass from the Stone Circle
+    h = lerp(h, lerp(5 + rg * rg * 30, 6 + rg * 2.5, pass), fr);
+  }
   h += smooth(150, 198, Math.max(Math.abs(x), -z)) * 34;                    // west/east/north mountains
   return h;
 }

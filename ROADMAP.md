@@ -63,7 +63,7 @@ Status marks: `[x]` done · `[~]` partial · `[ ]` to do
 - [x] Terrain from a map sketch (mountains, hills, forests, meadows, lakes) + a river and extra roads
 - [ ] Starting tutorial area + first village (video: tutorial area)
 - [x] Misty Swamp region (chapel, graveyard, camp, fog) + region titles
-- [ ] New regions: snowy mountains, desert ruins, dungeons (interiors)
+- [~] New regions: snowy mountains (Frostpeaks) done; desert ruins, dungeons (interiors) to do
 - [ ] NPC routines (day/night), merchant, blacksmith, inn
 - [ ] Sound and music: footsteps, sword, fire, rain, ambience (video: Added sound)
 - [ ] Streaming for a large world (chunk loading), far-distance LOD

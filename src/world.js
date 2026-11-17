@@ -1,7 +1,7 @@
 // Static world: terrain, water, grass, trees, village, castle ruins, coastal menhirs, shards, spider lair
 import {
   THREE, clamp, lerp, smooth, angDiff, mulberry32, hash2, vnoise, fbm, WATER, HALF, CASTLE,
-  heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, sketchAt, MID, tag, lam, basic, SWAMP, swampF, CHAPEL, CAMP
+  heightAt, isLand, findLand, pathDist, addCollider, addWall, addPlat, sketchAt, MID, tag, lam, basic, SWAMP, swampF, FROST, frostF, CHAPEL, CAMP
 } from './core.js';
 import { scene, ENV, REFL } from './render.js';
 import { makeDeadTree, PB } from './models.js';
@@ -30,6 +30,7 @@ const Q =new THREE.Quaternion(), M4 = new THREE.Matrix4(), PV = new THREE.Vector
     else if (ny < .78) { const s = .8 + .4 * k; r = .17 * s; gg = .19 * s; b = .25 * s; }
     else { r = .035 + .03 * k2; gg = .085 + .04 * k; b = .03 + .012 * k2; }
     if (y > WATER + 1 && y < 20 && ny >= .78 && rocky(x, z)) { r = .12; gg = .13; b = .17; }
+    const fc = frostF(x, z); if (fc > 0 && y > WATER + .5) { const sn = fc * (ny > .62 ? 1 : .45) * (.85 + .15 * k); r = lerp(r, .34 + .05 * k, sn); gg = lerp(gg, .37 + .05 * k, sn); b = lerp(b, .44 + .04 * k, sn); }   // snow, rock shows on steep faces
     const swc = swampF(x, z); if (swc > 0 && y > WATER - .3) { r = lerp(r, .055 + .03 * k, swc); gg = lerp(gg, .06 + .025 * k2, swc); b = lerp(b, .035 + .01 * k, swc); }
     const cob = Math.max(smooth(2.6, 1.4, pathDist(x, z)), smooth(12.5, 10.5, Math.hypot(x, z)), insideCastle(x, z, 1) ? 1 : 0);
     if (cob > 0) { r = lerp(r, .15 + .03 * k, cob); gg = lerp(gg, .16 + .03 * k, cob); b = lerp(b, .21 + .03 * k, cob); }
@@ -131,7 +132,7 @@ function makeGrassChunk(cx, cz) {
   for (let i = 0; i < N; i++) {
     const x = (cx + rng()) * CH, z = (cz + rng()) * CH, r1 = rng(), r2 = rng(), r3 = rng(), r4 = rng();
     const h = heightAt(x, z);
-    if (h < WATER + .9 || h > 16) continue;
+    if (h < WATER + .9 || h > 16 || frostF(x, z) > .25) continue;   // no grass under the Frostpeaks snow
     if (Math.hypot(x, z) < 12 || pathDist(x, z) < 2) continue;
     if (insideCastle(x, z, -1) && r1 > .12) continue;
     if (rocky(x, z) && r1 > .2) continue;
@@ -161,7 +162,7 @@ export const TOWER = { x: 18, z: -26, r: 3.6, h: 9 };   // watchtower (built fur
   const rng = mulberry32(1234), T = [];
   for (let i = 0; i < 11000 && T.length < 1400; i++) {
     const x = (rng() * 2 - 1) * (HALF - 8), z = (rng() * 2 - 1) * (HALF - 8), h = heightAt(x, z), f = fbm(x * .022 + 100, z * .022 - 50, 3), r = rng();
-    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15 || Math.hypot(x - TOWER.x, z - TOWER.z) < 16) continue;
+    if (Math.hypot(x, z) < 26 || insideCastle(x, z, -7) || pathDist(x, z) < 4 || h < WATER + 1.4 || h > 16 || rocky(x, z) || clearing(x, z) || swampF(x, z) > .15 || frostF(x, z) > .2 || Math.hypot(x - TOWER.x, z - TOWER.z) < 16) continue;
     const sk = sketchAt(x, z), fs = f + sk.T * .2 - sk['.'] * .25;   // map sketch: forests and meadows
     if (fs < .46 || (fs < .54 && r > (fs - .46) * 12)) continue;
     T.push({ x, z, h, s: .8 + rng() * .9, ry: rng() * 6.28, c: rng(), pine: rng() < .45 });
@@ -476,7 +477,7 @@ export const GRAVES = [];
 export const REGIONS = [
   { name: 'Village', x: 0, z: 0, r: 24 }, { name: 'Castle Ruins', x: CASTLE.x, z: CASTLE.z, r: 30 },
   { name: 'Misty Swamp', x: SWAMP.x, z: SWAMP.z, r: 50 }, { name: 'Ashlands', x: DRAGON_LAIR.x, z: DRAGON_LAIR.z, r: 28 },
-  { name: 'Spider Woods', x: LAIR.x, z: LAIR.z, r: 22 }, { name: 'Stone Circle', x: CIRCLE.x, z: CIRCLE.z, r: 16 }
+  { name: 'Spider Woods', x: LAIR.x, z: LAIR.z, r: 22 }, { name: 'Stone Circle', x: CIRCLE.x, z: CIRCLE.z, r: 16 }, { name: 'Frostpeaks', x: FROST.x, z: FROST.z, r: 45 }
 ];
 export function regionAt(x, z) { for (const R of REGIONS) if (Math.hypot(x - R.x, z - R.z) < R.r) return R.name; return z > 75 ? 'Storm Coast' : 'The Wilds'; }
 

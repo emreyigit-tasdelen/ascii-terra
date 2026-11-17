@@ -1,5 +1,5 @@
 // Entry point: input, camera, main loop
-import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF, WATER } from './core.js';
+import { $, clamp, lerp, smooth, keys, MOUSE, heightAt, swampF, frostF, WATER } from './core.js';
 import { camera, canvas, scene, resize, renderFrame, updateDay, updateRain, setZoom, gridFollow, ENV, VIEW } from './render.js';
 import { updateWorld, updateGrass, setGrassDensity, GU, flames, waterMat, regionAt } from './world.js';
 import { toggleCraft, initCraft, craftOpen } from './craft.js';
@@ -16,7 +16,7 @@ import { initMap, toggleMap, updateMap, mapOpen } from './map.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: camera can drop to the horizon (to see far away)
 const cam = { yaw: 0, pitch: .98, dist: 17, tx: 0, ty: 0, tz: 0 };
-const _swc = ENV.sky.clone().setRGB(.075, .09, .08);
+const _swc = ENV.sky.clone().setRGB(.075, .09, .08), _frc = ENV.sky.clone().setRGB(.16, .18, .22);
 /* ---------------- weather cycle ---------------- */
 // Every 4 minutes of wall-clock time picks clear / rain / fog from a hash of the period number, so every player
 // sees the same weather without any network message. R toggles rain by hand and stops the cycle for this session.
@@ -258,6 +258,9 @@ function frame(now, draw) {
     scene.fog.near = lerp(30, 12, sw); scene.fog.far = lerp(170, 90, sw) * farK;
     if (sw > 0) { ENV.sky.lerp(_swc, sw * .55); scene.background.copy(ENV.sky); scene.fog.color.copy(ENV.sky); }
     waterMat.uniforms.uFogNear.value = scene.fog.near; waterMat.uniforms.uFogFar.value = scene.fog.far;
+    { const fz = frostF(P.x, P.z);   // snowfall in the Frostpeaks, a cold pale haze
+      if (fz > .05) { ENV.sky.lerp(_frc, fz * .35); scene.background.copy(ENV.sky); scene.fog.color.copy(ENV.sky);
+        for (let i = 0; i < 3; i++) if (Math.random() < rdt * 40 * fz) burst('snow', P.x + (Math.random() - .5) * 40, P.y + 6 + Math.random() * 6, P.z + (Math.random() - .5) * 30, 1); } }
     { const ck = run ? coastK() : 0;   // coastal haze drifting over the shore
       if (ck > .1 && Math.random() < rdt * 10 * ck) burst('mist', P.x + (Math.random() - .5) * 36, WATER + .4 + Math.random() * 1.2, P.z + (Math.random() - .5) * 28, 1); }
     if (sw > .2 && Math.random() < rdt * 14 * sw) burst('mist', cam.tx + (Math.random() - .5) * 40, cam.ty + .3 + Math.random() * 1.5, cam.tz + (Math.random() - .5) * 30, 1);

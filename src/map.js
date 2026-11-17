@@ -1,5 +1,5 @@
 // World map (M): the whole land as a glyph grid with markers; wheel zooms, drag moves
-import { $, clamp, heightAt, sketchAt, pathDist, riverDist, swampF, WATER, HALF } from './core.js';
+import { $, clamp, heightAt, sketchAt, pathDist, riverDist, swampF, frostF, WATER, HALF } from './core.js';
 import { REGIONS, crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies } from './actors.js';
 import { PARTY } from './party.js';
@@ -18,6 +18,7 @@ function terrain(x, z) {
   if (riverDist(x, z) < 2.5) return ['~', '#2c4a6a'];
   if (pathDist(x, z) < 2.2) return ['=', '#8a8272'];
   if (Math.hypot(x, z) < 18) return ['#', '#b9a47a'];
+  if (frostF(x, z) > .45) return [h > 13 ? '^' : '*', h > 13 ? '#eef2fa' : '#c4cedc'];
   if (h > 13) return ['^', h > 20 ? '#c8c8d4' : '#8a8a98'];
   if (swampF(x, z) > .3) return [',', '#4f6a3c'];
   const s = sketchAt(x, z);

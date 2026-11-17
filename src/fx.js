@@ -26,6 +26,7 @@ const TYPES = {
   web: { col: [0xc8d4dc, 0xffffff], spd: [2, 6], up: 1.2, g: 3, life: [.4, .9], size: [.02, .05] },
   loot: { col: [0xffd060, 0xfff4c0], spd: [.3, 1.2], up: 3.2, g: -1, life: [.5, 1.1], size: [.02, .05] },
   hex: { col: [0x3aff2a, 0xb0ff80], spd: [1, 3], up: 1.5, g: 0, life: [.3, .7], size: [.03, .07] },
+  snow: { col: [0xdfe8f2, 0xffffff], spd: [.1, .4], up: 0, g: 1.4, life: [3, 5], size: [.03, .06] },
   mist: { col: [0x3a4440, 0x56605a], spd: [.15, .45], up: .05, g: 0, life: [3.5, 6], size: [.18, .4], drift: true }
 };
 const rnd = (a, b) => a + Math.random() * (b - a);
