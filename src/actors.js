@@ -19,7 +19,15 @@ let T = 0;
 
 /* ================= player ================= */
 export const P = { x: 0, z: 14, y: 0, vx: 0, vz: 0, vy: 0, air: false, face: Math.PI, hp: 100, maxhp: 100, dead: false, deadT: 0, hurtT: 0, hitT: 0, lastHit: 99,
-  dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, block: false, blockT: 0, st: 100, stMax: 100, stCd: 0, stunT: 0, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
+  dodgeT: 0, dodgeCd: 0, ddx: 0, ddz: 1, block: false, blockT: 0, st: 100, stMax: 100, mp: 100, mpMax: 100, stCd: 0, stunT: 0, atkT: -1, atkType: 0, comboT: 0, aimLock: 0, ph: 0, spinT: 0, lean: 0, turn: 0, rig: null, g: null };
+// mana: skills other than the sword cost mana; it refills over time (MP_REGEN per second)
+export const MANA = { fire: 15, whirl: 25, orb: 35, beam: 30 }, MP_REGEN = 7;
+let noMpT = 0;
+function spendMp(k) {
+  if (P.mp >= MANA[k]) { P.mp -= MANA[k]; return true; }
+  if (performance.now() - noMpT > 1200) { noMpT = performance.now(); floatText('NO MANA', P.x, P.y + 2.8, P.z, 'hurt'); }
+  return false;
+}
 export const CD = { slash: 0, fire: 0, whirl: 0, orb: 0, beam: 0 }, CDMAX = { slash: .42, fire: 2.5, whirl: 7, orb: 9, beam: 6 };
 export const TGT = { e: null };
 // character look (chosen on the creation screen, saved in S.look)
@@ -249,24 +257,24 @@ export function doSlash() {
   hitDummy(fx, fz); duelStrike('arc', fx, fz, baseDmg() * mult * (.9 + Math.random() * .3));
 }
 export function doFireball() {
-  if (P.dead || CD.fire > 0) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
+  if (P.dead || CD.fire > 0 || !spendMp('fire')) return; CD.fire = CDMAX.fire; const a = faceAim(); P.atkT = 0; P.atkType = 1; sfx('fire');
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   const m = new THREE.Mesh(new THREE.IcosahedronGeometry(.38, 0), fireballM); scene.add(m);
   projectiles.push({ m, x: P.x + dx * .9, y: P.y + 1.3, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24, life: 1.1 });
   sendNet({ t: 'fx', k: 'fb', x: P.x + dx * .9, z: P.z + dz * .9, vx: dx * 24, vz: dz * 24 });
 }
 export function doWhirl() {
-  if (P.dead || CD.whirl > 0) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
+  if (P.dead || CD.whirl > 0 || !spendMp('whirl')) return; CD.whirl = CDMAX.whirl; P.spinT = .45; P.atkT = 0; P.atkType = 1; blast(P.x, P.z, 4.4, 'spark'); sendNet({ t: 'fx', k: 'bl', x: P.x, z: P.z, r: 4.4 });
   for (const e of enemies) if (!e.dead && Math.hypot(e.x - P.x, e.z - P.z) < 4.4 + reachOf(e)) hitEnemy(e, baseDmg() * 1.6, P.x, P.z);
   duelStrike('rad', 0, 0, baseDmg() * 1.6, 4.4);
 }
 export function doOrb() {   // Void Orb: slow sphere that drags enemies in and implodes
-  if (P.dead || CD.orb > 0) return; CD.orb = CDMAX.orb; const a = faceAim(); P.atkT = 0; P.atkType = 1;
+  if (P.dead || CD.orb > 0 || !spendMp('orb')) return; CD.orb = CDMAX.orb; const a = faceAim(); P.atkT = 0; P.atkType = 1;
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   spawnOrb(P.x + dx * 1.4, P.z + dz * 1.4, dx * 5.5, dz * 5.5); sendNet({ t: 'fx', k: 'orb', x: P.x + dx * 1.4, z: P.z + dz * 1.4, vx: dx * 5.5, vz: dz * 5.5 });
 }
 export function doBeam() {   // Moon Lance: instant beam through everything in a line
-  if (P.dead || CD.beam > 0) return; CD.beam = CDMAX.beam; const a = faceAim(), L = 18; P.atkT = 0; P.atkType = 2;
+  if (P.dead || CD.beam > 0 || !spendMp('beam')) return; CD.beam = CDMAX.beam; const a = faceAim(), L = 18; P.atkT = 0; P.atkType = 2;
   let dx = a.x - P.x, dz = a.z - P.z; const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   spawnBeam(P.x, P.y + 1.3, P.z, dx, dz, L); sendNet({ t: 'fx', k: 'beam', x: P.x, z: P.z, vx: dx, vz: dz, r: L }); hitFeel(.03, .25);
   for (const e of enemies) {
@@ -546,6 +554,7 @@ export function updatePlayer(dt) {
   P.block = wantBlock;
   if (P.block) { P.blockT += dt; P.st -= 3 * dt; P.stCd = Math.max(P.stCd, .5); P.atkT = -1; faceAim(); }
   else if (P.stCd <= 0) P.st = Math.min(P.stMax, P.st + 28 * dt);
+  P.mp = Math.min(P.mpMax, P.mp + MP_REGEN * dt);
   P.animAmt = P.dodgeT > 0 ? 0 : Math.min(1, spd / 5.8); P.animRun = clamp((spd - 6) / 3.5, 0, 1);
   animBiped(r, { ph: P.ph, amt: P.animAmt, run: P.animRun, atk: P.atkT, atkType: P.atkType, hit: Math.max(0, P.hitT) * 3,
     dodge: P.dodgeT > 0 ? 1 - P.dodgeT / .42 : -1, air: P.air ? clamp(.4 + (P.vy > 0 ? .6 : .3), 0, 1) : 0, lean: P.lean, turn: P.turn, block: P.block ? 1 : 0, t: T, dt, style: 'knight' });

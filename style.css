@@ -69,7 +69,7 @@ canvas{display:block;position:fixed;inset:0;cursor:none}
 .lbl.ally{color:#9fc4ff}
 #overlay p.name{font-size:13px;color:#ccc}
 #pname{font:inherit;font-size:14px;background:#111;color:#fff;border:1px solid #888;padding:4px 8px;width:170px;text-align:center}
-.bar.st{height:4px}.bar.st i{background:repeating-linear-gradient(90deg,#8fbf3a 0 3px,#3e5a14 3px 4px);width:100%}
+.bar.mp{height:4px}.bar.mp i{background:repeating-linear-gradient(90deg,#3a7bff 0 3px,#14285a 3px 4px);width:100%}.bar.st{height:4px}.bar.st i{background:repeating-linear-gradient(90deg,#8fbf3a 0 3px,#3e5a14 3px 4px);width:100%}
 #acct{margin:6px auto 4px;max-width:300px}
 #acct .tabs{display:flex;gap:0;margin-bottom:8px}
 #acct .tabs button{flex:1;margin:0;font-size:12px;padding:5px 0;border-color:#555;color:#999;background:#0b0b0b}

@@ -291,7 +291,7 @@ export function updateHUD(dt) {
     qt += '\n';
   });
   $('quests').textContent = qt || 'Talk to the villagers (E)';
-  $('stfill').style.width = (P.st / P.stMax * 100) + '%';
+  $('stfill').style.width = (P.st / P.stMax * 100) + '%'; $('mpfill').style.width = (P.mp / P.mpMax * 100) + '%';
   $('hpfill').style.width = (P.hp / P.maxhp * 100) + '%'; $('hptxt').textContent = Math.ceil(P.hp) + ' / ' + P.maxhp + ' HP';
   $('xpfill').style.width = (S.xp / need(S.lvl) * 100) + '%'; $('xptxt').textContent = 'LV ' + S.lvl + ' · ' + S.xp + ' / ' + need(S.lvl) + ' XP';
   SLOTS.forEach((s, i) => {
