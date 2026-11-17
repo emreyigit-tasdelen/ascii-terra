@@ -75,8 +75,8 @@ export const nearestNPC = () => NPCS.find(n => Math.hypot(n.x - P.x, n.z - P.z) 
 /* ================= enemy types ================= */
 const darkKnight = () => makeKnight({ armor: 0x3b3e45, armorDark: 0x24262b, cloth: 0x161010, capeColor: 0x0c0909, chain: 0x2a2b2e, tattered: true, glowEyes: true, blade: 0x8a9098, guardColor: 0x3a3a3a, shieldFace: 0x1a1212, gold: 0x5a4a2a });
 const KINDS = {
-  skeleton: { id: 'skeleton', name: 'Skeleton Warrior', hp: 42, spd: 3.4, dmg: 8, xp: 16, gold: 4, aggro: 15, reach: 1.9, atkCd: 1.4, atkTime: .7, h: 2.3, make: s => makeSkeleton(s), biped: 'shamble', fx: 'bone' },
-  dknight: { id: 'dknight', name: 'Dark Knight', hp: 120, spd: 3.7, dmg: 15, xp: 48, gold: 18, aggro: 16, reach: 2.1, atkCd: 1.5, atkTime: .75, h: 2.4, make: darkKnight, biped: 'knight', fx: 'spark' },
+  skeleton: { id: 'skeleton', block: .18, name: 'Skeleton Warrior', hp: 42, spd: 3.4, dmg: 8, xp: 16, gold: 4, aggro: 15, reach: 1.9, atkCd: 1.4, atkTime: .7, h: 2.3, make: s => makeSkeleton(s), biped: 'shamble', fx: 'bone' },
+  dknight: { id: 'dknight', block: .45, name: 'Dark Knight', hp: 120, spd: 3.7, dmg: 15, xp: 48, gold: 18, aggro: 16, reach: 2.1, atkCd: 1.5, atkTime: .75, h: 2.4, make: darkKnight, biped: 'knight', fx: 'spark' },
   wolf: { id: 'wolf', name: 'Black Wolf', hp: 60, spd: 6.8, dmg: 11, xp: 28, gold: 8, aggro: 22, reach: 2.1, atkCd: 1.2, atkTime: .5, h: 1.9, make: s => makeWolf(s), scale: 1.15, fx: 'blood', anim: 'wolf' },
   ghoul: { id: 'ghoul', name: 'Ghoul', hp: 50, spd: 5.4, dmg: 10, xp: 30, gold: 6, aggro: 18, reach: 1.9, atkCd: 1.1, atkTime: .55, h: 2, make: s => makeGhoul(s), biped: 'hunch', fx: 'blood', lunge: true },
   witch: { id: 'witch', name: 'Swamp Witch', hp: 70, spd: 3.2, dmg: 16, xp: 45, gold: 14, aggro: 24, reach: 13, atkCd: 2.4, atkTime: .8, h: 2.4, make: makeWitch, biped: 'robe-hunch', fx: 'blood', ranged: true },
@@ -301,10 +301,15 @@ export function hitEnemy(e, dmg, fromX, fromZ, o = {}) {
     dmg = (dmg + M.atk + (beast ? M.beast : 0)) * (1 + M.dmg + (undead ? M.undead : 0) + (beast ? M.beastPct : 0) + (e.k.boss ? M.boss : 0) + (keys.shift ? M.run : 0) + M.extra);
     dmg = Math.round(dmg * (crit ? 2 + M.critDmg : 1));
     if (M.leech > 0) P.hp = Math.min(P.maxhp, P.hp + dmg * M.leech);
+    // shield-bearing enemies block hits from the front while they are not attacking or stunned (strike from the side or back)
+    const fx = fromX - e.x, fz = fromZ - e.z, fl = Math.hypot(fx, fz) || 1;
+    if (e.k.block && e.atkT < 0 && !(e.stunT > 0) && (fx * Math.sin(e.face) + fz * Math.cos(e.face)) / fl > .5 && Math.random() < e.k.block) {
+      dmg = Math.max(1, Math.round(dmg * .2)); o.blocked = true; burst('spark', e.x + fx / fl * .6, e.y + e.k.h * .5, e.z + fz / fl * .6, 12); sfx('block');
+    }
   }
   const dx = e.x - fromX, dz = e.z - fromZ, d = Math.hypot(dx, dz) || 1, sc = e.k.scale || 1; _dir.set(dx / d, 0, dz / d);
   burst(e.k.fx, e.x - dx / d * .3 * sc, e.y + e.k.h * .45, e.z - dz / d * .3 * sc, crit ? 18 : 9, _dir);
-  floatText((crit ? 'CRIT ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : (local ? '' : 'info'));
+  floatText(o.blocked ? 'BLOCKED ' + dmg : (crit ? 'CRIT ' : '') + dmg, e.x, e.y + e.k.h * .8, e.z, crit ? 'crit' : (local ? '' : 'info'));
   e.hurtT = .12; e.hitT = e.k.boss ? .15 : .35;
   if (local) { TGT.e = e; if (!o.quiet) { hitFeel(crit ? .07 : .045, crit ? .3 : .14); sfx(crit ? 'crit' : 'hit'); } }
   if (isClient() && local) { e.hp -= dmg; sendNet({ t: 'hit', e: e.idx, d: dmg, c: crit, x: fromX, z: fromZ }); return; }   // karar host'ta
