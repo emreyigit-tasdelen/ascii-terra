@@ -101,6 +101,11 @@ function setPaused(on) {
 }
 initKeys();
 $('psens').onchange = () => save();
+// crosshair (the in-game mouse pointer): size and colour, saved like the other settings
+function applyCross() { const c = S.cross = { s: 20, c: '#ffffff', ...S.cross }; $('cross').style.fontSize = c.s + 'px'; $('cross').style.color = c.c; $('pcs').value = c.s; $('pcc').value = c.c; }
+$('pcs').oninput = () => { S.cross = S.cross || {}; S.cross.s = +$('pcs').value; applyCross(); };
+$('pcc').oninput = () => { S.cross = S.cross || {}; S.cross.c = $('pcc').value; applyCross(); };
+$('pcs').onchange = $('pcc').onchange = () => save();
 $('psens').oninput = () => { S.sens = +$('psens').value; $('psensv').textContent = S.sens.toFixed(1) + 'x'; };   // saved with the account (or browser save) when the menu closes / autosave
 $('presume').onclick = () => setPaused(false);
 $('phelp').onclick = () => toggleHelp();
@@ -128,7 +133,7 @@ function begin(fresh) {
   if (!had) { S.tut = 0; openCreate(() => { }); }
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
-  toggleFull(true);   // the game always plays in true fullscreen (the start click is the user gesture it needs)
+  applyCross(); toggleFull(true);   // the game always plays in true fullscreen (the start click is the user gesture it needs)
   started = true; $('overlay').hidden = true; $('hud').hidden = false;
   joinWorld(nm);
   setTimeout(() => { if (!$('help').hidden) toggleHelp(); }, 15000);
