@@ -16,6 +16,8 @@ function rebuild() {
     remap[cur] = def; if (!used.has(def)) remap[def] = '';   // a default key nobody uses any more does nothing
   }
 }
+// Turkish keyboards send ı / İ for the I key
+export const lowKey = k => (k === "ı" || k === "İ" ? "i" : k.toLowerCase());
 export const keyOf = def => binds[def] || def;
 export const mapKey = k => (k in remap ? remap[k] : k);
 rebuild();
@@ -36,7 +38,7 @@ function save() { rebuild(); try { localStorage.setItem('terra.keys', JSON.strin
 /* while a binding waits for a key, the next key press is taken here (Esc cancels) */
 export function captureKey(e) {
   if (!waiting) return false;
-  e.preventDefault(); const k = e.key.toLowerCase();
+  e.preventDefault(); const k = lowKey(e.key);
   if (k !== 'escape') {
     if (RESERVED.includes(k) || k.length !== 1) { waiting = null; renderKeys(); return true; }
     for (const [def] of ACTIONS) if (keyOf(def) === k && def !== waiting) binds[def] = keyOf(waiting);   // swap with the action that had this key

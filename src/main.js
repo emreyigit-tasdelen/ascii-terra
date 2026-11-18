@@ -8,7 +8,7 @@ import { P, enemies, updatePlayer, updateEnemies, updateEffects, updateNPCs, act
 import { FXS, burst, updateFX } from './fx.js';
 import { duelKey } from './duel.js';
 import { partyKey } from './party.js';
-import { mapKey, captureKey, initKeys, renderKeys, keyOf } from './keys.js';
+import { lowKey, mapKey, captureKey, initKeys, renderKeys, keyOf } from './keys.js';
 import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, chatCancel } from './net.js';
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot } from './game.js';
 import { initAudio, updateAudio, toggleSound, sfx, getVolume, setVolume } from './audio.js';
@@ -47,7 +47,7 @@ addEventListener('keydown', e => {
   }
   if (paused) return;
   if (started && e.key === 'Enter') { e.preventDefault(); for (const k in keys) keys[k] = false; chatToggle(); return; }
-  const rk = e.key.toLowerCase(), k = mapKey(rk);
+  const rk = lowKey(e.key), k = mapKey(rk);
   if ('wasd'.includes(k) && k.length === 1) keys[k] = true;
   if (e.key === 'Shift') keys.shift = true;
   if (e.key === 'Alt') { e.preventDefault(); keys.alt = true; }
@@ -69,7 +69,7 @@ addEventListener('keydown', e => {
   else if (e.key === 'ArrowLeft') { keys.aL = true; e.preventDefault(); } else if (e.key === 'ArrowRight') { keys.aR = true; e.preventDefault(); }
   else if (e.key === 'ArrowUp') { keys.aU = true; e.preventDefault(); } else if (e.key === 'ArrowDown') { keys.aD = true; e.preventDefault(); }
 });
-addEventListener('keyup', e => { const k = mapKey(e.key.toLowerCase()); if (e.key === 'ArrowLeft') keys.aL = false; else if (e.key === 'ArrowRight') keys.aR = false; else if (e.key === 'ArrowUp') keys.aU = false; else if (e.key === 'ArrowDown') keys.aD = false; if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
+addEventListener('keyup', e => { const k = mapKey(lowKey(e.key)); if (e.key === 'ArrowLeft') keys.aL = false; else if (e.key === 'ArrowRight') keys.aR = false; else if (e.key === 'ArrowUp') keys.aU = false; else if (e.key === 'ArrowDown') keys.aD = false; if ('wasd'.includes(k) && k.length === 1) keys[k] = false; if (e.key === 'Shift') keys.shift = false; if (e.key === 'Alt') { e.preventDefault(); keys.alt = false; } });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; MOUSE.lmb = MOUSE.rmb = MOUSE.mmb = false; });
 addEventListener('mousemove', e => {
   MOUSE.x = e.clientX; MOUSE.y = e.clientY;

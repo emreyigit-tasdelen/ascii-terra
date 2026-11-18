@@ -339,6 +339,7 @@ function updateMini() {
   }
   const put = (x, z, c) => { const i = Math.round((x - P.x) / cx) + (C >> 1), j = Math.round((z - P.z) / cz) + (R >> 1); if (i >= 0 && i < C && j >= 0 && j < R) rows[j][i] = c; };
   put(CIRCLE.x, CIRCLE.z, 'O'); crystals.forEach(c => { if (!c.taken) put(c.x, c.z, '*'); }); NPCS.forEach(n => put(n.x, n.z, 'N'));
-  enemies.forEach(e => { if (!e.dead) put(e.x, e.z, e.k.boss ? 'B' : 'x'); }); put(P.x, P.z, '@');
+  enemies.forEach(e => { if (!e.dead) put(e.x, e.z, e.k.boss ? 'B' : 'x'); });
+  for (const Rm of NET.remotes.values()) if (Rm.got) put(Rm.x, Rm.z, 'p'); put(P.x, P.z, '@');
   $('minimap').textContent = rows.map(r => r.join('')).join('\n');
 }
