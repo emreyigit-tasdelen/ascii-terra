@@ -1,7 +1,8 @@
-// Weapon crafting: blade metal + up to 3 runes. Opened with K. The preview is an ASCII sword drawn
-// with the metal's own glyphs; runes add their glyph into the blade. Bonuses apply to every sword hit.
+// Crafting (K): blade and six armour pieces, each a metal + rune slots. The preview is a rotatable 3D model
+// printed in ASCII (preview.js). Blade bonuses apply to every sword hit, armour bonuses all the time.
 import { $ } from './core.js';
 import { S, toast } from './game.js';
+import { initPreview, previewFrame } from './preview.js';
 
 export const METALS = {
   forged: { n: 'As forged', g: '#%:', c: '#9a9a9a', d: 'Plain blade.', atk: 0 },
@@ -43,40 +44,12 @@ export function craftMods() {
   return o;
 }
 
-/* ---------------- ASCII sword preview ---------------- */
-function swordArt(t) {
-  const st = craftState(), m = METALS[st.metal] || METALS.forged, W = 34, H = 22, grid = [];
-  for (let y = 0; y < H; y++) grid.push(new Array(W).fill(null));
-  const put = (x, y, ch, c) => { x = Math.round(x); y = Math.round(y); if (y >= 0 && y < H && x >= 0 && x < W) grid[y][x] = [ch, c]; };
-  // blade: a diagonal from bottom-left to top-right, two glyphs wide, tapering to a point
-  const runeCells = new Set(st.runes.map((_, i) => 4 + i * 4));
-  for (let i = 0; i < 15; i++) {
-    const x = 11 + i * 1.3, y = 14 - i * .82, g = m.g[(i + Math.floor(t * 3)) % m.g.length];
-    put(x, y, g, m.c); if (i < 13) put(x + 1, y, m.g[(i + 1) % m.g.length], m.c);
-    if (runeCells.has(i)) { const r = st.runes[[...runeCells].indexOf(i)]; put(x + .5, y - 1, r, RUNES[r].c); }
-  }
-  // guard and grip
-  for (let k = -3; k <= 3; k++) put(9 + k * .7 + 1, 15 + k * .6 - .5, k === 0 ? '@' : '=', '#b89a5a');
-  for (let k = 1; k <= 4; k++) put(9 - k * 1.1, 16 + k * .7, k === 4 ? 'O' : '/', '#7a5634');
-  // glow: sparks of the rune colours around the blade
-  st.runes.forEach((r, j) => { for (let s = 0; s < 3; s++) { const a = t * 2 + j * 2 + s * 2.1, i = (s * 5 + j * 3 + Math.floor(t * 4)) % 15; put(11 + i * 1.3 + Math.cos(a) * 2, 14 - i * .82 + Math.sin(a), '.', RUNES[r].c); } });
-  return grid.map(row => row.map(c => c ? `<span style="color:${c[1]}">${c[0] === '<' ? '&lt;' : c[0]}</span>` : ' ').join('')).join('\n');
-}
-
 /* ---------------- armour pieces ---------------- */
 // each piece: metal (DEF from ARMOR_DEF) + 2 runes; rune effects on armour come from ARMOR_RUNE
 export const PIECES = { helm: 'Helm', shoulders: 'Shoulders', chest: 'Chest', gloves: 'Gloves', legs: 'Legs', boots: 'Boots' };
 const ARMOR_DEF = { forged: 0, iron: 1, steel: 2, bronze: 1.5, silver: 1.5, gold: .5, moon: 3, night: 1.5, blood: 2, ossite: 1.5, ember: 1.5 };
 const ARMOR_RUNE = { '+': { def: 1, d: '+1 DEF' }, '^': { hp: 8, d: '+8 max HP' }, '*': { def: .5, hp: 4, d: '+0.5 DEF, +4 max HP' }, 'z': { thorns: .05, d: 'reflect 5% of melee damage' },
   '~': { regen: .3, d: '+0.3 HP per second' }, '>': { speed: .02, d: '+2% move speed' }, '/': { def: .5, d: '+0.5 DEF' }, 'x': { hp: 6, d: '+6 max HP' }, 'v': { regen: .2, d: '+0.2 HP per second' }, 'o': { def: .7, d: '+0.7 DEF' } };
-const ART = {   // # = metal glyph, rows are staggered like mail
-  helm: ['   ####   ', '  ######  ', ' ######## ', ' ##-  -## ', ' ######## ', '  ######  ', ' ######## ', '##########'],
-  shoulders: ['  ####      ####  ', ' ######    ###### ', '########  ########', '########  ########', ' ######    ###### '],
-  chest: ['  ###    ###  ', ' ############ ', '##############', '##############', ' ############ ', ' ############ ', '  ##########  ', '  ##########  ', '   ########   '],
-  gloves: [' ##  ##      ##  ## ', ' ##  ##      ##  ## ', ' ######      ###### ', ' ######      ###### ', '  ####        ####  ', '  ####        ####  '],
-  legs: ['##########', '####  ####', '###    ###', '###    ###', '###    ###', '###    ###', '###    ###', '###    ###'],
-  boots: [' ###     ###  ', ' ###     ###  ', ' ###     ###  ', ' #####   ##### ', '######  ######']
-};
 export function armorState(p) { S.armor = S.armor || {}; return S.armor[p] || (S.armor[p] = { metal: 'forged', runes: [] }); }
 export function armorMods() {
   const o = { def: 0, hp: 0, regen: 0, thorns: 0, speed: 0 };
@@ -86,22 +59,14 @@ export function armorMods() {
   }
   return o;
 }
-function armorArt(p, t) {
-  const st = armorState(p), m = METALS[st.metal] || METALS.forged;
-  return ART[p].map((row, y) => (y % 2 ? ' ' : '') + row.split('').map((ch, x) => {
-    if (ch !== '#') return ch === ' ' ? ' ' : `<span style="color:#555">${ch}</span>`;
-    const g = m.g[(x + y + Math.floor(t * 2)) % m.g.length];
-    return `<span style="color:${m.c}">${g}</span>`;
-  }).join('')).join('\n') + '\n\n' + st.runes.map(r => `<span style="color:${RUNES[r].c}">  ${r}  </span>`).join('');
-}
-
 /* ---------------- panel ---------------- */
 let open = false, timer = 0, tab = 'weapon';
 export function craftOpen() { return open; }
-const art = () => tab === 'weapon' ? swordArt(performance.now() / 1000) : armorArt(tab, performance.now() / 1000);
+// 3D preview (preview.js): the current piece in its metal colour, runes as glowing studs; drag to turn it
+const art = (dt = 0) => { const st = tab === 'weapon' ? craftState() : armorState(tab), m = METALS[st.metal] || METALS.forged; return previewFrame(tab, m.c, st.runes.map(r => RUNES[r].c), dt); };
 export function toggleCraft(on = !open) {
   open = on; $('craft').hidden = !on;
-  clearInterval(timer); if (on) { render(); timer = setInterval(() => { $('craftArt').innerHTML = art(); }, 120); }
+  clearInterval(timer); if (on) { render(); timer = setInterval(() => { $('craftArt').innerHTML = art(.05); }, 50); }
 }
 function render() {
   const weapon = tab === 'weapon', st = weapon ? craftState() : armorState(tab), m = METALS[st.metal], slots = weapon ? 3 : 2;
@@ -120,6 +85,7 @@ function render() {
 let inited = false;
 export function initCraft() {
   if (inited) return; inited = true;
+  initPreview($('craftArt'));
   $('craft').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return; const weapon = tab === 'weapon', st = weapon ? craftState() : armorState(tab), max = weapon ? 3 : 2;
     if (b.dataset.t) tab = b.dataset.t;
