@@ -14,6 +14,7 @@
 `src/core.js` (height, collision, MID) · `render.js` (ASCII pass, light, shadows) · `world.js` (terrain, village, castle, swamp) · `models.js` (models + `animBiped`) · `actors.js` (player, enemy AI, skills, shield) · `fx.js` (particles) · `game.js` (quests, inventory, HUD, saving) · `net.js` (multiplayer client) · `audio.js` (procedural WebAudio sound) · `duel.js` (PvP duels) · `party.js` (parties, shared XP) · `map.js` (world map screen) · `main.js` (input, loop, start screen, pause) · `server/server.js` (dependency-free Node: static + WebSocket + accounts) · `server/db.js` (SQLite) · `server/admin.js` (admin CLI) · `start.bat` (Windows launcher).
 
 ## Done (newest first)
+- Game enters true fullscreen automatically on start (Continue/New game click); pause menu has a Full screen button.
 - F11 now uses the Fullscreen API (+ keyboard lock for Esc) so the browser bar no longer appears when the mouse touches the top edge.
 - Turkish keyboard: I key sends "ı", normalised by lowKey() in keys.js. Other players drawn with names on world map (p Name / P Name for party) and as p on minimap.
 - Craft screen: 3D ASCII preview (src/preview.js) — off-screen three.js model rendered to a 60x28 target and printed as coloured glyphs; drag to turn, auto-spins when idle. Panel clickable (pointer-events:auto).

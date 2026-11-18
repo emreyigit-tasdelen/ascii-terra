@@ -36,9 +36,13 @@ let started = false, last = performance.now(), T = 0, saveT = 0, regT = 0;
 // Keyboard lock keeps Esc for the game (hold Esc to leave fullscreen).
 addEventListener('keydown', e => {
   if (e.key !== 'F11') return; e.preventDefault(); e.stopImmediatePropagation();
-  if (document.fullscreenElement) document.exitFullscreen();
-  else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => navigator.keyboard?.lock?.(['Escape'])).catch(() => {});
+  toggleFull();
 }, true);
+function toggleFull(on = !document.fullscreenElement) {
+  if (!on) return document.fullscreenElement && document.exitFullscreen();
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => navigator.keyboard?.lock?.(['Escape'])).catch(() => {});
+}
+$('pfull').addEventListener('click', () => toggleFull());   // module scripts run after the page is parsed
 addEventListener('keydown', e => {
   const ae = document.activeElement;
   if (ae && ae.tagName === 'INPUT') {   // game keys are ignored while typing
@@ -124,6 +128,7 @@ function begin(fresh) {
   if (!had) { S.tut = 0; openCreate(() => { }); }
   cam.tx = P.x; cam.ty = P.y; cam.tz = P.z; cam.yaw = 0;
   updateGrass(P.x, P.z, 999);
+  toggleFull(true);   // the game always plays in true fullscreen (the start click is the user gesture it needs)
   started = true; $('overlay').hidden = true; $('hud').hidden = false;
   joinWorld(nm);
   setTimeout(() => { if (!$('help').hidden) toggleHelp(); }, 15000);
