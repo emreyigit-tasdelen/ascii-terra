@@ -32,6 +32,13 @@ function updateWeather(dt) {
 let started = false, last = performance.now(), T = 0, saveT = 0, regT = 0;
 
 /* ---------------- input ---------------- */
+// F11: real (API) fullscreen instead of the browser's own, so hovering the top edge does not bring the browser bar back.
+// Keyboard lock keeps Esc for the game (hold Esc to leave fullscreen).
+addEventListener('keydown', e => {
+  if (e.key !== 'F11') return; e.preventDefault(); e.stopImmediatePropagation();
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen({ navigationUI: 'hide' }).then(() => navigator.keyboard?.lock?.(['Escape'])).catch(() => {});
+}, true);
 addEventListener('keydown', e => {
   const ae = document.activeElement;
   if (ae && ae.tagName === 'INPUT') {   // game keys are ignored while typing
