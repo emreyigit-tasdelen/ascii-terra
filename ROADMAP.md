@@ -135,6 +135,9 @@ the `net.js` client: `invite`, `invite_reply`, `party_*`, `duel_*`. Invites expi
 
 ---
 
+## Tablets (iPad / Android) — plan
+Order: (0) reach the server from a tablet (LAN, then HTTPS hosting with wss) → (1) touch controls: joystick, drag camera, pinch zoom, action and skill buttons, auto-target; desktop unchanged → (2) UI on Pointer Events, 44 px targets, landscape hint → (3) auto quality (VIEW.scale) → (4) PWA: manifest, icons, service worker, standalone → (5, optional) Google Play via TWA, App Store via Capacitor. Side track: Gamepad API, iPad trackpad camera (no Pointer Lock on iPad). Facts (Nov 2026): iPad Safari has no Pointer Lock or orientation lock; fullscreen drops gamepad shoulder buttons, so prefer the home-screen app; PWA install needs HTTPS.
+
 ## Next sprint (suggested)
 1. Equipment slots (the craft screen already has blade and armour tabs)
 2. Skills and support gems
