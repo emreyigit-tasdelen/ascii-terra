@@ -9,14 +9,17 @@ try {
   Write-Host 'Checking for updates...'
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
   $h = @{ 'User-Agent' = 'ascii-terra-updater' }
-  $remote = (Invoke-RestMethod "https://api.github.com/repos/$repo/commits/main" -Headers $h -TimeoutSec 10).sha
+  # Only published releases are installed, never unreleased commits on main.
+  try { $remote = (Invoke-RestMethod "https://api.github.com/repos/$repo/releases/latest" -Headers $h -TimeoutSec 10).tag_name }
+  catch { if ($_.Exception.Response.StatusCode -eq 404) { Write-Host 'No release yet.'; exit 0 }; throw }
+  if ($remote -notmatch '^v[0-9A-Za-z._-]+$') { throw "unexpected release tag" }
   $local = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { '' }
-  if ($remote -eq $local) { Write-Host 'Up to date.'; exit 0 }
+  if ($remote -eq $local) { Write-Host "Up to date ($remote)."; exit 0 }
 
   $tmp = Join-Path $env:TEMP "ascii-terra-update-$PID"
   New-Item -ItemType Directory $tmp | Out-Null
-  $zip = Join-Path $tmp 'main.zip'
-  Invoke-WebRequest "https://github.com/$repo/archive/refs/heads/main.zip" -OutFile $zip -Headers $h -TimeoutSec 60 -UseBasicParsing
+  $zip = Join-Path $tmp 'release.zip'
+  Invoke-WebRequest "https://github.com/$repo/archive/refs/tags/$remote.zip" -OutFile $zip -Headers $h -TimeoutSec 60 -UseBasicParsing
   Expand-Archive $zip -DestinationPath $tmp
   $src = Get-ChildItem $tmp -Directory | Select-Object -First 1
   # Copy new and changed files only; nothing is deleted, server\data is excluded.
@@ -29,6 +32,8 @@ try {
   $manFile = Join-Path $root '.files'
   if (Test-Path $manFile) {
     foreach ($f in Get-Content $manFile) {
+      # Skip anything that could point outside the game folder (.., drive or rooted paths).
+      if ($f -match '\.\.|:' -or [IO.Path]::IsPathRooted($f)) { continue }
       if ($f -and $new -notcontains $f -and $f -notlike 'server\data\*') {
         $p = Join-Path $root $f
         if (Test-Path $p -PathType Leaf) { Remove-Item $p -Force }
@@ -38,7 +43,7 @@ try {
   Set-Content $manFile $new
   Set-Content $verFile $remote
   Remove-Item $tmp -Recurse -Force
-  Write-Host 'Updated to the latest version.'
+  Write-Host "Updated to $remote."
 } catch {
   Write-Host "Update skipped: $($_.Exception.Message)"
 }

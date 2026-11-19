@@ -13,9 +13,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0server\update.ps1" & e
 
 :git
 echo Checking for updates...
-git fetch --quiet origin main 2>nul || (echo Could not reach GitHub, starting without update. & exit /b 0)
-for /f %%a in ('git rev-parse HEAD') do set LOCAL=%%a
-for /f %%a in ('git rev-parse origin/main') do set REMOTE=%%a
-if "%LOCAL%"=="%REMOTE%" (echo Up to date. & exit /b 0)
+rem Only released versions (tags v*) are installed, never unreleased commits on main.
+git fetch --quiet --tags origin 2>nul || (echo Could not reach GitHub, starting without update. & exit /b 0)
+set TAG=
+for /f %%a in ('git tag --list "v*" --sort=-v:refname') do if not defined TAG set TAG=%%a
+if not defined TAG (echo No release yet. & exit /b 0)
+git merge-base --is-ancestor %TAG% HEAD && (echo Up to date ^(%TAG%^). & exit /b 0)
 rem --ff-only refuses to overwrite local changes; then nothing is changed.
-(git pull --ff-only --quiet origin main && echo Updated to the latest version.) || echo Update skipped: you have local changes. & exit /b 0
+(git merge --ff-only --quiet %TAG% 2>nul && echo Updated to %TAG%.) || echo Update skipped: you have local changes. & exit /b 0
