@@ -13,6 +13,7 @@ import { NET, initNet, joinWorld, authRequest, logout, updateNet, chatToggle, ch
 import { S, load, save, hasSave, resetSave, applyState, interact, closeDialog, toggleInv, invOpen, invPress, usePotion, updateHUD, toast, beginLabels, endLabels, toggleMini, toggleHelp, buildHotbar, showRegion, updateLoot } from './game.js';
 import { initAudio, updateAudio, toggleSound, sfx, getVolume, setVolume } from './audio.js';
 import { initMap, toggleMap, updateMap, mapOpen } from './map.js';
+import { initTouch, touchFrame } from './touch.js';
 
 const DAYLEN = 480, PMIN = .05;   // PMIN: camera can drop to the horizon (to see far away)
 const cam = { yaw: 0, pitch: .98, dist: 17, tx: 0, ty: 0, tz: 0 };
@@ -99,7 +100,7 @@ function setPaused(on) {
   if (on) renderKeys();
   if (on) { const v = S.sens || 1; $('psens').value = v; $('psensv').textContent = v.toFixed(1) + 'x'; save(); }
 }
-initKeys();
+initKeys(); initTouch(cam);
 $('psens').onchange = () => save();
 // crosshair (the in-game mouse pointer): size and colour, saved like the other settings
 function applyCross() { const c = S.cross = { s: 20, c: '#ffffff', ...S.cross }; $('cross').style.fontSize = c.s + 'px'; $('cross').style.color = c.c; $('pcs').value = c.s; $('pcc').value = c.c; }
@@ -261,7 +262,7 @@ function frame(now, draw) {
   let dt = rdt; if (FXS.stop > 0) { FXS.stop -= rdt; dt = rdt * .05; }   // short hit-stop
   const run = started && !(paused && !NET.online);   // single player freezes the world; online it keeps running
   if (paused) P.invuln = true; else P.invuln = false;
-  beginLabels();
+  beginLabels(); touchFrame(started, paused);
   if (run) {
     if (MOUSE.lmb) doSlash();
     updatePlayer(dt); updateEnemies(dt); updateEffects(dt); updateNet(rdt); updateIntro(dt, T);
