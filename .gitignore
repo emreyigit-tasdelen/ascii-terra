@@ -34,3 +34,6 @@ server/data/
 
 # Updater state (ZIP installs)
 .version
+
+# Updater state (ZIP installs)
+.files

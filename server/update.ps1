@@ -22,6 +22,20 @@ try {
   # Copy new and changed files only; nothing is deleted, server\data is excluded.
   robocopy $src.FullName $root /E /XD (Join-Path $src.FullName 'server\data') /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "copy failed ($LASTEXITCODE)" }
+  # Remove files the previous update installed that are gone upstream. Only files listed in
+  # our own manifest are ever deleted, so player files and server\data are never touched.
+  $base = $src.FullName.Length + 1
+  $new = @(Get-ChildItem $src.FullName -Recurse -File | ForEach-Object { $_.FullName.Substring($base) })
+  $manFile = Join-Path $root '.files'
+  if (Test-Path $manFile) {
+    foreach ($f in Get-Content $manFile) {
+      if ($f -and $new -notcontains $f -and $f -notlike 'server\data\*') {
+        $p = Join-Path $root $f
+        if (Test-Path $p -PathType Leaf) { Remove-Item $p -Force }
+      }
+    }
+  }
+  Set-Content $manFile $new
   Set-Content $verFile $remote
   Remove-Item $tmp -Recurse -Force
   Write-Host 'Updated to the latest version.'

@@ -8,8 +8,8 @@ if exist ".git" (
   if not errorlevel 1 goto git
 )
 rem Downloaded as a ZIP (or no git installed): update from the GitHub ZIP.
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0server\update.ps1"
-exit /b 0
+rem Lines that may replace this file end with "& exit /b" on the same line, so cmd never reads on.
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0server\update.ps1" & exit /b 0
 
 :git
 echo Checking for updates...
@@ -18,5 +18,4 @@ for /f %%a in ('git rev-parse HEAD') do set LOCAL=%%a
 for /f %%a in ('git rev-parse origin/main') do set REMOTE=%%a
 if "%LOCAL%"=="%REMOTE%" (echo Up to date. & exit /b 0)
 rem --ff-only refuses to overwrite local changes; then nothing is changed.
-git pull --ff-only --quiet origin main && (echo Updated to the latest version.) || (echo Update skipped: you have local changes.)
-exit /b 0
+(git pull --ff-only --quiet origin main && echo Updated to the latest version.) || echo Update skipped: you have local changes. & exit /b 0
