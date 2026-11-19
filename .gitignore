@@ -31,3 +31,6 @@ scratch/
 
 # Server-side accounts and saves (personal data, never committed)
 server/data/
+
+# Updater state (ZIP installs)
+.version

@@ -1,5 +1,6 @@
 @echo off
 cd /d "%~dp0"
+call update.bat
 where node >nul 2>&1
 if %errorlevel%==0 (
   start "ASCII-Terra server" /min node server\server.js
