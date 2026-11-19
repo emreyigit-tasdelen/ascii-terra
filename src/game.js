@@ -7,6 +7,7 @@ import { crystals, CIRCLE } from './world.js';
 import { P, NPCS, enemies, CD, CDMAX, TGT, resetPlayer } from './actors.js';
 import { NET, sendNet } from './net.js';
 import { partyQuest } from './party.js';
+import { TOUCH } from './touch.js';
 
 const SAVE_KEY = 'asciiTerra2';
 export let S = freshState();
@@ -184,7 +185,7 @@ export function interact(npc) {
   else if (q.st === 0) text = q.offer + '\n<i>[E] Accept</i>';
   else if (q.st === 1) text = q.hint + ' (' + progress(q) + '/' + q.n + ')';
   else text = q.done + '\n<i>[E] Claim reward</i>';
-  dialog = { npc, q }; const d = $('dialog'); d.innerHTML = '<b>' + npc.name + '</b>' + (q ? ' — ' + q.title : '') + '<br>' + text.replace(/\n/g, '<br>'); d.hidden = false;
+  dialog = { npc, q }; const d = $('dialog'); d.innerHTML = '<b>' + npc.name + '</b>' + (q ? ' — ' + q.title : '') + '<br>' + (TOUCH.on ? text.replace(/\[E\]/g, '[USE]') : text).replace(/\n/g, '<br>'); d.hidden = false;
 }
 
 /* ================= saving ================= */

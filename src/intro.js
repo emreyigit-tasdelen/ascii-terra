@@ -5,6 +5,7 @@ import { scene } from './render.js';
 import { S, Q, toast } from './game.js';
 import { P, LOOKS, setLook } from './actors.js';
 import { burst } from './fx.js';
+import { TOUCH } from './touch.js';
 
 /* ---------------- character creation ---------------- */
 const hex = c => '#' + c.toString(16).padStart(6, '0');
@@ -49,12 +50,12 @@ export function hitDummy(fx, fz) {
 
 /* ---------------- tutorial ---------------- */
 const STEPS = [
-  { t: 'Move with W A S D', done: s => s.moved > 6 },
-  { t: 'Hold Shift while moving to run', done: s => s.ran > 1.2 },
-  { t: 'Strike the training dummy: left click (3 hits)', done: () => DUMMY.hits >= 3 },
-  { t: 'Roll out of danger with C', done: () => P.dodgeT > 0 },
-  { t: 'Raise your shield: hold Alt', done: () => P.block },
-  { t: 'Talk to Old Mira by the fire: walk up to her and press E', done: () => Q.some(q => q.st > 0) }
+  { t: 'Move with W A S D', tt: 'Drag on the left side to walk', done: s => s.moved > 6 },
+  { t: 'Hold Shift while moving to run', tt: 'Push the stick to the rim to run', done: s => s.ran > 1.2 },
+  { t: 'Strike the training dummy: left click (3 hits)', tt: 'Strike the training dummy: ATK (3 hits)', done: () => DUMMY.hits >= 3 },
+  { t: 'Roll out of danger with C', tt: 'Roll out of danger: ROLL', done: () => P.dodgeT > 0 },
+  { t: 'Raise your shield: hold Alt', tt: 'Raise your shield: hold BLK', done: () => P.block },
+  { t: 'Talk to Old Mira by the fire: walk up to her and press E', tt: 'Talk to Old Mira by the fire: walk up to her and tap USE', done: () => Q.some(q => q.st > 0) }
 ];
 const st = { moved: 0, ran: 0, lx: null, lz: null };
 export function updateIntro(dt, t) {
@@ -65,5 +66,5 @@ export function updateIntro(dt, t) {
   st.lx = P.x; st.lz = P.z;
   const s = STEPS[S.tut];
   if (s.done(st)) { S.tut++; toast(S.tut >= STEPS.length ? 'Tutorial complete — the world is yours' : 'Done!'); return; }
-  el.hidden = false; el.textContent = `[${S.tut + 1}/${STEPS.length}]  ${s.t}`;
+  el.hidden = false; el.textContent = `[${S.tut + 1}/${STEPS.length}]  ${TOUCH.on && s.tt || s.t}`;
 }

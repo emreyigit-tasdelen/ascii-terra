@@ -63,13 +63,15 @@ function build(tab, metal, runes) {
 
 export function initPreview(el) {
   el.style.cursor = 'grab';
-  el.addEventListener('mousedown', e => { view.drag = { x: e.clientX, y: e.clientY }; el.style.cursor = 'grabbing'; e.preventDefault(); });
-  addEventListener('mousemove', e => {
+  // Pointer Events so a finger can turn the item too (touch-action: none on touch screens, see style.css)
+  el.addEventListener('pointerdown', e => { view.drag = { x: e.clientX, y: e.clientY }; el.style.cursor = 'grabbing'; e.preventDefault(); try { el.setPointerCapture(e.pointerId); } catch (_) { /* pointer gone */ } });
+  el.addEventListener('pointermove', e => {
     if (!view.drag) return;
     const dx = e.clientX - view.drag.x, dy = e.clientY - view.drag.y; view.drag = { x: e.clientX, y: e.clientY };
     view.yaw += dx * .012; view.pitch = Math.max(-1.2, Math.min(1.2, view.pitch + dy * .01)); view.vy = dx * .012; view.idle = 0;
   });
-  addEventListener('mouseup', () => { if (view.drag) { view.drag = null; el.style.cursor = 'grab'; } });
+  const up = () => { if (view.drag) { view.drag = null; el.style.cursor = 'grab'; } };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
 }
 
 /* returns the HTML for one frame; dt in seconds */

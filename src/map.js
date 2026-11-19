@@ -77,14 +77,26 @@ export function updateMap(dt) {
 export function initMap() {
   if (cv) return; cv = $('mapCv'); g = cv.getContext('2d');
   cv.addEventListener('wheel', e => { e.preventDefault(); e.stopPropagation(); V.zoom = clamp(V.zoom * Math.exp(e.deltaY * .0015), .8, 6); dirty = true; }, { passive: false });
-  cv.addEventListener('mousedown', e => { drag = { x: e.clientX, y: e.clientY }; });
-  addEventListener('mouseup', () => { drag = null; });
-  addEventListener('mousemove', e => {
-    if (!drag || !mapOpen()) return;
-    V.x = clamp(V.x - (e.clientX - drag.x) / CW * V.zoom, -HALF, HALF); V.z = clamp(V.z - (e.clientY - drag.y) / CH * V.zoom * CH / CW, -HALF, HALF);
-    drag.x = e.clientX; drag.y = e.clientY; dirty = true;
+  // Pointer Events: mouse drag and one-finger drag pan, two fingers pinch-zoom, double click / double tap centres
+  const pts = new Map(); let pinch = 0, lastTap = 0;
+  const centre = () => { V.x = P.x; V.z = P.z; dirty = true; };
+  cv.addEventListener('pointerdown', e => {
+    try { cv.setPointerCapture(e.pointerId); } catch (_) { /* pointer gone */ }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY }); pinch = 0;
+    if (e.pointerType === 'touch') { const t = performance.now(); if (t - lastTap < 300 && pts.size === 1) centre(); lastTap = t; }
   });
-  cv.addEventListener('dblclick', () => { V.x = P.x; V.z = P.z; dirty = true; });
+  cv.addEventListener('pointermove', e => {
+    const p = pts.get(e.pointerId); if (!p || !mapOpen()) return;
+    if (pts.size >= 2) {
+      p.x = e.clientX; p.y = e.clientY; const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch) { V.zoom = clamp(V.zoom * pinch / d, .8, 6); dirty = true; } pinch = d; return;
+    }
+    V.x = clamp(V.x - (e.clientX - p.x) / CW * V.zoom, -HALF, HALF); V.z = clamp(V.z - (e.clientY - p.y) / CH * V.zoom * CH / CW, -HALF, HALF);
+    p.x = e.clientX; p.y = e.clientY; dirty = true;
+  });
+  const up = e => { pts.delete(e.pointerId); pinch = 0; };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('dblclick', centre);
   addEventListener('resize', () => { dirty = true; });
   $('mapClose').onclick = () => toggleMap(false);
 }

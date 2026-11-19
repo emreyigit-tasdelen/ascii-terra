@@ -42,6 +42,18 @@ export function initTouch(c) {
   document.body.append(root);
   const menu = document.createElement('button'); menu.id = 'tmenu'; menu.textContent = '≡'; menu.hidden = true;   // pause, or close the open window
   document.body.append(menu);
+  const rot = document.createElement('div'); rot.id = 'rotate'; rot.textContent = '[ <-> ]\n\nTurn your tablet sideways to play';
+  document.body.append(rot);
+  // touch version of the controls panel; hidden at start, opened from the pause menu (Controls), tap to close
+  const help = $('help'); help.hidden = true; help.addEventListener('click', () => { help.hidden = true; });
+  help.textContent = 'TOUCH CONTROLS                                   (tap to close)\n' +
+    'Left side: drag to walk, push to the rim to run\n' +
+    'Right side: swipe to turn the camera and aim, pinch to zoom\n' +
+    'ATK attack (hold for combos) · BLK hold shield · JMP jump · ROLL dodge\n' +
+    '2 fireball · 3 whirlwind · 5 void orb · 6 moon lance · POT potion\n' +
+    'USE talk / accept / claim · RIDE horse\n' +
+    'CHAT · MAP · CRAFT · INV on the right · ≡ pause or close a window\n' +
+    'Map: drag to move, pinch to zoom, double tap to centre';
   menu.addEventListener('pointerdown', e => { e.preventDefault(); escape(); });
 
   root.querySelectorAll('.tbtn').forEach((b, i) => {
@@ -91,7 +103,8 @@ export function initTouch(c) {
 // every frame: show the layer only in play with no window open, and keep the aim point fixed
 export function touchFrame(started, paused) {
   if (!TOUCH.on) return;
-  const win = invOpen() || mapOpen() || craftOpen() || $('dialog').hidden === false || document.activeElement?.id === 'chatin';
+  // dialogs stay playable: the USE button accepts a quest or claims the reward
+  const win = invOpen() || mapOpen() || craftOpen() || document.activeElement?.id === 'chatin';
   const hide = !started || paused || win, t = $('touch');
   if (hide && !t.hidden) {   // a hidden button never gets its pointerup: let go of everything it held
     keys.w = keys.a = keys.s = keys.d = keys.shift = keys.alt = false; MOUSE.lmb = false;
