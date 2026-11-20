@@ -19,6 +19,8 @@ Tamamen ASCII karakterlerle, gerçek zamanlı ve tarayıcıda çizilen karanlık
 [English](README.md) · **Türkçe**
 
 <img src="docs/screenshot.jpg" alt="ASCII-Terra oynanış" width="800">
+<br><br>
+<img src="docs/village.jpg" alt="Gece köy: kamp ateşi, köylüler ve uzun çimen, hepsi ASCII" width="800">
 
 **[Hızlı başlangıç](#hızlı-başlangıç)** · [Kurulum rehberi](docs/INSTALL.tr.md) · [Yol haritası](ROADMAP.md)
 
