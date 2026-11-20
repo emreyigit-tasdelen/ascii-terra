@@ -8,150 +8,121 @@
 /_/   \_\____/ \____|___|___|    |_| |_____|_| \_\_| \_\/_/   \_\
 ```
 
-### Ekrandaki her şeyin ASCII karakterlerden oluştuğu, karanlık bir şövalye dünyası aksiyon RPG'si.
+### Her piksel bir harf.
 
-Çimen, zırh, kale duvarları, deniz, ateş ve yağmur; hepsi tarayıcında, gerçek zamanlı, harflerle çiziliyor.<br>
-Tek başına, LAN'da arkadaşlarınla ya da tabletten oyna.
+Tamamen ASCII karakterlerle, gerçek zamanlı ve tarayıcıda çizilen karanlık şövalye aksiyon RPG'si.
 
 [![Sürüm](https://img.shields.io/github/v/release/emreyigit-tasdelen/ascii-terra?color=c9a227)](https://github.com/emreyigit-tasdelen/ascii-terra/releases)
 [![Lisans: MIT](https://img.shields.io/badge/lisans-MIT-blue)](LICENSE)
 ![Sıfır bağımlılık](https://img.shields.io/badge/sunucu-s%C4%B1f%C4%B1r%20ba%C4%9F%C4%B1ml%C4%B1l%C4%B1k-brightgreen)
-![WebGL2](https://img.shields.io/badge/gerekli-WebGL2-lightgrey)
-[![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-destek-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/emreyigit-tasdelen)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-destek-ffdd00?logo=buymeacoffee&logoColor=black)](https://buymeacoffee.com/emreyigit.tasdelen)
 
 [English](README.md) · **Türkçe**
 
 <img src="docs/screenshot.jpg" alt="ASCII-Terra oynanış" width="800">
 
+**[Hızlı başlangıç](#hızlı-başlangıç)** · [Kurulum rehberi](docs/INSTALL.tr.md) · [Yol haritası](ROADMAP.md)
+
 </div>
 
 ---
 
+## Bu nedir?
+
+ASCII-Terra, görüntünün metinden oluştuğu açık dünya bir aksiyon RPG'si. Taş duvarlar yoğun harf dokusu,
+çimen her yaprağı izleyen `/ | \` çizgileri, su siyah zemin üstünde beyaz `~ =` köpüğü, ateş turuncu `# % &` olarak titriyor.
+Yağmur ve deniz bile harflerden oluşuyor.
+
+Gümüş zırhlı şövalye **Torvan**'ı oynarsın. Kale harabesindeki ölümsüzleri temizle, kurtları avla, sisli bataklığı geç,
+dev örümcek *Gloomweaver*'ı yen ve Taş Çember'de yemin et. Tek başına, ağındaki arkadaşlarla ya da tabletten oyna.
+
+> **Durum:** erken geliştirme. Uzun vadeli hedef çevrimiçi bir ASCII MMORPG. [Yol haritası](ROADMAP.md).
+
+## Neden farklı görünüyor?
+
+- **Altında gerçek bir 3D sahne var.** Three.js dünyayı gölge, parlak zırh ve parçacıklarla ekran dışına çizer. Özel bir shader sonra onu metne çevirir.
+- **Karakter malzemeye göre seçilir.** Taş, çimen, su, metal ve ateşin her birinin kendi karakter seti var; yüzey ne olduğunu kendisi söyler.
+- **Ekrandaki hiçbir şey resim değil.** Karakterler, yaratıklar ve efektler harflerden kurulu. Projenin tek kuralı bu.
+
 ## Hızlı başlangıç
 
-Ayrıntılı rehber: [docs/INSTALL.tr.md](docs/INSTALL.tr.md).
+Oyun tarayıcıda çalışır ama küçük bir yerel sunucu ister (içinde geliyor, kurulum adımı ve paket yok).
 
-**Windows:** [son sürümü](https://github.com/emreyigit-tasdelen/ascii-terra/releases/latest) indir, ZIP'i aç ve **`start.bat`**'a çift tıkla. Oyun tarayıcıda açılır.
+**Windows:** [son sürümü](https://github.com/emreyigit-tasdelen/ascii-terra/releases/latest) indir, ZIP'i aç, **`start.bat`**'a çift tıkla.
 
-**[Node.js](https://nodejs.org) 22.5+ olan her sistem:**
+**[Node.js](https://nodejs.org) 22.13+ olan her sistem:**
 
 ```bash
 git clone https://github.com/emreyigit-tasdelen/ascii-terra.git
 cd ascii-terra
-node server/server.js
+node server/server.js     # sonra http://localhost:8765 adresini aç
 ```
 
-Sonra <http://localhost:8765> adresini aç. `npm install` yok, derlenecek bir şey yok.
-
-> **Güncelleme:** `start.bat` her açılışta GitHub'da yeni sürüm olup olmadığına bakar ve varsa kendisi kurar.
-> Hesapların ve kayıtların (`server/data/`) hiçbir zaman değiştirilmez.
-
-## Bu nedir?
-
-ASCII-Terra, klasik zindan oyunları ruhunda, tamamen metinle çizilen açık dünya bir ARPG'dir.
-3D sahne Three.js ile ekran dışında çizilir; özel bir shader her pikseli malzemeye göre seçilen bir
-karaktere çevirir: taş duvarlar yoğun harf dokusu olur, çimen her yaprağı izleyen `/ | \` çizgileri olur,
-su siyah zemin üstünde beyaz `~ =` köpüğüdür, ateş turuncu `# % &` olarak titrer.
-
-Gümüş zırhlı, kırmızı tabard'lı şövalye **Torvan**'ı oynarsın. Kale harabesindeki ölümsüzleri temizle,
-kurtları avla, dev örümcek *Gloomweaver*'ı yen ve Taş Çember'de yemin et.
-
-> **Durum:** erken geliştirme. Uzun vadeli hedef çevrimiçi, çok oyunculu bir ASCII MMORPG. [Yol haritası](ROADMAP.md).
+`start.bat` her açılışta oyunu GitHub sürümlerinden günceller ve hesaplarına, kayıtlarına hiç dokunmaz.
+Adım adım anlatım, güvenlik duvarı ve sorun giderme: **[docs/INSTALL.tr.md](docs/INSTALL.tr.md)**.
 
 ## Öne çıkanlar
 
 | | |
 |---|---|
-| **%100 ASCII** | Malzemeye göre karakter setleri, piksele hizalı karakter atlası, karakter ve yaratıklar için daha ince ızgara. Gerçek zamanlı gölge, parlak zırh, parçacıklar, gece/gündüz, yağmur ve sis. |
-| **Savaş** | Kılıç kombosu, stamina ile kalkan ve **savuşturma (parry)**, ateş topu, kasırga, boşluk küresi, ay mızrağı, yuvarlanma, zıplama, at. Boss'lar saldırıyı yerde turuncu daireyle önceden gösterir, canı yarının altına inince öfkelenir. |
-| **Dünya** | Köy, meşaleli kapılı kale harabesi, menhirli köpüklü kıyı, ormanlar ve sisli **Misty Swamp**. Dünya haritası, 9 görevlik zincir, yere düşen ganimet ve rünlü demircilik (kılıç ve zırh). |
-| **Yaratıklar** | İskeletler, kara şövalyeler, yaralanınca kaçan kurtlar, ghoul'ler, bataklık cadıları ve trol, örümcek *Gloomweaver* ve kanatlı *Ash Dragon*; hepsi tam animasyonlu prosedürel modeller. |
-| **Çok oyunculu** | 32 oyuncuya kadar, otomatik host devriyle host-yetkili co-op, sohbet, ortak XP ve görevli **partiler**, **PvP düellolar**, sunucuda kayıtlı hesaplar. |
-| **Dokunmatik** | iPad ve Android tabletlerde sanal joystick, kaydırarak bakma ve nişan, iki parmakla yakınlaştırma ve aksiyon düğmeleri. Masaüstü kontrolleri aynı kalır. |
+| **Savaş** | Kılıç kombosu, kalkan ve **savuşturma**, ateş topu, kasırga, boşluk küresi, ay mızrağı, yuvarlanma, zıplama, at. Boss'lar saldırıyı yerde daireyle gösterir, canı yarıya inince öfkelenir. |
+| **Dünya** | Köy, kale harabesi, dikilitaşlı köpüklü kıyı, ormanlar ve Misty Swamp. Dünya haritası, 9 görevlik zincir, yere düşen ganimet, kılıç ve zırh için rün demirciliği. |
+| **Yaratıklar** | İskeletler, kara şövalyeler, yaralanınca kaçan kurtlar, ghoul'ler, cadılar, bir trol, örümcek *Gloomweaver* ve *Ash Dragon*. |
+| **Çok oyunculu** | 32 oyuncuya kadar, otomatik host devriyle co-op, sohbet, ortak XP ve görevli partiler, PvP düello, sunucuda kayıtlı hesaplar. |
+| **Tabletler** | iPad ve Android: sanal joystick, kaydırarak bakma ve nişan, iki parmakla yakınlaştırma, aksiyon düğmeleri. |
+| **Atmosfer** | Gece ve gündüz, yağmur, sis, vuruş duraksaması, kamera sarsıntısı, kodla üretilen ses. |
 
-## Arkadaşlarla oyna (LAN partisi)
+## Arkadaşlarla ve tabletle oyna
 
-`start.bat`'i bir bilgisayarda çalıştır. Sunucu diğerleri için adresi yazar:
+1. `start.bat`'i **bir bilgisayarda** çalıştır. Sunucu odur.
+2. Konsol `For friends on your local network → http://192.168.x.x:8765` yazar.
+3. Aynı ağdaki herkes bu adresi bilgisayarda ya da tablette açar. Tableti yatay tut.
 
-```
-For friends on your local network → http://192.168.x.x:8765
-```
+Tablette sol yarıyı sürükleyerek yürürsün, sağ yarıyı kaydırarak bakar ve nişan alırsın, iki parmakla yakınlaştırırsın.
+İnternet üzerinden oynamak için sunucuyu HTTPS arkasında bir VPS'e koy (istemci otomatik `wss://` kullanır). Ayrıntılar [kurulum rehberinde](docs/INSTALL.tr.md).
 
-Aynı ağdaki herkes bu adresi bilgisayarda ya da tablette tarayıcıda açar.
-Windows sorarsa Node.js'e **özel ağlarda** izin ver. İnternet üzerinden oynamak için sunucuyu HTTPS arkasında bir VPS'te çalıştır; istemci otomatik olarak `wss://` kullanır.
-
-## Tabletler (iPad ve Android)
-
-LAN adresini Safari ya da Chrome'da aç ve tableti yatay tut.
-
-- **Sol taraf:** sürükleyerek yürü, kenara kadar itince koş
-- **Sağ taraf:** kaydırarak kamerayı çevir ve nişan al, iki parmakla yakınlaştır
-- **Düğmeler:** saldırı, kalkan, zıplama, yuvarlanma, yetenekler, iksir, kullan, at, envanter, harita, demircilik, sohbet
-- iPad'de sayfayı ana ekrana ekleyip tam ekran oynayabilirsin
-
-## Kontroller (klavye ve fare)
+## Kontroller
 
 | Tuş | İşlev |
 |---|---|
 | `W A S D` / `Shift` | yürü / koş |
 | `Space` / `C` | zıpla / yuvarlan |
-| Sol tık ya da `1` | imlece doğru kılıç saldırısı (3'lü kombo) |
-| `Alt` (basılı) | kalkan; darbe anında doğru zamanda bloklarsan **savuşturursun** |
+| Sol tık ya da `1` | kılıç, 3'lü kombo |
+| `Alt` (basılı) | kalkan; darbe anında doğru zamanda bloklarsan savuşturursun |
 | `2` `3` `5` `6` | ateş topu, kasırga, boşluk küresi, ay mızrağı |
-| `4` / `Q` | iksir |
-| `E` / `F` | konuş / at |
-| `I` `K` `M` `N` | envanter, demircilik, dünya haritası, mini harita |
-| `Enter` | sohbet |
-| `G` / `J` | düello / parti daveti (`Y` kabul, `N` ret) |
-| `Esc` / `P` | duraklatma menüsü (tuşlar buradan değiştirilebilir) |
-| Sağ sürükle, oklar, tekerlek | kamera |
+| `E` `F` `I` `K` `M` | konuş, at, envanter, demircilik, harita |
+| `Enter` / `G` / `J` | sohbet / düello / parti daveti |
+| `Esc` | duraklatma menüsü, tuş ataması |
 
-Tam liste: oyunda `H` tuşuna bas. Yeni oyun, karakter oluşturma ve kısa bir eğitimle başlar.
+Gerisi için oyunda `H` tuşuna bas.
 
-## Çok oyunculu ayrıntılar
+## Çizici nasıl çalışır
 
-- **Host-yetkili co-op:** görünür ilk oyuncu düşmanları ve boss'ları simüle eder; diğerleri küçük anlık görüntüler (10 Hz) alır ve vuruşlarını host'a gönderir. Host ayrılırsa rol otomatik olarak başka bir oyuncuya geçer.
-- Öldürme ödülü son vuruşu yapana gider; yakındaki parti üyeleri XP'yi ve görev öldürme sayılarını paylaşır.
-- **Hesaplar:** ilerlemeni sunucuda tutmak için başlangıç ekranında kaydol ya da misafir oyna (ilerleme o tarayıcıda kalır). Parolalar tuzlu scrypt özeti, giriş jetonları SHA-256 özeti olarak saklanır, girişler hız sınırlıdır ve her şey git'in yok saydığı `server/data/` içindedir.
-- **Veritabanı:** Node'un yerleşik SQLite'ı (`node:sqlite`), WAL modu, günlük yedek (son 7 tutulur). Parola kurtarma tek kullanımlık kurtarma koduyla yapılır; e-posta saklanmaz.
-- **Yönetici CLI:** `node server/admin.js list | reset <ad> | ban <ad> | unban <ad> | delete <ad> --yes | backup`
-- Sunucu bağımlılıksızdır: statik dosyalar ve minimal WebSocket düz Node ile, yol geçişi koruması ile mesaj boyutu ve hız sınırlarıyla.
+1. Sahne tam çözünürlükte ekran dışı bir hedefe çizilir.
+2. Her malzeme alfa kanalına bir **malzeme kimliği** yazar. Çimen ayrıca her yaprağın ekran açısını saklar.
+3. Tam ekran bir geçiş ekranı karakter hücrelerine böler, her hücreyi 3×3 örnekler ve o malzemenin setinden bir karakter seçip sahnenin rengiyle boyar.
+4. İnce şeyler (yağmur, ağ, çiçek) herhangi bir örnek isabet ederse hücreyi sahiplenir; 1 piksellik çizgiler kaybolmaz.
 
-## ASCII çizici nasıl çalışır
-
-1. Sahne ekran dışı bir hedefe tam çözünürlükte çizilir.
-2. Her malzeme alfa kanalına bir **malzeme kimliği** yazar (`src/core.js`). Çimen ayrıca her yaprağın ekran açısını kodlar.
-3. Tam ekran bir geçiş (`src/render.js`) ekranı karakter hücrelerine böler, her hücreyi 3×3 örnekler ve o malzemeye ait setten bir karakter seçip sahnenin rengiyle boyar.
-4. İnce nesneler (yağmur, ağ, çiçek) herhangi bir örnek isabet ederse hücreyi sahiplenir; 1 piksellik çizgiler kaybolmaz.
-
-Ayrıntılar: [docs/STYLE-GUIDE.md](docs/STYLE-GUIDE.md)
+Kod: `src/core.js` (malzeme kimlikleri), `src/render.js` (geçiş). Stil kuralları: [docs/STYLE-GUIDE.md](docs/STYLE-GUIDE.md).
 
 ## Proje yapısı
 
 ```
-index.html, style.css   giriş sayfası ve arayüz stilleri
-src/core.js             matematik, gürültü, arazi yüksekliği, çarpışma, malzeme kimlikleri
-src/render.js           çizici, ASCII son işlem, gece/gündüz, yağmur
-src/world.js            arazi, deniz, çimen, ağaçlar, köy, kale, bataklık
-src/models.js           karakter modelleri ve animasyon
-src/actors.js           oyuncu, düşman yapay zekâsı, yetenekler, mermiler
-src/game.js             durum, eşyalar, görevler, diyalog, kayıt, arayüz
-src/net.js, duel.js, party.js   çok oyunculu istemci, düellolar, partiler
-src/touch.js            tabletler için dokunmatik kontroller
-src/main.js             girdi, kamera, ana döngü
-server/                 bağımlılıksız Node.js sunucusu, SQLite, yönetici CLI
-update.bat              sürüm güncelleyici (start.bat çağırır)
+src/core.js, render.js     matematik, arazi, malzeme kimlikleri, ASCII geçişi
+src/world.js, models.js    arazi, kale, bataklık, karakterler ve animasyon
+src/actors.js, game.js     oyuncu, düşman yapay zekâsı, yetenekler, görevler, eşyalar, arayüz
+src/net.js, duel.js, party.js, touch.js   çok oyunculu, düello, parti, tablet kontrolleri
+server/                    bağımlılıksız Node.js sunucusu, SQLite, yönetici CLI
+start.bat, update.bat      başlatıcı ve sürüm güncelleyici
 ```
 
 ## Destek
 
-ASCII-Terra açık geliştirilir. Beğendiysen geliştirmeyi destekleyebilirsin:
+Açık geliştirilir. Beğendiysen:
 [GitHub Sponsors](https://github.com/sponsors/emreyigit-tasdelen) · [Buy Me a Coffee](https://buymeacoffee.com/emreyigit.tasdelen)
 
 ## Katkı
 
-Issue ve pull request'ler memnuniyetle karşılanır. Temel kural: **ekranda görünen her şey ASCII olmalı.**
+Issue ve pull request'ler memnuniyetle karşılanır. Tek kural: **ekranda görünen her şey ASCII olmalı.**
 
 ## Lisans
 
