@@ -18,8 +18,6 @@ A dark-knight action RPG drawn entirely with ASCII characters, in real time, in 
 
 **English** · [Türkçe](README.tr.md)
 
-<img src="docs/screenshot.jpg" alt="ASCII-Terra gameplay" width="800">
-<br><br>
 <img src="docs/village.jpg" alt="The village at night: campfire, villagers and tall grass, all in ASCII" width="800">
 
 **[Quick start](#quick-start)** · [Install guide](docs/INSTALL.md) · [Roadmap](ROADMAP.md)
