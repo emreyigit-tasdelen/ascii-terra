@@ -30,6 +30,8 @@ Play solo, with friends on your LAN, or from a tablet.
 
 ## Quick start
 
+Detailed guide: [docs/INSTALL.md](docs/INSTALL.md).
+
 **Windows:** download the [latest release](https://github.com/emreyigit-tasdelen/ascii-terra/releases/latest), unzip it and double-click **`start.bat`**. The game opens in your browser.
 
 **Any system with [Node.js](https://nodejs.org) 22.5+:**

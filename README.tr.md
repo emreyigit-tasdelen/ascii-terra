@@ -30,6 +30,8 @@ Tek başına, LAN'da arkadaşlarınla ya da tabletten oyna.
 
 ## Hızlı başlangıç
 
+Ayrıntılı rehber: [docs/INSTALL.tr.md](docs/INSTALL.tr.md).
+
 **Windows:** [son sürümü](https://github.com/emreyigit-tasdelen/ascii-terra/releases/latest) indir, ZIP'i aç ve **`start.bat`**'a çift tıkla. Oyun tarayıcıda açılır.
 
 **[Node.js](https://nodejs.org) 22.5+ olan her sistem:**
